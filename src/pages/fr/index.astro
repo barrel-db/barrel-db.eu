@@ -1,29 +1,29 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import LayoutFr from '../../layouts/LayoutFr.astro';
 ---
 
-<Layout title="AI-Native Databases for Europe">
+<LayoutFr title="Bases de Donnees IA-Natives pour l'Europe">
   <!-- Hero Section -->
   <section class="py-24 px-4 bg-gradient-to-b from-barrel-black to-teal-dark/10">
     <div class="container mx-auto text-center max-w-5xl">
       <div class="flex items-center justify-center gap-2 mb-6">
         <span class="text-2xl">🇪🇺</span>
-        <span class="text-barrel-gray/60 text-sm font-medium uppercase tracking-wider">European Infrastructure</span>
+        <span class="text-barrel-gray/60 text-sm font-medium uppercase tracking-wider">Infrastructure Europeenne</span>
       </div>
       <h1 class="text-5xl md:text-6xl font-bold mb-6">
-        <span class="bg-gradient-to-r from-coral to-teal-light bg-clip-text text-transparent">AI-Native Databases</span>
+        <span class="bg-gradient-to-r from-coral to-teal-light bg-clip-text text-transparent">Bases de Donnees IA-Natives</span>
         <br />
-        <span class="text-barrel-gray">for Europe</span>
+        <span class="text-barrel-gray">pour l'Europe</span>
       </h1>
       <p class="text-xl text-barrel-gray/70 mb-8 max-w-2xl mx-auto">
-        High-performance vector and document databases built in Erlang. Open source, embeddable, production-ready.
+        Bases de donnees vectorielles et documentaires haute performance construites en Erlang. Open source, embarquables, pretes pour la production.
       </p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
         <a href="https://docs.barrel-dbs.eu" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
           Documentation
         </a>
-        <a href="/pricing" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-8 py-3 rounded-lg text-lg transition">
-          View Pricing
+        <a href="/fr/pricing" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-8 py-3 rounded-lg text-lg transition">
+          Voir les Tarifs
         </a>
       </div>
     </div>
@@ -32,9 +32,9 @@ import Layout from '../layouts/Layout.astro';
   <!-- Product Cards Section -->
   <section class="py-16 px-4">
     <div class="container mx-auto max-w-5xl">
-      <h2 class="text-3xl font-bold mb-4 text-center">Two Databases, One Platform</h2>
+      <h2 class="text-3xl font-bold mb-4 text-center">Deux Bases de Donnees, Une Plateforme</h2>
       <p class="text-barrel-gray/60 text-center mb-12 max-w-2xl mx-auto">
-        Purpose-built databases for AI workloads. Use them together or separately.
+        Des bases de donnees concues pour les charges de travail IA. Utilisez-les ensemble ou separement.
       </p>
 
       <div class="grid md:grid-cols-2 gap-8">
@@ -46,30 +46,30 @@ import Layout from '../layouts/Layout.astro';
             </svg>
           </div>
           <h3 class="text-2xl font-bold mb-2 text-coral">Barrel Vector</h3>
-          <p class="text-barrel-gray/50 text-sm mb-4">Vector Database</p>
+          <p class="text-barrel-gray/50 text-sm mb-4">Base de Donnees Vectorielle</p>
           <p class="text-barrel-gray/70 mb-6">
-            High-performance single-node vector database with HNSW, FAISS, DiskANN, and BM25 backends. Perfect for semantic search and RAG applications.
+            Base de donnees vectorielle mono-noeud haute performance avec backends HNSW, FAISS, DiskANN et BM25. Parfaite pour la recherche semantique et les applications RAG.
           </p>
           <ul class="space-y-2 text-sm text-barrel-gray/70 mb-6">
             <li class="flex items-center gap-2">
               <span class="text-coral">+</span>
-              <span>&lt;5ms search latency</span>
+              <span>Latence de recherche &lt;5ms</span>
             </li>
             <li class="flex items-center gap-2">
               <span class="text-coral">+</span>
-              <span>Hybrid search (vector + BM25)</span>
+              <span>Recherche hybride (vecteur + BM25)</span>
             </li>
             <li class="flex items-center gap-2">
               <span class="text-coral">+</span>
-              <span>Metadata filtering</span>
+              <span>Filtrage par metadonnees</span>
             </li>
             <li class="flex items-center gap-2">
               <span class="text-coral">+</span>
-              <span>Embeddable in Erlang/Elixir</span>
+              <span>Embarquable en Erlang/Elixir</span>
             </li>
           </ul>
-          <a href="/products/vectordb" class="text-coral hover:text-coral-dark font-semibold">
-            Learn more &rarr;
+          <a href="/fr/products/vectordb" class="text-coral hover:text-coral-dark font-semibold">
+            En savoir plus &rarr;
           </a>
         </div>
 
@@ -81,30 +81,30 @@ import Layout from '../layouts/Layout.astro';
             </svg>
           </div>
           <h3 class="text-2xl font-bold mb-2 text-teal-light">Barrel Docs</h3>
-          <p class="text-barrel-gray/50 text-sm mb-4">Document Database</p>
+          <p class="text-barrel-gray/50 text-sm mb-4">Base de Donnees Documentaire</p>
           <p class="text-barrel-gray/70 mb-6">
-            Document database with MVCC, declarative queries, real-time subscriptions, and peer-to-peer replication. Built for edge computing and sync.
+            Base de donnees documentaire avec MVCC, requetes declaratives, abonnements temps reel et replication pair-a-pair. Concue pour l'edge computing et la synchronisation.
           </p>
           <ul class="space-y-2 text-sm text-barrel-gray/70 mb-6">
             <li class="flex items-center gap-2">
               <span class="text-teal-light">+</span>
-              <span>&lt;1ms read latency</span>
+              <span>Latence de lecture &lt;1ms</span>
             </li>
             <li class="flex items-center gap-2">
               <span class="text-teal-light">+</span>
-              <span>P2P replication</span>
+              <span>Replication P2P</span>
             </li>
             <li class="flex items-center gap-2">
               <span class="text-teal-light">+</span>
-              <span>Real-time subscriptions</span>
+              <span>Abonnements temps reel</span>
             </li>
             <li class="flex items-center gap-2">
               <span class="text-teal-light">+</span>
-              <span>Automatic path indexing</span>
+              <span>Indexation automatique des chemins</span>
             </li>
           </ul>
-          <a href="/products/docdb" class="text-teal-light hover:text-teal-dark font-semibold">
-            Learn more &rarr;
+          <a href="/fr/products/docdb" class="text-teal-light hover:text-teal-dark font-semibold">
+            En savoir plus &rarr;
           </a>
         </div>
       </div>
@@ -114,9 +114,9 @@ import Layout from '../layouts/Layout.astro';
   <!-- Key Differentiators Section -->
   <section class="py-16 px-4 bg-barrel-black/50">
     <div class="container mx-auto max-w-5xl">
-      <h2 class="text-3xl font-bold mb-4 text-center">Why Barrel Databases?</h2>
+      <h2 class="text-3xl font-bold mb-4 text-center">Pourquoi Barrel Databases ?</h2>
       <p class="text-barrel-gray/60 text-center mb-12 max-w-2xl mx-auto">
-        Built different. Built in Europe. Built to last.
+        Construites differemment. Construites en Europe. Construites pour durer.
       </p>
 
       <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -127,7 +127,7 @@ import Layout from '../layouts/Layout.astro';
             </svg>
           </div>
           <h3 class="font-semibold text-barrel-gray mb-2">Open Source</h3>
-          <p class="text-barrel-gray/60 text-sm">Apache 2.0 licensed. Fork it, modify it, deploy it anywhere.</p>
+          <p class="text-barrel-gray/60 text-sm">Licence Apache 2.0. Forkez, modifiez, deployez ou vous voulez.</p>
         </div>
 
         <div class="bg-barrel-black p-6 rounded-xl border border-teal-dark/30 text-center">
@@ -136,16 +136,16 @@ import Layout from '../layouts/Layout.astro';
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
             </svg>
           </div>
-          <h3 class="font-semibold text-barrel-gray mb-2">Built in Erlang</h3>
-          <p class="text-barrel-gray/60 text-sm">Battle-tested VM. Fault-tolerant by design. No garbage collection pauses.</p>
+          <h3 class="font-semibold text-barrel-gray mb-2">Construit en Erlang</h3>
+          <p class="text-barrel-gray/60 text-sm">VM eprouvee. Tolerante aux pannes par conception. Pas de pauses GC.</p>
         </div>
 
         <div class="bg-barrel-black p-6 rounded-xl border border-teal-dark/30 text-center">
           <div class="w-12 h-12 bg-teal-light/20 rounded-lg mx-auto flex items-center justify-center mb-4">
             <span class="text-xl">🇪🇺</span>
           </div>
-          <h3 class="font-semibold text-barrel-gray mb-2">EU Hosted</h3>
-          <p class="text-barrel-gray/60 text-sm">GDPR native. No US Cloud Act. Your data stays in Europe.</p>
+          <h3 class="font-semibold text-barrel-gray mb-2">Heberge en UE</h3>
+          <p class="text-barrel-gray/60 text-sm">RGPD natif. Pas de Cloud Act US. Vos donnees restent en Europe.</p>
         </div>
 
         <div class="bg-barrel-black p-6 rounded-xl border border-teal-dark/30 text-center">
@@ -154,8 +154,8 @@ import Layout from '../layouts/Layout.astro';
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
             </svg>
           </div>
-          <h3 class="font-semibold text-barrel-gray mb-2">Embeddable</h3>
-          <p class="text-barrel-gray/60 text-sm">Use as a library in your Erlang/Elixir apps. No separate process needed.</p>
+          <h3 class="font-semibold text-barrel-gray mb-2">Embarquable</h3>
+          <p class="text-barrel-gray/60 text-sm">Utilisez comme bibliotheque dans vos apps Erlang/Elixir. Pas de processus separe.</p>
         </div>
       </div>
     </div>
@@ -173,10 +173,10 @@ import Layout from '../layouts/Layout.astro';
         <div class="flex flex-col md:flex-row gap-8 items-center">
           <div class="flex-1">
             <h2 class="text-3xl md:text-4xl font-bold mb-4">
-              <span class="text-teal-light">European</span> Infrastructure
+              Infrastructure <span class="text-teal-light">Europeenne</span>
             </h2>
             <p class="text-barrel-gray/70 text-lg mb-6">
-              Your data never leaves Europe. Built by a European team, hosted in European data centers, operated under European law.
+              Vos donnees ne quittent jamais l'Europe. Construit par une equipe europeenne, heberge dans des centres de donnees europeens, opere selon le droit europeen.
             </p>
             <div class="grid grid-cols-2 gap-4">
               <div class="flex items-center gap-3">
@@ -186,8 +186,8 @@ import Layout from '../layouts/Layout.astro';
                   </svg>
                 </div>
                 <div>
-                  <p class="font-semibold text-barrel-gray">Data Sovereignty</p>
-                  <p class="text-barrel-gray/60 text-sm">No US Cloud Act</p>
+                  <p class="font-semibold text-barrel-gray">Souverainete des Donnees</p>
+                  <p class="text-barrel-gray/60 text-sm">Pas de Cloud Act US</p>
                 </div>
               </div>
               <div class="flex items-center gap-3">
@@ -197,8 +197,8 @@ import Layout from '../layouts/Layout.astro';
                   </svg>
                 </div>
                 <div>
-                  <p class="font-semibold text-barrel-gray">GDPR Native</p>
-                  <p class="text-barrel-gray/60 text-sm">Built-in compliance</p>
+                  <p class="font-semibold text-barrel-gray">RGPD Natif</p>
+                  <p class="text-barrel-gray/60 text-sm">Conformite integree</p>
                 </div>
               </div>
             </div>
@@ -206,7 +206,7 @@ import Layout from '../layouts/Layout.astro';
 
           <div class="flex-shrink-0">
             <div class="bg-barrel-black/50 p-6 rounded-xl border border-teal-dark/30">
-              <p class="text-sm text-barrel-gray/60 mb-4 text-center">Data Centers</p>
+              <p class="text-sm text-barrel-gray/60 mb-4 text-center">Centres de Donnees</p>
               <div class="grid grid-cols-2 gap-3">
                 <div class="bg-teal-dark/20 px-4 py-3 rounded-lg text-center">
                   <p class="text-lg">🇫🇷</p>
@@ -218,7 +218,7 @@ import Layout from '../layouts/Layout.astro';
                 </div>
                 <div class="bg-teal-dark/20 px-4 py-3 rounded-lg text-center">
                   <p class="text-lg">🇨🇭</p>
-                  <p class="font-semibold text-barrel-gray text-sm">Geneva</p>
+                  <p class="font-semibold text-barrel-gray text-sm">Geneve</p>
                 </div>
                 <div class="bg-teal-dark/20 px-4 py-3 rounded-lg text-center">
                   <p class="text-lg">🇫🇷</p>
@@ -237,8 +237,8 @@ import Layout from '../layouts/Layout.astro';
     <div class="container mx-auto max-w-4xl text-center">
       <h2 class="text-3xl font-bold mb-4">100% Open Source</h2>
       <p class="text-barrel-gray/60 mb-8 max-w-2xl mx-auto">
-        All components are Apache 2.0 licensed. Fork it, modify it, deploy it anywhere.
-        We monetize support and managed infrastructure, not code access.
+        Tous les composants sont sous licence Apache 2.0. Forkez, modifiez, deployez ou vous voulez.
+        Nous monetisons le support et l'infrastructure geree, pas l'acces au code.
       </p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
         <a href="https://codeberg.org/barrel-platform/barrel_vectordb" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-6 py-3 rounded-lg transition flex items-center justify-center gap-2">
@@ -256,18 +256,18 @@ import Layout from '../layouts/Layout.astro';
   <!-- CTA Section -->
   <section class="py-20 px-4 bg-gradient-to-t from-barrel-black to-teal-dark/10">
     <div class="container mx-auto max-w-4xl text-center">
-      <h2 class="text-3xl font-bold mb-4">Ready to Get Started?</h2>
+      <h2 class="text-3xl font-bold mb-4">Pret a Commencer ?</h2>
       <p class="text-barrel-gray/60 mb-8">
-        Self-host free, or get managed hosting and support with our EU infrastructure.
+        Auto-hebergez gratuitement, ou obtenez l'hebergement gere et le support avec notre infrastructure europeenne.
       </p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="/pricing" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
-          View Pricing
+        <a href="/fr/pricing" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
+          Voir les Tarifs
         </a>
-        <a href="/contact" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-8 py-3 rounded-lg text-lg transition">
-          Talk to Us
+        <a href="/fr/contact" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-8 py-3 rounded-lg text-lg transition">
+          Contactez-nous
         </a>
       </div>
     </div>
   </section>
-</Layout>
+</LayoutFr>

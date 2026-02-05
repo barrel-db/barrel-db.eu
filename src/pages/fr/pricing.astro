@@ -1,0 +1,275 @@
+---
+import LayoutFr from '../../layouts/LayoutFr.astro';
+---
+
+<LayoutFr title="Tarifs" description="Tarification simple et transparente pour les bases de donnees Barrel. Auto-hebergez gratuitement, payez pour le support et l'hebergement gere.">
+  <section class="py-20 px-4">
+    <div class="container mx-auto max-w-6xl">
+      <div class="text-center mb-16">
+        <h1 class="text-4xl md:text-5xl font-bold mb-4">Tarification Simple et Transparente</h1>
+        <p class="text-xl text-barrel-gray/60 max-w-2xl mx-auto">
+          Les deux bases de donnees sont 100% open source. Auto-hebergez gratuitement, ou obtenez du support et de l'hebergement gere.
+        </p>
+      </div>
+
+      <!-- Support Tiers Section -->
+      <div class="mb-20">
+        <div class="flex items-center justify-center gap-3 mb-4">
+          <div class="w-10 h-10 bg-coral/20 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-coral" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path>
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold">Plans de Support</h2>
+        </div>
+        <p class="text-barrel-gray/60 text-center mb-8">Tarification par instance. Combinez selon vos besoins.</p>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <!-- Community -->
+          <div class="bg-barrel-black rounded-xl border border-teal-dark/30 p-6">
+            <div class="text-center mb-6">
+              <h3 class="text-lg font-semibold mb-2">Communaute</h3>
+              <p class="text-3xl font-bold mb-1">Gratuit</p>
+              <p class="text-barrel-gray/60 text-sm">Pour toujours</p>
+            </div>
+            <ul class="space-y-3 mb-6 text-sm">
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                100% open source
+              </li>
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Issues Codeberg
+              </li>
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Support communautaire
+              </li>
+            </ul>
+            <a href="https://codeberg.org/barrel-platform" class="block w-full text-center bg-teal-dark/20 hover:bg-teal-dark/30 text-barrel-gray py-2.5 rounded-lg transition text-sm">
+              Voir le Code
+            </a>
+          </div>
+
+          <!-- Basic -->
+          <div class="bg-barrel-black rounded-xl border border-coral/30 p-6">
+            <div class="text-center mb-6">
+              <h3 class="text-lg font-semibold mb-2">Basic</h3>
+              <p class="text-3xl font-bold mb-1">29<span class="text-lg text-barrel-gray/60">€/mois</span></p>
+              <p class="text-barrel-gray/60 text-sm">Par instance</p>
+            </div>
+            <ul class="space-y-3 mb-6 text-sm">
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-4 h-4 text-coral mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Support email
+              </li>
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-4 h-4 text-coral mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Reponse sous 72h
+              </li>
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-4 h-4 text-coral mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Heures ouvrables
+              </li>
+            </ul>
+            <a href="https://console.barrel-dbs.eu/subscribe/basic" class="block w-full text-center bg-coral hover:bg-coral-dark text-white py-2.5 rounded-lg transition text-sm font-semibold">
+              S'abonner
+            </a>
+          </div>
+
+          <!-- Standard -->
+          <div class="bg-barrel-black rounded-xl border border-coral/30 p-6">
+            <div class="text-center mb-6">
+              <h3 class="text-lg font-semibold mb-2">Standard</h3>
+              <p class="text-3xl font-bold mb-1">99<span class="text-lg text-barrel-gray/60">€/mois</span></p>
+              <p class="text-barrel-gray/60 text-sm">Par instance</p>
+            </div>
+            <ul class="space-y-3 mb-6 text-sm">
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-4 h-4 text-coral mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Support 8x5
+              </li>
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-4 h-4 text-coral mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Reponse sous 24h
+              </li>
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-4 h-4 text-coral mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Aide au deploiement
+              </li>
+            </ul>
+            <a href="https://console.barrel-dbs.eu/subscribe/standard" class="block w-full text-center bg-coral hover:bg-coral-dark text-white py-2.5 rounded-lg transition text-sm font-semibold">
+              S'abonner
+            </a>
+          </div>
+
+          <!-- Professional -->
+          <div class="bg-barrel-black rounded-xl border border-coral p-6 relative">
+            <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-coral text-white text-xs px-3 py-1 rounded-full font-semibold">
+              Populaire
+            </div>
+            <div class="text-center mb-6">
+              <h3 class="text-lg font-semibold mb-2">Professional</h3>
+              <p class="text-3xl font-bold mb-1">249<span class="text-lg text-barrel-gray/60">€/mois</span></p>
+              <p class="text-barrel-gray/60 text-sm">Par instance</p>
+            </div>
+            <ul class="space-y-3 mb-6 text-sm">
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-4 h-4 text-coral mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Support 24x5
+              </li>
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-4 h-4 text-coral mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Reponse critique 4h
+              </li>
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-4 h-4 text-coral mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Tickets prioritaires
+              </li>
+            </ul>
+            <a href="https://console.barrel-dbs.eu/subscribe/professional" class="block w-full text-center bg-coral hover:bg-coral-dark text-white py-2.5 rounded-lg transition text-sm font-semibold">
+              S'abonner
+            </a>
+          </div>
+
+          <!-- Enterprise -->
+          <div class="bg-barrel-black rounded-xl border border-teal-dark/30 p-6">
+            <div class="text-center mb-6">
+              <h3 class="text-lg font-semibold mb-2">Enterprise</h3>
+              <p class="text-3xl font-bold mb-1">Sur mesure</p>
+              <p class="text-barrel-gray/60 text-sm">Contactez-nous</p>
+            </div>
+            <ul class="space-y-3 mb-6 text-sm">
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Support 24x7
+              </li>
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                SLA personnalise
+              </li>
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Ingenieur dedie
+              </li>
+            </ul>
+            <a href="/fr/contact" class="block w-full text-center bg-teal-dark/20 hover:bg-teal-dark/30 text-barrel-gray py-2.5 rounded-lg transition text-sm">
+              Contacter les Ventes
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Managed Hosting Section -->
+      <div class="mb-20">
+        <div class="flex items-center justify-center gap-3 mb-4">
+          <div class="w-10 h-10 bg-teal-light/20 rounded-lg flex items-center justify-center">
+            <svg class="w-5 h-5 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold">Hebergement Gere</h2>
+        </div>
+        <p class="text-barrel-gray/60 text-center mb-8">Laissez-nous le faire tourner pour vous. Infrastructure 100% europeenne.</p>
+
+        <div class="max-w-2xl mx-auto">
+          <div class="bg-barrel-black rounded-xl border border-teal-light/30 p-8 text-center">
+            <p class="text-4xl font-bold mb-2">5<span class="text-xl text-barrel-gray/60">€/Go/mois</span></p>
+            <p class="text-barrel-gray/60 mb-6">Hebergement de base de donnees gere sur infrastructure europeenne</p>
+            <ul class="space-y-3 mb-8 text-sm text-left max-w-md mx-auto">
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Sauvegardes automatiques
+              </li>
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Haute disponibilite
+              </li>
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Monitoring et alertes
+              </li>
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Centres de donnees UE uniquement (Paris, Amsterdam, Geneve, Lille)
+              </li>
+            </ul>
+            <a href="https://console.barrel-dbs.eu" class="inline-block bg-teal-light hover:bg-teal-dark text-barrel-black px-8 py-3 rounded-lg transition font-semibold">
+              Ouvrir la Console
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- What's Included Section -->
+      <div class="bg-barrel-black rounded-xl p-8 max-w-4xl mx-auto border border-teal-dark/30 mb-16">
+        <h3 class="text-xl font-semibold text-center mb-8">Tous les Plans Incluent</h3>
+        <div class="grid md:grid-cols-2 gap-6">
+          <div class="flex items-start gap-3">
+            <svg class="w-6 h-6 text-coral flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+            <div>
+              <p class="font-semibold">Residence des Donnees UE Uniquement</p>
+              <p class="text-barrel-gray/60 text-sm">Les donnees ne quittent jamais l'infrastructure europeenne</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <svg class="w-6 h-6 text-coral flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+            <div>
+              <p class="font-semibold">100% Open Source</p>
+              <p class="text-barrel-gray/60 text-sm">Apache 2.0. Forkez, modifiez, deployez.</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <svg class="w-6 h-6 text-coral flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            <div>
+              <p class="font-semibold">Haute Performance</p>
+              <p class="text-barrel-gray/60 text-sm">Recherche vectorielle &lt;5ms, lectures documents &lt;1ms</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <svg class="w-6 h-6 text-coral flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            <div>
+              <p class="font-semibold">Conforme RGPD</p>
+              <p class="text-barrel-gray/60 text-sm">Concu pour la protection des donnees europeenne</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAQ -->
+      <div class="max-w-3xl mx-auto">
+        <h2 class="text-2xl font-bold text-center mb-8">Questions ?</h2>
+        <div class="space-y-6">
+          <div class="bg-barrel-black rounded-lg border border-teal-dark/30 p-6">
+            <h4 class="font-semibold mb-2">Puis-je tout auto-heberger ?</h4>
+            <p class="text-barrel-gray/60 text-sm">
+              Oui. Barrel Vector et Barrel Docs sont tous deux open source sous licence Apache 2.0. Vous pouvez les executer sur votre propre infrastructure sans cout.
+              Les plans payants ajoutent le support professionnel et l'hebergement gere.
+            </p>
+          </div>
+          <div class="bg-barrel-black rounded-lg border border-teal-dark/30 p-6">
+            <h4 class="font-semibold mb-2">Que signifie "par instance" ?</h4>
+            <p class="text-barrel-gray/60 text-sm">
+              Chaque noeud de base de donnees en cours d'execution compte comme une instance. Si vous executez 3 noeuds Barrel Vector et 2 noeuds Barrel Docs,
+              cela fait 5 instances. Combinez les niveaux de support selon vos besoins.
+            </p>
+          </div>
+          <div class="bg-barrel-black rounded-lg border border-teal-dark/30 p-6">
+            <h4 class="font-semibold mb-2">Proposez-vous une facturation annuelle ?</h4>
+            <p class="text-barrel-gray/60 text-sm">
+              Oui. Les plans annuels incluent 2 mois gratuits. Contactez les ventes pour les tarifs annuels.
+            </p>
+          </div>
+          <div class="bg-barrel-black rounded-lg border border-teal-dark/30 p-6">
+            <h4 class="font-semibold mb-2">Comment fonctionne l'hebergement gere ?</h4>
+            <p class="text-barrel-gray/60 text-sm">
+              Inscrivez-vous sur <a href="https://console.barrel-dbs.eu" class="text-teal-light hover:underline">console.barrel-dbs.eu</a>,
+              creez votre base de donnees, et nous gerons le deploiement, les sauvegardes, le monitoring et les mises a jour. Vous recevez les identifiants de connexion
+              et nous nous occupons du reste.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</LayoutFr>

@@ -1,0 +1,130 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = "Bases de donnees IA-natives pour l'Europe - Bases de donnees vectorielles et documentaires haute performance construites en Erlang" } = Astro.props;
+---
+
+<!doctype html>
+<html lang="fr" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/logo-symbol-coral.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content={description} />
+    <title>{title} | barrel-dbs</title>
+
+    <!-- Google Fonts - Roboto -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+    <!-- Crisp Chat -->
+    <script type="text/javascript">
+      window.$crisp=[];window.CRISP_WEBSITE_ID="YOUR_CRISP_ID";
+      (function(){d=document;s=d.createElement("script");
+      s.src="https://client.crisp.chat/l.js";s.async=1;
+      d.getElementsByTagName("head")[0].appendChild(s);})();
+    </script>
+
+  </head>
+  <body class="bg-barrel-black text-barrel-gray min-h-screen flex flex-col">
+    <header class="border-b border-teal-dark/30">
+      <nav class="container mx-auto px-4 py-4 flex items-center justify-between">
+        <a href="/fr" class="flex items-center gap-3 hover:opacity-80 transition">
+          <img src="/logo-symbol-coral.svg" alt="Barrel" class="h-10 w-auto" />
+          <span class="text-xl font-bold text-barrel-gray">barrel-dbs</span>
+        </a>
+        <div class="hidden md:flex items-center gap-6">
+          <!-- Products Dropdown -->
+          <div class="relative group">
+            <button class="text-barrel-gray/70 hover:text-barrel-gray transition flex items-center gap-1">
+              Produits
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </button>
+            <div class="absolute top-full left-0 mt-2 w-48 bg-barrel-black border border-teal-dark/30 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+              <a href="/fr/products/vectordb" class="block px-4 py-3 hover:bg-teal-dark/20 transition">
+                <span class="font-medium text-barrel-gray">Barrel Vector</span>
+                <span class="block text-xs text-barrel-gray/60">Base vectorielle</span>
+              </a>
+              <a href="/fr/products/docdb" class="block px-4 py-3 hover:bg-teal-dark/20 transition border-t border-teal-dark/20">
+                <span class="font-medium text-barrel-gray">Barrel Docs</span>
+                <span class="block text-xs text-barrel-gray/60">Base documentaire</span>
+              </a>
+            </div>
+          </div>
+          <a href="/fr/pricing" class="text-barrel-gray/70 hover:text-barrel-gray transition">Tarifs</a>
+          <a href="https://docs.barrel-dbs.eu" class="text-barrel-gray/70 hover:text-barrel-gray transition">Docs</a>
+          <a href="/fr/contact" class="text-barrel-gray/70 hover:text-barrel-gray transition">Contact</a>
+        </div>
+        <div class="flex items-center gap-3">
+          <!-- Language Switcher -->
+          <div class="hidden md:flex items-center border border-teal-dark/50 rounded-lg overflow-hidden">
+            <a href="/" class="text-barrel-gray/60 hover:text-barrel-gray hover:bg-teal-dark/20 px-3 py-1.5 text-sm transition">EN</a>
+            <span class="bg-teal-dark/30 text-barrel-gray px-3 py-1.5 text-sm font-medium">FR</span>
+          </div>
+          <a href="https://console.barrel-dbs.eu" class="bg-coral hover:bg-coral-dark text-white px-4 py-2 rounded-lg transition font-medium">
+            Console
+          </a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="flex-1">
+      <slot />
+    </main>
+
+    <footer class="border-t border-teal-dark/30 py-12 mt-auto">
+      <div class="container mx-auto px-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div>
+            <div class="flex items-center gap-2 mb-4">
+              <img src="/logo-symbol-white.svg" alt="Barrel" class="h-8 w-auto" />
+              <span class="font-bold text-barrel-gray">barrel-dbs</span>
+            </div>
+            <p class="text-barrel-gray/60 text-sm">Bases de donnees IA-natives pour l'Europe.</p>
+          </div>
+          <div>
+            <h4 class="font-semibold text-barrel-gray mb-4">Produits</h4>
+            <ul class="space-y-2 text-sm">
+              <li><a href="/fr/products/vectordb" class="text-barrel-gray/60 hover:text-barrel-gray">Barrel Vector</a></li>
+              <li><a href="/fr/products/docdb" class="text-barrel-gray/60 hover:text-barrel-gray">Barrel Docs</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-semibold text-barrel-gray mb-4">Open Source</h4>
+            <ul class="space-y-2 text-sm">
+              <li><a href="https://docs.barrel-dbs.eu" class="text-barrel-gray/60 hover:text-barrel-gray">Documentation</a></li>
+              <li><a href="https://codeberg.org/barrel-platform/barrel_vectordb" class="text-barrel-gray/60 hover:text-barrel-gray">Barrel Vector (Codeberg)</a></li>
+              <li><a href="https://codeberg.org/barrel-platform/barrel_docdb" class="text-barrel-gray/60 hover:text-barrel-gray">Barrel Docs (Codeberg)</a></li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-semibold text-barrel-gray mb-4">Entreprise</h4>
+            <ul class="space-y-2 text-sm">
+              <li><a href="/fr/contact" class="text-barrel-gray/60 hover:text-barrel-gray">Contact</a></li>
+              <li><a href="/fr/pricing" class="text-barrel-gray/60 hover:text-barrel-gray">Tarifs</a></li>
+              <li class="flex items-center gap-1.5 text-barrel-gray/60">
+                <span>🇪🇺</span> Entreprise europeenne
+              </li>
+              <li class="text-barrel-gray/60">Conforme RGPD</li>
+            </ul>
+          </div>
+        </div>
+        <div class="border-t border-teal-dark/30 mt-8 pt-8 text-center text-barrel-gray/60 text-sm">
+          <p>&copy; 2025 Enki Bridge. Licence Apache 2.0.</p>
+          <p class="mt-1 flex items-center justify-center gap-1.5">
+            <span>🇪🇺</span> Fierement concu et heberge en Europe
+          </p>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

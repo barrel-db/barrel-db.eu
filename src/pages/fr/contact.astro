@@ -1,0 +1,127 @@
+---
+import LayoutFr from '../../layouts/LayoutFr.astro';
+---
+
+<LayoutFr title="Contact" description="Contactez l'equipe barrel-dbs">
+  <section class="py-20 px-4">
+    <div class="container mx-auto max-w-4xl">
+      <div class="text-center mb-16">
+        <h1 class="text-4xl md:text-5xl font-bold mb-4">Parlons-en</h1>
+        <p class="text-xl text-barrel-gray/60 max-w-2xl mx-auto">
+          Questions sur les bases de donnees Barrel ? Besoin d'aide pour le deploiement ? Nous serions ravis d'echanger avec vous.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-12">
+        <!-- Contact Options -->
+        <div class="space-y-8">
+          <div>
+            <h2 class="text-2xl font-bold mb-6">Nous Contacter</h2>
+
+            <!-- Live Chat -->
+            <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30 mb-4">
+              <div class="flex items-start gap-4">
+                <div class="bg-coral p-3 rounded-lg">
+                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="font-semibold text-barrel-gray mb-1">Chat en Direct</h3>
+                  <p class="text-barrel-gray/60 text-sm mb-3">Discutez avec nous directement. Reponse generalement en quelques minutes pendant les heures de bureau UE.</p>
+                  <button
+                    onclick="$crisp.push(['do', 'chat:open'])"
+                    class="text-coral hover:text-coral-dark text-sm font-semibold"
+                  >
+                    Demarrer une conversation &rarr;
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Email -->
+            <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30 mb-4">
+              <div class="flex items-start gap-4">
+                <div class="bg-teal-dark p-3 rounded-lg">
+                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="font-semibold text-barrel-gray mb-1">Email</h3>
+                  <p class="text-barrel-gray/60 text-sm mb-3">Pour les demandes detaillees ou si vous preferez l'email.</p>
+                  <a href="mailto:hello@barrel-dbs.eu" class="text-coral hover:text-coral-dark text-sm font-semibold">
+                    hello@barrel-dbs.eu
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Codeberg -->
+            <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
+              <div class="flex items-start gap-4">
+                <div class="bg-teal-light p-3 rounded-lg">
+                  <svg class="w-6 h-6 text-barrel-black" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 1C5.925 1 1 5.925 1 12s4.925 11 11 11 11-4.925 11-11S18.075 1 12 1zm0 1.5c5.247 0 9.5 4.253 9.5 9.5s-4.253 9.5-9.5 9.5S2.5 17.247 2.5 12 6.753 2.5 12 2.5zm0 3a6.5 6.5 0 100 13 6.5 6.5 0 000-13zm0 2a4.5 4.5 0 110 9 4.5 4.5 0 010-9z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="font-semibold text-barrel-gray mb-1">Issues Codeberg</h3>
+                  <p class="text-barrel-gray/60 text-sm mb-3">Signalez des bugs ou demandez des fonctionnalites sur Codeberg.</p>
+                  <a href="https://codeberg.org/barrel-platform" class="text-coral hover:text-coral-dark text-sm font-semibold">
+                    Voir les depots &rarr;
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sales CTA -->
+        <div>
+          <div class="bg-gradient-to-br from-teal-dark/30 to-barrel-black p-8 rounded-xl border border-coral/30">
+            <h2 class="text-2xl font-bold mb-4">Solutions Enterprise</h2>
+            <p class="text-barrel-gray/80 mb-6">
+              Besoin de SLAs personnalises, d'un support dedie ou d'aide pour des deploiements a grande echelle ? Discutons-en.
+            </p>
+            <ul class="space-y-3 mb-8">
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-5 h-5 text-teal-light flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <span>SLAs et contrats de support personnalises</span>
+              </li>
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-5 h-5 text-teal-light flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <span>Conseil en architecture</span>
+              </li>
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-5 h-5 text-teal-light flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <span>Assistance au deploiement</span>
+              </li>
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-5 h-5 text-teal-light flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <span>Options cloud prive ou on-premise</span>
+              </li>
+            </ul>
+            <button
+              onclick="$crisp.push(['do', 'chat:open']); $crisp.push(['do', 'message:send', ['text', 'Je suis interesse par les solutions enterprise']])"
+              class="w-full bg-coral hover:bg-coral-dark text-white py-3 rounded-lg transition font-semibold"
+            >
+              Contacter les Ventes
+            </button>
+          </div>
+
+          <!-- Company Info -->
+          <div class="mt-8 bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
+            <h3 class="font-semibold text-barrel-gray mb-4">Informations Entreprise</h3>
+            <div class="space-y-2 text-sm text-barrel-gray/60">
+              <p><strong class="text-barrel-gray/80">Developpe par :</strong> Enki Bridge</p>
+              <p><strong class="text-barrel-gray/80">Infrastructure :</strong> <a href="https://bgp.tools/as/209823" class="text-teal-light hover:underline">AS209823</a></p>
+              <p><strong class="text-barrel-gray/80">Localisation :</strong> Union Europeenne</p>
+              <p><strong class="text-barrel-gray/80">Centres de Donnees :</strong> Paris, Amsterdam, Geneve, Lille</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</LayoutFr>
