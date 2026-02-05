@@ -6,9 +6,17 @@ import Layout from '../layouts/Layout.astro';
   <!-- Hero Section -->
   <section class="py-24 px-4 bg-gradient-to-b from-barrel-black to-teal-dark/10">
     <div class="container mx-auto text-center max-w-5xl">
-      <div class="flex items-center justify-center gap-2 mb-6">
-        <span class="text-2xl">🇪🇺</span>
-        <span class="text-barrel-gray/60 text-sm font-medium uppercase tracking-wider">European Infrastructure</span>
+      <div class="flex items-center justify-center gap-4 mb-6">
+        <div class="flex items-center gap-2 bg-teal-dark/20 px-3 py-1.5 rounded-full border border-teal-dark/30">
+          <svg class="w-4 h-4 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+          </svg>
+          <span class="text-teal-light text-sm font-medium">Open Source</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">🇪🇺</span>
+          <span class="text-barrel-gray/60 text-sm font-medium uppercase tracking-wider">European</span>
+        </div>
       </div>
       <h1 class="text-5xl md:text-6xl font-bold mb-6">
         <span class="bg-gradient-to-r from-coral to-teal-light bg-clip-text text-transparent">AI-Native Databases</span>
@@ -45,7 +53,10 @@ import Layout from '../layouts/Layout.astro';
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
             </svg>
           </div>
-          <h3 class="text-2xl font-bold mb-2 text-coral">Barrel Vector</h3>
+          <div class="flex items-center gap-3 mb-2">
+            <h3 class="text-2xl font-bold text-coral">Barrel Vector</h3>
+            <span class="bg-teal-light/20 text-teal-light text-xs px-2 py-0.5 rounded font-medium">Apache 2.0</span>
+          </div>
           <p class="text-barrel-gray/50 text-sm mb-4">Vector Database</p>
           <p class="text-barrel-gray/70 mb-6">
             High-performance single-node vector database with HNSW, FAISS, DiskANN, and BM25 backends. Perfect for semantic search and RAG applications.
@@ -80,7 +91,10 @@ import Layout from '../layouts/Layout.astro';
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
             </svg>
           </div>
-          <h3 class="text-2xl font-bold mb-2 text-teal-light">Barrel Docs</h3>
+          <div class="flex items-center gap-3 mb-2">
+            <h3 class="text-2xl font-bold text-teal-light">Barrel Docs</h3>
+            <span class="bg-teal-light/20 text-teal-light text-xs px-2 py-0.5 rounded font-medium">Apache 2.0</span>
+          </div>
           <p class="text-barrel-gray/50 text-sm mb-4">Document Database</p>
           <p class="text-barrel-gray/70 mb-6">
             Document database with MVCC, declarative queries, real-time subscriptions, and peer-to-peer replication. Built for edge computing and sync.
