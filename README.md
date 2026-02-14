@@ -138,6 +138,13 @@ server {
 | [barrel_docdb](https://gitlab.enki.io/barrel-db/barrel_docdb) | Document database |
 | [barrel_embed](https://gitlab.enki.io/barrel-db/barrel_embed) | Embedding library |
 
+## Branches
+
+| Branch | Description |
+|--------|-------------|
+| `main` | Production - pure OSS site |
+| `with-platform-links` | Includes Barrel Platform CTAs and links (for when barrel-platform.eu is ready) |
+
 ## License
 
 Website content: MIT
