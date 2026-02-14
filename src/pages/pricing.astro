@@ -2,13 +2,13 @@
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout title="Pricing" description="Simple, transparent pricing for Barrel databases. Self-host free, or get support and managed databases.">
+<Layout title="Pricing" description="Simple, transparent pricing for Barrel databases. Self-host free, or get support and Barrel Console.">
   <section class="py-20 px-4">
     <div class="container mx-auto max-w-6xl">
       <div class="text-center mb-16">
         <h1 class="text-4xl md:text-5xl font-bold mb-4">Simple, Transparent Pricing</h1>
         <p class="text-xl text-barrel-gray/60 max-w-2xl mx-auto">
-          Both databases are 100% open source. Self-host free, or get support and managed databases.
+          Both databases are 100% open source. Self-host free, or get support and Barrel Console.
         </p>
       </div>
 
@@ -164,54 +164,58 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </div>
 
-      <!-- Managed Database Section -->
+      <!-- Barrel Console Section -->
       <div class="mb-20">
         <div class="flex items-center justify-center gap-3 mb-4">
           <div class="w-10 h-10 bg-teal-light/20 rounded-lg flex items-center justify-center">
             <svg class="w-5 h-5 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
             </svg>
           </div>
-          <h2 class="text-2xl font-bold">Managed Database</h2>
+          <h2 class="text-2xl font-bold">Barrel Console</h2>
         </div>
-        <p class="text-barrel-gray/60 text-center mb-8">Let us run it for you. EU-only infrastructure.</p>
+        <p class="text-barrel-gray/60 text-center mb-8">Bring Your Own Cloud. We manage, you host.</p>
 
         <div class="max-w-3xl mx-auto">
           <div class="bg-barrel-black rounded-xl border border-teal-light/30 p-8">
-            <div class="grid md:grid-cols-2 gap-8 mb-8">
+            <div class="grid md:grid-cols-3 gap-6 mb-8">
               <div class="text-center">
-                <p class="text-4xl font-bold mb-2">10<span class="text-xl text-barrel-gray/60">€/month</span></p>
-                <p class="text-barrel-gray/60">Per database</p>
+                <p class="text-3xl font-bold mb-1">Free</p>
+                <p class="text-barrel-gray/60 text-sm">Up to 3 nodes</p>
               </div>
               <div class="text-center">
-                <p class="text-4xl font-bold mb-2">2<span class="text-xl text-barrel-gray/60">€/GB/month</span></p>
-                <p class="text-barrel-gray/60">Storage</p>
+                <p class="text-3xl font-bold mb-1">19<span class="text-lg text-barrel-gray/60">€/mo</span></p>
+                <p class="text-barrel-gray/60 text-sm">Up to 10 nodes</p>
+              </div>
+              <div class="text-center">
+                <p class="text-3xl font-bold mb-1">49<span class="text-lg text-barrel-gray/60">€/mo</span></p>
+                <p class="text-barrel-gray/60 text-sm">Unlimited nodes</p>
               </div>
             </div>
             <div class="border-t border-teal-dark/30 pt-6 mb-6">
-              <p class="text-sm text-barrel-gray/60 text-center mb-4">Example: 2 databases × 10GB = €20 + €20 = €40/month</p>
+              <p class="text-sm text-barrel-gray/60 text-center mb-4">Control plane for your self-hosted Barrel servers</p>
             </div>
             <ul class="space-y-3 mb-8 text-sm max-w-md mx-auto">
               <li class="flex items-start gap-2 text-barrel-gray/80">
                 <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                Automatic backups
+                Node registration & health monitoring
               </li>
               <li class="flex items-start gap-2 text-barrel-gray/80">
                 <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                High availability
+                Cluster topology & replication view
               </li>
               <li class="flex items-start gap-2 text-barrel-gray/80">
                 <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                Monitoring & alerts
+                Node discovery & mesh coordination
               </li>
               <li class="flex items-start gap-2 text-barrel-gray/80">
                 <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                EU-only data centers (Paris, Amsterdam, Geneva, Lille)
+                Alerts & notifications
               </li>
             </ul>
             <div class="text-center">
-              <a href="/contact" class="inline-block bg-teal-light hover:bg-teal-dark text-barrel-black px-8 py-3 rounded-lg transition font-semibold">
-                Contact Us
+              <a href="https://console.barrel-db.eu" class="inline-block bg-teal-light hover:bg-teal-dark text-barrel-black px-8 py-3 rounded-lg transition font-semibold">
+                Open Console
               </a>
             </div>
           </div>
@@ -285,10 +289,10 @@ import Layout from '../layouts/Layout.astro';
             </p>
           </div>
           <div class="bg-barrel-black rounded-lg border border-teal-dark/30 p-6">
-            <h4 class="font-semibold mb-2">How does managed database work?</h4>
+            <h4 class="font-semibold mb-2">What is Barrel Console?</h4>
             <p class="text-barrel-gray/60 text-sm">
-              Contact us to set up your managed database. We handle deployment, backups, monitoring, and updates on our EU infrastructure.
-              You get connection credentials and we handle the rest.
+              Barrel Console is a control plane for your self-hosted Barrel servers. You run the databases on your infrastructure,
+              we provide monitoring, node discovery, cluster management, and alerts. Like CockroachDB's BYOC model.
             </p>
           </div>
         </div>
