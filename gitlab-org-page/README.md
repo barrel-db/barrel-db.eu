@@ -1,3 +1,7 @@
+# Barrel DB
+
+Get started with our databases in a few lines of Erlang.
+
 ## Quick Start
 
 ### Barrel Vector (vector database)
