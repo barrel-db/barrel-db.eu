@@ -2,13 +2,13 @@
 import LayoutFr from '../../layouts/LayoutFr.astro';
 ---
 
-<LayoutFr title="Tarifs" description="Tarification simple et transparente pour les bases de donnees Barrel. Auto-hebergez gratuitement, payez pour le support et l'hebergement gere.">
+<LayoutFr title="Tarifs" description="Tarification simple et transparente pour les bases de donnees Barrel. Auto-hebergez gratuitement, ou obtenez du support et des bases gerees.">
   <section class="py-20 px-4">
     <div class="container mx-auto max-w-6xl">
       <div class="text-center mb-16">
         <h1 class="text-4xl md:text-5xl font-bold mb-4">Tarification Simple et Transparente</h1>
         <p class="text-xl text-barrel-gray/60 max-w-2xl mx-auto">
-          Les deux bases de donnees sont 100% open source. Auto-hebergez gratuitement, ou obtenez du support et de l'hebergement gere.
+          Les deux bases de donnees sont 100% open source. Auto-hebergez gratuitement, ou obtenez du support et des bases gerees.
         </p>
       </div>
 
@@ -39,14 +39,14 @@ import LayoutFr from '../../layouts/LayoutFr.astro';
               </li>
               <li class="flex items-start gap-2 text-barrel-gray/80">
                 <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                Issues Codeberg
+                Issues GitLab
               </li>
               <li class="flex items-start gap-2 text-barrel-gray/80">
                 <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                 Support communautaire
               </li>
             </ul>
-            <a href="https://codeberg.org/barrel-platform" class="block w-full text-center bg-teal-dark/20 hover:bg-teal-dark/30 text-barrel-gray py-2.5 rounded-lg transition text-sm">
+            <a href="https://gitlab.enki.io/barrel-db" class="block w-full text-center bg-teal-dark/20 hover:bg-teal-dark/30 text-barrel-gray py-2.5 rounded-lg transition text-sm">
               Voir le Code
             </a>
           </div>
@@ -132,35 +132,39 @@ import LayoutFr from '../../layouts/LayoutFr.astro';
             </a>
           </div>
 
-          <!-- Enterprise -->
+          <!-- Enterprise Repository -->
           <div class="bg-barrel-black rounded-xl border border-teal-dark/30 p-6">
             <div class="text-center mb-6">
-              <h3 class="text-lg font-semibold mb-2">Enterprise</h3>
-              <p class="text-3xl font-bold mb-1">Sur mesure</p>
-              <p class="text-barrel-gray/60 text-sm">Contactez-nous</p>
+              <h3 class="text-lg font-semibold mb-2">Repo Enterprise</h3>
+              <p class="text-3xl font-bold mb-1">Inclus</p>
+              <p class="text-barrel-gray/60 text-sm">Avec plans payants</p>
             </div>
             <ul class="space-y-3 mb-6 text-sm">
               <li class="flex items-start gap-2 text-barrel-gray/80">
                 <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                Support 24x7
+                Depot prive
               </li>
               <li class="flex items-start gap-2 text-barrel-gray/80">
                 <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                SLA personnalise
+                SSO/OIDC & SAML
               </li>
               <li class="flex items-start gap-2 text-barrel-gray/80">
                 <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                Ingenieur dedie
+                Permissions RBAC
+              </li>
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Journaux d'audit
               </li>
             </ul>
             <a href="/fr/contact" class="block w-full text-center bg-teal-dark/20 hover:bg-teal-dark/30 text-barrel-gray py-2.5 rounded-lg transition text-sm">
-              Contacter les Ventes
+              En Savoir Plus
             </a>
           </div>
         </div>
       </div>
 
-      <!-- Managed Hosting Section -->
+      <!-- Managed Database Section -->
       <div class="mb-20">
         <div class="flex items-center justify-center gap-3 mb-4">
           <div class="w-10 h-10 bg-teal-light/20 rounded-lg flex items-center justify-center">
@@ -168,15 +172,26 @@ import LayoutFr from '../../layouts/LayoutFr.astro';
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
             </svg>
           </div>
-          <h2 class="text-2xl font-bold">Hebergement Gere</h2>
+          <h2 class="text-2xl font-bold">Base de Donnees Geree</h2>
         </div>
-        <p class="text-barrel-gray/60 text-center mb-8">Laissez-nous le faire tourner pour vous. Infrastructure 100% europeenne.</p>
+        <p class="text-barrel-gray/60 text-center mb-8">Laissez-nous la faire tourner pour vous. Infrastructure 100% europeenne.</p>
 
-        <div class="max-w-2xl mx-auto">
-          <div class="bg-barrel-black rounded-xl border border-teal-light/30 p-8 text-center">
-            <p class="text-4xl font-bold mb-2">5<span class="text-xl text-barrel-gray/60">€/Go/mois</span></p>
-            <p class="text-barrel-gray/60 mb-6">Hebergement de base de donnees gere sur infrastructure europeenne</p>
-            <ul class="space-y-3 mb-8 text-sm text-left max-w-md mx-auto">
+        <div class="max-w-3xl mx-auto">
+          <div class="bg-barrel-black rounded-xl border border-teal-light/30 p-8">
+            <div class="grid md:grid-cols-2 gap-8 mb-8">
+              <div class="text-center">
+                <p class="text-4xl font-bold mb-2">10<span class="text-xl text-barrel-gray/60">€/mois</span></p>
+                <p class="text-barrel-gray/60">Par base de donnees</p>
+              </div>
+              <div class="text-center">
+                <p class="text-4xl font-bold mb-2">2<span class="text-xl text-barrel-gray/60">€/Go/mois</span></p>
+                <p class="text-barrel-gray/60">Stockage</p>
+              </div>
+            </div>
+            <div class="border-t border-teal-dark/30 pt-6 mb-6">
+              <p class="text-sm text-barrel-gray/60 text-center mb-4">Exemple : 2 bases de donnees × 10 Go = 20€ + 20€ = 40€/mois</p>
+            </div>
+            <ul class="space-y-3 mb-8 text-sm max-w-md mx-auto">
               <li class="flex items-start gap-2 text-barrel-gray/80">
                 <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                 Sauvegardes automatiques
@@ -194,9 +209,11 @@ import LayoutFr from '../../layouts/LayoutFr.astro';
                 Centres de donnees UE uniquement (Paris, Amsterdam, Geneve, Lille)
               </li>
             </ul>
-            <a href="https://console.barrel-db.eu" class="inline-block bg-teal-light hover:bg-teal-dark text-barrel-black px-8 py-3 rounded-lg transition font-semibold">
-              Ouvrir la Console
-            </a>
+            <div class="text-center">
+              <a href="/fr/contact" class="inline-block bg-teal-light hover:bg-teal-dark text-barrel-black px-8 py-3 rounded-lg transition font-semibold">
+                Contactez-nous
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -261,11 +278,17 @@ import LayoutFr from '../../layouts/LayoutFr.astro';
             </p>
           </div>
           <div class="bg-barrel-black rounded-lg border border-teal-dark/30 p-6">
-            <h4 class="font-semibold mb-2">Comment fonctionne l'hebergement gere ?</h4>
+            <h4 class="font-semibold mb-2">Qu'est-ce que le Depot Enterprise ?</h4>
             <p class="text-barrel-gray/60 text-sm">
-              Inscrivez-vous sur <a href="https://console.barrel-db.eu" class="text-teal-light hover:underline">console.barrel-db.eu</a>,
-              creez votre base de donnees, et nous gerons le deploiement, les sauvegardes, le monitoring et les mises a jour. Vous recevez les identifiants de connexion
-              et nous nous occupons du reste.
+              Tous les plans de support payants incluent l'acces a notre Depot Enterprise prive avec authentification SSO/OIDC et SAML,
+              controle d'acces base sur les roles (RBAC), journaux d'audit avec politiques de retention, et correctifs de securite prioritaires.
+            </p>
+          </div>
+          <div class="bg-barrel-black rounded-lg border border-teal-dark/30 p-6">
+            <h4 class="font-semibold mb-2">Comment fonctionne la base de donnees geree ?</h4>
+            <p class="text-barrel-gray/60 text-sm">
+              Contactez-nous pour configurer votre base de donnees geree. Nous gerons le deploiement, les sauvegardes, le monitoring et les mises a jour sur notre infrastructure europeenne.
+              Vous recevez les identifiants de connexion et nous nous occupons du reste.
             </p>
           </div>
         </div>

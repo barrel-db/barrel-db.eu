@@ -2,13 +2,13 @@
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout title="Pricing" description="Simple, transparent pricing for Barrel databases. Self-host free, pay for support and managed hosting.">
+<Layout title="Pricing" description="Simple, transparent pricing for Barrel databases. Self-host free, or get support and managed databases.">
   <section class="py-20 px-4">
     <div class="container mx-auto max-w-6xl">
       <div class="text-center mb-16">
         <h1 class="text-4xl md:text-5xl font-bold mb-4">Simple, Transparent Pricing</h1>
         <p class="text-xl text-barrel-gray/60 max-w-2xl mx-auto">
-          Both databases are 100% open source. Self-host free, or get support and managed hosting.
+          Both databases are 100% open source. Self-host free, or get support and managed databases.
         </p>
       </div>
 
@@ -39,14 +39,14 @@ import Layout from '../layouts/Layout.astro';
               </li>
               <li class="flex items-start gap-2 text-barrel-gray/80">
                 <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                Codeberg issues
+                GitLab issues
               </li>
               <li class="flex items-start gap-2 text-barrel-gray/80">
                 <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                 Community support
               </li>
             </ul>
-            <a href="https://codeberg.org/barrel-platform" class="block w-full text-center bg-teal-dark/20 hover:bg-teal-dark/30 text-barrel-gray py-2.5 rounded-lg transition text-sm">
+            <a href="https://gitlab.enki.io/barrel-db" class="block w-full text-center bg-teal-dark/20 hover:bg-teal-dark/30 text-barrel-gray py-2.5 rounded-lg transition text-sm">
               View Source
             </a>
           </div>
@@ -132,35 +132,39 @@ import Layout from '../layouts/Layout.astro';
             </a>
           </div>
 
-          <!-- Enterprise -->
+          <!-- Enterprise Repository -->
           <div class="bg-barrel-black rounded-xl border border-teal-dark/30 p-6">
             <div class="text-center mb-6">
-              <h3 class="text-lg font-semibold mb-2">Enterprise</h3>
-              <p class="text-3xl font-bold mb-1">Custom</p>
-              <p class="text-barrel-gray/60 text-sm">Contact us</p>
+              <h3 class="text-lg font-semibold mb-2">Enterprise Repo</h3>
+              <p class="text-3xl font-bold mb-1">Included</p>
+              <p class="text-barrel-gray/60 text-sm">With paid plans</p>
             </div>
             <ul class="space-y-3 mb-6 text-sm">
               <li class="flex items-start gap-2 text-barrel-gray/80">
                 <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                24x7 support
+                Private repository
               </li>
               <li class="flex items-start gap-2 text-barrel-gray/80">
                 <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                Custom SLA
+                SSO/OIDC & SAML
               </li>
               <li class="flex items-start gap-2 text-barrel-gray/80">
                 <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                Dedicated engineer
+                RBAC permissions
+              </li>
+              <li class="flex items-start gap-2 text-barrel-gray/80">
+                <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Audit logging
               </li>
             </ul>
             <a href="/contact" class="block w-full text-center bg-teal-dark/20 hover:bg-teal-dark/30 text-barrel-gray py-2.5 rounded-lg transition text-sm">
-              Contact Sales
+              Learn More
             </a>
           </div>
         </div>
       </div>
 
-      <!-- Managed Hosting Section -->
+      <!-- Managed Database Section -->
       <div class="mb-20">
         <div class="flex items-center justify-center gap-3 mb-4">
           <div class="w-10 h-10 bg-teal-light/20 rounded-lg flex items-center justify-center">
@@ -168,15 +172,26 @@ import Layout from '../layouts/Layout.astro';
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
             </svg>
           </div>
-          <h2 class="text-2xl font-bold">Managed Hosting</h2>
+          <h2 class="text-2xl font-bold">Managed Database</h2>
         </div>
         <p class="text-barrel-gray/60 text-center mb-8">Let us run it for you. EU-only infrastructure.</p>
 
-        <div class="max-w-2xl mx-auto">
-          <div class="bg-barrel-black rounded-xl border border-teal-light/30 p-8 text-center">
-            <p class="text-4xl font-bold mb-2">5<span class="text-xl text-barrel-gray/60">€/GB/month</span></p>
-            <p class="text-barrel-gray/60 mb-6">Managed database hosting on EU infrastructure</p>
-            <ul class="space-y-3 mb-8 text-sm text-left max-w-md mx-auto">
+        <div class="max-w-3xl mx-auto">
+          <div class="bg-barrel-black rounded-xl border border-teal-light/30 p-8">
+            <div class="grid md:grid-cols-2 gap-8 mb-8">
+              <div class="text-center">
+                <p class="text-4xl font-bold mb-2">10<span class="text-xl text-barrel-gray/60">€/month</span></p>
+                <p class="text-barrel-gray/60">Per database</p>
+              </div>
+              <div class="text-center">
+                <p class="text-4xl font-bold mb-2">2<span class="text-xl text-barrel-gray/60">€/GB/month</span></p>
+                <p class="text-barrel-gray/60">Storage</p>
+              </div>
+            </div>
+            <div class="border-t border-teal-dark/30 pt-6 mb-6">
+              <p class="text-sm text-barrel-gray/60 text-center mb-4">Example: 2 databases × 10GB = €20 + €20 = €40/month</p>
+            </div>
+            <ul class="space-y-3 mb-8 text-sm max-w-md mx-auto">
               <li class="flex items-start gap-2 text-barrel-gray/80">
                 <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                 Automatic backups
@@ -194,9 +209,11 @@ import Layout from '../layouts/Layout.astro';
                 EU-only data centers (Paris, Amsterdam, Geneva, Lille)
               </li>
             </ul>
-            <a href="https://console.barrel-db.eu" class="inline-block bg-teal-light hover:bg-teal-dark text-barrel-black px-8 py-3 rounded-lg transition font-semibold">
-              Open Console
-            </a>
+            <div class="text-center">
+              <a href="/contact" class="inline-block bg-teal-light hover:bg-teal-dark text-barrel-black px-8 py-3 rounded-lg transition font-semibold">
+                Contact Us
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -261,11 +278,17 @@ import Layout from '../layouts/Layout.astro';
             </p>
           </div>
           <div class="bg-barrel-black rounded-lg border border-teal-dark/30 p-6">
-            <h4 class="font-semibold mb-2">How does managed hosting work?</h4>
+            <h4 class="font-semibold mb-2">What is the Enterprise Repository?</h4>
             <p class="text-barrel-gray/60 text-sm">
-              Sign up at <a href="https://console.barrel-db.eu" class="text-teal-light hover:underline">console.barrel-db.eu</a>,
-              create your database, and we handle deployment, backups, monitoring, and updates. You get connection credentials
-              and we handle the rest.
+              All paid support plans include access to our private Enterprise Repository with SSO/OIDC and SAML authentication,
+              role-based access control (RBAC), audit logging with retention policies, and priority security patches.
+            </p>
+          </div>
+          <div class="bg-barrel-black rounded-lg border border-teal-dark/30 p-6">
+            <h4 class="font-semibold mb-2">How does managed database work?</h4>
+            <p class="text-barrel-gray/60 text-sm">
+              Contact us to set up your managed database. We handle deployment, backups, monitoring, and updates on our EU infrastructure.
+              You get connection credentials and we handle the rest.
             </p>
           </div>
         </div>

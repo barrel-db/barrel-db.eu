@@ -1,0 +1,243 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Open Source" description="All Barrel DB projects are 100% open source under Apache 2.0. View source code, contribute, and deploy anywhere.">
+  <section class="py-20 px-4">
+    <div class="container mx-auto max-w-5xl">
+      <div class="text-center mb-16">
+        <div class="flex items-center justify-center gap-2 mb-4">
+          <div class="w-12 h-12 bg-teal-light/20 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+            </svg>
+          </div>
+        </div>
+        <h1 class="text-4xl md:text-5xl font-bold mb-4">100% Open Source</h1>
+        <p class="text-xl text-barrel-gray/60 max-w-2xl mx-auto">
+          All Barrel DB projects are Apache 2.0 licensed. Fork it, modify it, deploy it anywhere.
+          We monetize support and managed infrastructure, not code access.
+        </p>
+      </div>
+
+      <!-- Projects Grid -->
+      <div class="mb-16">
+        <h2 class="text-2xl font-bold text-center mb-8">Projects</h2>
+        <div class="grid md:grid-cols-3 gap-6">
+          <!-- barrel_vectordb -->
+          <div class="bg-barrel-black p-6 rounded-xl border border-coral/30 hover:border-coral/50 transition">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 bg-coral/20 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-coral" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-bold text-coral">barrel_vectordb</h3>
+                <span class="text-barrel-gray/50 text-xs">Vector Database</span>
+              </div>
+            </div>
+            <p class="text-barrel-gray/70 text-sm mb-4">
+              High-performance vector database with HNSW, FAISS, DiskANN, and BM25 backends.
+            </p>
+            <div class="flex items-center gap-2 mb-4">
+              <span class="bg-teal-light/20 text-teal-light text-xs px-2 py-0.5 rounded">Apache 2.0</span>
+              <span class="bg-orange-500/20 text-orange-400 text-xs px-2 py-0.5 rounded">Alpha</span>
+            </div>
+            <div class="flex gap-2">
+              <a href="https://gitlab.enki.io/barrel-db/barrel_vectordb" class="flex-1 text-center bg-teal-dark/20 hover:bg-teal-dark/30 text-barrel-gray py-2 rounded-lg transition text-sm">
+                Source
+              </a>
+              <a href="https://docs.barrel-db.eu/vectordb" class="flex-1 text-center bg-coral/20 hover:bg-coral/30 text-coral py-2 rounded-lg transition text-sm">
+                Docs
+              </a>
+            </div>
+          </div>
+
+          <!-- barrel_docdb -->
+          <div class="bg-barrel-black p-6 rounded-xl border border-teal-light/30 hover:border-teal-light/50 transition">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 bg-teal-light/20 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-bold text-teal-light">barrel_docdb</h3>
+                <span class="text-barrel-gray/50 text-xs">Document Database</span>
+              </div>
+            </div>
+            <p class="text-barrel-gray/70 text-sm mb-4">
+              Document database with MVCC, declarative queries, and P2P replication.
+            </p>
+            <div class="flex items-center gap-2 mb-4">
+              <span class="bg-teal-light/20 text-teal-light text-xs px-2 py-0.5 rounded">Apache 2.0</span>
+              <span class="bg-orange-500/20 text-orange-400 text-xs px-2 py-0.5 rounded">Alpha</span>
+            </div>
+            <div class="flex gap-2">
+              <a href="https://gitlab.enki.io/barrel-db/barrel_docdb" class="flex-1 text-center bg-teal-dark/20 hover:bg-teal-dark/30 text-barrel-gray py-2 rounded-lg transition text-sm">
+                Source
+              </a>
+              <a href="https://docs.barrel-db.eu/docdb" class="flex-1 text-center bg-teal-light/20 hover:bg-teal-light/30 text-teal-light py-2 rounded-lg transition text-sm">
+                Docs
+              </a>
+            </div>
+          </div>
+
+          <!-- barrel_embed -->
+          <div class="bg-barrel-black p-6 rounded-xl border border-purple-500/30 hover:border-purple-500/50 transition">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                </svg>
+              </div>
+              <div>
+                <h3 class="font-bold text-purple-400">barrel_embed</h3>
+                <span class="text-barrel-gray/50 text-xs">Embedding Library</span>
+              </div>
+            </div>
+            <p class="text-barrel-gray/70 text-sm mb-4">
+              Erlang embedding library with 15+ providers (OpenAI, Ollama, local models, etc.).
+            </p>
+            <div class="flex items-center gap-2 mb-4">
+              <span class="bg-teal-light/20 text-teal-light text-xs px-2 py-0.5 rounded">Apache 2.0</span>
+              <span class="bg-green-500/20 text-green-400 text-xs px-2 py-0.5 rounded">v1.0.0</span>
+            </div>
+            <div class="flex gap-2">
+              <a href="https://gitlab.enki.io/barrel-db/barrel_embed" class="flex-1 text-center bg-teal-dark/20 hover:bg-teal-dark/30 text-barrel-gray py-2 rounded-lg transition text-sm">
+                Source
+              </a>
+              <a href="https://docs.barrel-db.eu/embed" class="flex-1 text-center bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 py-2 rounded-lg transition text-sm">
+                Docs
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- License Section -->
+      <div class="mb-16">
+        <h2 class="text-2xl font-bold text-center mb-8">Apache 2.0 License</h2>
+        <div class="bg-barrel-black p-8 rounded-xl border border-teal-dark/30 max-w-3xl mx-auto">
+          <p class="text-barrel-gray/70 mb-6">
+            All Barrel DB projects are released under the Apache License, Version 2.0. This means you can:
+          </p>
+          <div class="grid md:grid-cols-2 gap-6">
+            <div>
+              <h4 class="font-semibold text-teal-light mb-3">You can:</h4>
+              <ul class="space-y-2 text-sm text-barrel-gray/70">
+                <li class="flex items-start gap-2">
+                  <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  Use commercially
+                </li>
+                <li class="flex items-start gap-2">
+                  <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  Modify and distribute
+                </li>
+                <li class="flex items-start gap-2">
+                  <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  Use privately
+                </li>
+                <li class="flex items-start gap-2">
+                  <svg class="w-4 h-4 text-teal-light mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  Patent use granted
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold text-coral mb-3">You must:</h4>
+              <ul class="space-y-2 text-sm text-barrel-gray/70">
+                <li class="flex items-start gap-2">
+                  <svg class="w-4 h-4 text-coral mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                  Include license
+                </li>
+                <li class="flex items-start gap-2">
+                  <svg class="w-4 h-4 text-coral mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                  State changes
+                </li>
+                <li class="flex items-start gap-2">
+                  <svg class="w-4 h-4 text-coral mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                  Include copyright
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contributing Section -->
+      <div class="mb-16">
+        <h2 class="text-2xl font-bold text-center mb-8">Contributing</h2>
+        <div class="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          <div class="bg-barrel-black p-6 rounded-xl border border-teal-dark/30 text-center">
+            <div class="w-12 h-12 bg-teal-light/20 rounded-lg mx-auto flex items-center justify-center mb-4">
+              <svg class="w-6 h-6 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+              </svg>
+            </div>
+            <h3 class="font-semibold text-barrel-gray mb-2">Documentation</h3>
+            <p class="text-barrel-gray/60 text-sm">Improve docs, fix typos, add examples</p>
+          </div>
+          <div class="bg-barrel-black p-6 rounded-xl border border-teal-dark/30 text-center">
+            <div class="w-12 h-12 bg-teal-light/20 rounded-lg mx-auto flex items-center justify-center mb-4">
+              <svg class="w-6 h-6 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+              </svg>
+            </div>
+            <h3 class="font-semibold text-barrel-gray mb-2">Feature Ideas</h3>
+            <p class="text-barrel-gray/60 text-sm">Open issues to discuss new features</p>
+          </div>
+          <div class="bg-barrel-black p-6 rounded-xl border border-teal-dark/30 text-center">
+            <div class="w-12 h-12 bg-teal-light/20 rounded-lg mx-auto flex items-center justify-center mb-4">
+              <svg class="w-6 h-6 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+              </svg>
+            </div>
+            <h3 class="font-semibold text-barrel-gray mb-2">Code</h3>
+            <p class="text-barrel-gray/60 text-sm">Submit merge requests with fixes and features</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Support Section -->
+      <div class="bg-gradient-to-br from-teal-dark/30 via-barrel-black to-coral/10 p-8 md:p-12 rounded-2xl border border-teal-dark/50">
+        <div class="flex flex-col md:flex-row gap-8 items-center">
+          <div class="flex-1">
+            <h2 class="text-2xl font-bold mb-4">Need Professional Support?</h2>
+            <p class="text-barrel-gray/70 mb-6">
+              While the code is free, we offer professional support plans for teams that need guaranteed response times, deployment assistance, and dedicated engineering help.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4">
+              <a href="/pricing" class="bg-coral hover:bg-coral-dark text-white px-6 py-3 rounded-lg transition font-semibold text-center">
+                View Support Plans
+              </a>
+              <a href="/contact" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-6 py-3 rounded-lg transition text-center">
+                Contact Us
+              </a>
+            </div>
+          </div>
+          <div class="flex-shrink-0">
+            <div class="bg-barrel-black/50 p-6 rounded-xl border border-teal-dark/30">
+              <p class="text-sm text-barrel-gray/60 mb-4 text-center">Support Options</p>
+              <div class="space-y-2 text-sm">
+                <div class="flex items-center gap-2 text-barrel-gray/70">
+                  <span class="text-teal-light">+</span> Community: GitLab Issues
+                </div>
+                <div class="flex items-center gap-2 text-barrel-gray/70">
+                  <span class="text-coral">+</span> Basic: Email (72h)
+                </div>
+                <div class="flex items-center gap-2 text-barrel-gray/70">
+                  <span class="text-coral">+</span> Professional: 4h SLA
+                </div>
+                <div class="flex items-center gap-2 text-barrel-gray/70">
+                  <span class="text-coral">+</span> Enterprise: Dedicated
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
