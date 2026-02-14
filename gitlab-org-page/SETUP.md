@@ -7,13 +7,17 @@
    - New group → Name: `barrel-db`
    - URL: `gitlab.enki.io/barrel-db`
 
-2. **Create the .gitlab project**:
+2. **Add group description** (shows ABOVE repos):
+   - Group → Settings → General → Description
+   - Copy content from `GROUP_DESCRIPTION.md`
+
+3. **Create the barrel-db project** (for README below repos):
    - Inside `barrel-db` group, create new project
-   - Name: `.gitlab` (with the dot)
+   - Name: `barrel-db` (same as group name)
    - Visibility: Public
 
-3. **Add the README**:
-   - Copy `README.md` from this folder to the `.gitlab` project root
+4. **Add the README**:
+   - Copy `README.md` from this folder to the `barrel-db` project root
    - Commit and push
 
 4. **Transfer repos** (from barrel-platform to barrel-db):
