@@ -1,66 +1,93 @@
-<svg viewBox="0 0 600 280" xmlns="http://www.w3.org/2000/svg" fill="none">
+<svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg" fill="none">
   <!-- Background -->
-  <rect width="600" height="280" fill="#222929"/>
+  <rect width="600" height="300" fill="#222929"/>
+
+  <!-- Title -->
+  <text x="300" y="28" text-anchor="middle" fill="#75B6B2" font-family="Roboto, sans-serif" font-size="12" font-weight="500">Share data between your offices and datacenters</text>
 
   <!-- Central Console -->
-  <rect x="230" y="90" width="140" height="100" rx="8" fill="#006B77" stroke="#75B6B2" stroke-width="2"/>
-  <text x="300" y="130" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="14" font-weight="600">Barrel Console</text>
-  <text x="300" y="150" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="10" opacity="0.7">Control Plane</text>
+  <rect x="230" y="105" width="140" height="90" rx="8" fill="#006B77" stroke="#75B6B2" stroke-width="2"/>
+  <text x="300" y="140" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="14" font-weight="600">Barrel Console</text>
+  <text x="300" y="158" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="10" opacity="0.7">Control Plane</text>
 
   <!-- Console icon -->
-  <rect x="275" y="160" width="50" height="20" rx="2" fill="#222929" stroke="#75B6B2" stroke-width="1"/>
-  <circle cx="285" cy="170" r="3" fill="#C65E59"/>
-  <circle cx="295" cy="170" r="3" fill="#75B6B2"/>
-  <circle cx="305" cy="170" r="3" fill="#75B6B2"/>
+  <rect x="275" y="168" width="50" height="18" rx="2" fill="#222929" stroke="#75B6B2" stroke-width="1"/>
+  <circle cx="285" cy="177" r="2.5" fill="#C65E59"/>
+  <circle cx="295" cy="177" r="2.5" fill="#75B6B2"/>
+  <circle cx="305" cy="177" r="2.5" fill="#75B6B2"/>
 
-  <!-- Left Cloud (Your Infrastructure) -->
-  <g transform="translate(40, 60)">
-    <!-- Cloud shape -->
-    <path d="M80 120 C30 120 20 80 50 60 C40 20 100 10 110 50 C150 30 170 80 140 100 C160 120 120 140 80 120" fill="#2d3333" stroke="#444c4c" stroke-width="1"/>
-    <text x="85" y="75" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="9" opacity="0.6">Your Cloud</text>
+  <!-- Paris Office (Left) -->
+  <g transform="translate(30, 70)">
+    <rect x="0" y="0" width="120" height="80" rx="6" fill="#2d3333" stroke="#444c4c" stroke-width="1"/>
+    <text x="60" y="20" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="11" font-weight="500">Paris Office</text>
 
     <!-- Nodes -->
-    <rect x="45" y="85" width="30" height="24" rx="3" fill="#C65E59" stroke="#a84d49" stroke-width="1"/>
-    <text x="60" y="100" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="8">DB</text>
+    <rect x="15" y="35" width="35" height="28" rx="3" fill="#C65E59" stroke="#a84d49" stroke-width="1"/>
+    <text x="32" y="53" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="9">DocDB</text>
 
-    <rect x="85" y="85" width="30" height="24" rx="3" fill="#C65E59" stroke="#a84d49" stroke-width="1"/>
-    <text x="100" y="100" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="8">DB</text>
+    <rect x="60" y="35" width="45" height="28" rx="3" fill="#C65E59" stroke="#a84d49" stroke-width="1"/>
+    <text x="82" y="53" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="9">VectorDB</text>
   </g>
 
-  <!-- Right Cloud (Another DC) -->
-  <g transform="translate(400, 60)">
-    <!-- Cloud shape -->
-    <path d="M80 120 C30 120 20 80 50 60 C40 20 100 10 110 50 C150 30 170 80 140 100 C160 120 120 140 80 120" fill="#2d3333" stroke="#444c4c" stroke-width="1"/>
-    <text x="85" y="75" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="9" opacity="0.6">Another DC</text>
+  <!-- Berlin Office (Right) -->
+  <g transform="translate(450, 70)">
+    <rect x="0" y="0" width="120" height="80" rx="6" fill="#2d3333" stroke="#444c4c" stroke-width="1"/>
+    <text x="60" y="20" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="11" font-weight="500">Berlin Office</text>
 
     <!-- Nodes -->
-    <rect x="55" y="85" width="30" height="24" rx="3" fill="#C65E59" stroke="#a84d49" stroke-width="1"/>
-    <text x="70" y="100" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="8">DB</text>
+    <rect x="15" y="35" width="35" height="28" rx="3" fill="#C65E59" stroke="#a84d49" stroke-width="1"/>
+    <text x="32" y="53" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="9">DocDB</text>
 
-    <rect x="95" y="85" width="30" height="24" rx="3" fill="#C65E59" stroke="#a84d49" stroke-width="1"/>
-    <text x="110" y="100" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="8">DB</text>
+    <rect x="60" y="35" width="45" height="28" rx="3" fill="#C65E59" stroke="#a84d49" stroke-width="1"/>
+    <text x="82" y="53" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="9">VectorDB</text>
+  </g>
+
+  <!-- Frankfurt DC (Bottom) -->
+  <g transform="translate(200, 230)">
+    <rect x="0" y="0" width="200" height="55" rx="6" fill="#2d3333" stroke="#444c4c" stroke-width="1"/>
+    <text x="100" y="18" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="11" font-weight="500">Frankfurt Datacenter</text>
+
+    <!-- Nodes -->
+    <rect x="15" y="28" width="35" height="20" rx="3" fill="#C65E59" stroke="#a84d49" stroke-width="1"/>
+    <text x="32" y="42" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="8">DocDB</text>
+
+    <rect x="60" y="28" width="35" height="20" rx="3" fill="#C65E59" stroke="#a84d49" stroke-width="1"/>
+    <text x="77" y="42" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="8">DocDB</text>
+
+    <rect x="105" y="28" width="40" height="20" rx="3" fill="#C65E59" stroke="#a84d49" stroke-width="1"/>
+    <text x="125" y="42" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="8">VectorDB</text>
+
+    <rect x="155" y="28" width="30" height="20" rx="3" fill="#C65E59" stroke="#a84d49" stroke-width="1"/>
+    <text x="170" y="42" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="8">DB</text>
   </g>
 
   <!-- Connection lines (dashed) -->
-  <line x1="175" y1="140" x2="230" y2="140" stroke="#75B6B2" stroke-width="2" stroke-dasharray="6,3"/>
-  <line x1="370" y1="140" x2="425" y2="140" stroke="#75B6B2" stroke-width="2" stroke-dasharray="6,3"/>
+  <!-- Paris to Console -->
+  <line x1="150" y1="120" x2="230" y2="140" stroke="#75B6B2" stroke-width="2" stroke-dasharray="6,3"/>
+  <!-- Berlin to Console -->
+  <line x1="450" y1="120" x2="370" y2="140" stroke="#75B6B2" stroke-width="2" stroke-dasharray="6,3"/>
+  <!-- Frankfurt to Console -->
+  <line x1="300" y1="195" x2="300" y2="230" stroke="#75B6B2" stroke-width="2" stroke-dasharray="6,3"/>
 
-  <!-- Bottom edge node -->
-  <g transform="translate(260, 220)">
-    <rect x="0" y="0" width="80" height="35" rx="4" fill="#2d3333" stroke="#444c4c" stroke-width="1"/>
-    <rect x="15" y="10" width="22" height="16" rx="2" fill="#C65E59" stroke="#a84d49" stroke-width="1"/>
-    <text x="26" y="21" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="7">DB</text>
-    <text x="55" y="22" text-anchor="middle" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="8" opacity="0.6">Edge</text>
+  <!-- Small arrows -->
+  <polygon points="225,138 230,140 227,144" fill="#75B6B2"/>
+  <polygon points="375,138 370,140 373,144" fill="#75B6B2"/>
+  <polygon points="297,225 300,230 303,225" fill="#75B6B2"/>
+
+  <!-- Replication arrows between locations -->
+  <g opacity="0.5">
+    <!-- Paris <-> Frankfurt -->
+    <line x1="120" y1="165" x2="200" y2="245" stroke="#E9967A" stroke-width="1" stroke-dasharray="4,2"/>
+    <!-- Berlin <-> Frankfurt -->
+    <line x1="480" y1="165" x2="400" y2="245" stroke="#E9967A" stroke-width="1" stroke-dasharray="4,2"/>
   </g>
 
-  <!-- Connection to edge -->
-  <line x1="300" y1="190" x2="300" y2="220" stroke="#75B6B2" stroke-width="2" stroke-dasharray="6,3"/>
+  <!-- Legend -->
+  <g transform="translate(20, 270)">
+    <line x1="0" y1="0" x2="20" y2="0" stroke="#75B6B2" stroke-width="2" stroke-dasharray="6,3"/>
+    <text x="28" y="4" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="9" opacity="0.7">Management</text>
 
-  <!-- Labels -->
-  <text x="300" y="25" text-anchor="middle" fill="#75B6B2" font-family="Roboto, sans-serif" font-size="11" font-weight="500">Node Discovery &amp; Mesh Coordination</text>
-
-  <!-- Small arrows on lines -->
-  <polygon points="225,137 230,140 225,143" fill="#75B6B2"/>
-  <polygon points="375,137 370,140 375,143" fill="#75B6B2"/>
-  <polygon points="297,215 300,220 303,215" fill="#75B6B2"/>
+    <line x1="100" y1="0" x2="120" y2="0" stroke="#E9967A" stroke-width="1" stroke-dasharray="4,2" opacity="0.5"/>
+    <text x="128" y="4" fill="#F3F3F2" font-family="Roboto, sans-serif" font-size="9" opacity="0.7">Replication</text>
+  </g>
 </svg>
