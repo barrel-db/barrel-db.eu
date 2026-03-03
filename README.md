@@ -134,9 +134,9 @@ server {
 
 | Repository | Description |
 |------------|-------------|
-| [barrel_vectordb](https://gitlab.enki.io/barrel-db/barrel_vectordb) | Vector database |
-| [barrel_docdb](https://gitlab.enki.io/barrel-db/barrel_docdb) | Document database |
-| [barrel_embed](https://gitlab.enki.io/barrel-db/barrel_embed) | Embedding library |
+| [barrel_vectordb](https://github.com/barrel-db/barrel_vectordb) | Vector database |
+| [barrel_docdb](https://github.com/barrel-db/barrel_docdb) | Document database |
+| [barrel_embed](https://github.com/barrel-db/barrel_embed) | Embedding library |
 
 ## Branches
 
