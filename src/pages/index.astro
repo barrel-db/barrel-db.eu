@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 ---
 
-<Layout title="Open Source AI-Native Databases">
+<Layout title="The edge-AI database for agents">
   <!-- Hero Section -->
   <section class="py-24 px-4 bg-gradient-to-b from-barrel-black to-teal-dark/10">
     <div class="container mx-auto text-center max-w-5xl">
@@ -19,18 +19,19 @@ import Layout from '../layouts/Layout.astro';
         </div>
       </div>
       <h1 class="text-5xl md:text-6xl font-bold mb-6">
-        <span class="bg-gradient-to-r from-coral to-teal-light bg-clip-text text-transparent">AI-Native Databases</span>
+        <span class="bg-gradient-to-r from-coral to-teal-light bg-clip-text text-transparent">The edge-AI database for agents</span>
         <br />
         <span class="text-barrel-gray">Built in Europe</span>
       </h1>
-      <p class="text-xl text-barrel-gray/70 mb-8 max-w-2xl mx-auto">
-        High-performance vector and document databases built in Erlang. Open source, embeddable, production-ready.
+      <p class="text-xl text-barrel-gray/70 mb-8 max-w-3xl mx-auto">
+        One embeddable database for documents, blobs, and vectors under a single id, with local search,
+        offline-first sync, encryption, and an agent layer over REST and MCP. Erlang. Apache 2.0.
       </p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
         <a href="https://docs.barrel-db.eu" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
           Documentation
         </a>
-        <a href="https://github.com/barrel-db" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-8 py-3 rounded-lg text-lg transition flex items-center justify-center gap-2">
+        <a href="https://github.com/barrel-db/barrel" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-8 py-3 rounded-lg text-lg transition flex items-center justify-center gap-2">
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
           View Source
         </a>
@@ -38,98 +39,104 @@ import Layout from '../layouts/Layout.astro';
     </div>
   </section>
 
-  <!-- Product Cards Section -->
+  <!-- One Unified Database Section -->
   <section class="py-16 px-4">
     <div class="container mx-auto max-w-5xl">
-      <h2 class="text-3xl font-bold mb-4 text-center">Two Databases, One Platform</h2>
+      <h2 class="text-3xl font-bold mb-4 text-center">One record. Documents, blobs, and vectors.</h2>
       <p class="text-barrel-gray/60 text-center mb-12 max-w-2xl mx-auto">
-        Purpose-built databases for AI workloads. Use them together or separately.
+        Barrel keeps a document, its attachments, and its embedding under one id, so an agent's memory
+        is one write and one read. Embed it as a library, run it as a server, or sync it to the browser.
       </p>
 
-      <div class="grid md:grid-cols-2 gap-8">
-        <!-- Barrel Vector Card -->
-        <div class="bg-barrel-black p-8 rounded-xl border border-coral/30 hover:border-coral/50 transition">
-          <div class="w-14 h-14 bg-coral/20 rounded-xl flex items-center justify-center mb-6">
-            <svg class="w-7 h-7 text-coral" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
-            </svg>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="bg-barrel-black p-6 rounded-xl border border-teal-dark/30">
+          <div class="w-12 h-12 bg-coral/20 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-coral" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
           </div>
-          <div class="flex items-center gap-3 mb-2">
-            <h3 class="text-2xl font-bold text-coral">Barrel Vector</h3>
-            <span class="bg-teal-light/20 text-teal-light text-xs px-2 py-0.5 rounded font-medium">Apache 2.0</span>
-          </div>
-          <p class="text-barrel-gray/50 text-sm mb-4">Vector Database</p>
-          <p class="text-barrel-gray/70 mb-6">
-            High-performance single-node vector database with HNSW, FAISS, DiskANN, and BM25 backends. Perfect for semantic search and RAG applications.
-          </p>
-          <ul class="space-y-2 text-sm text-barrel-gray/70 mb-6">
-            <li class="flex items-center gap-2">
-              <span class="text-coral">+</span>
-              <span>&lt;5ms search latency</span>
-            </li>
-            <li class="flex items-center gap-2">
-              <span class="text-coral">+</span>
-              <span>Hybrid search (vector + BM25)</span>
-            </li>
-            <li class="flex items-center gap-2">
-              <span class="text-coral">+</span>
-              <span>Metadata filtering</span>
-            </li>
-            <li class="flex items-center gap-2">
-              <span class="text-coral">+</span>
-              <span>Embeddable in Erlang/Elixir</span>
-            </li>
-          </ul>
-          <a href="/products/vectordb" class="text-coral hover:text-coral-dark font-semibold">
-            Learn more &rarr;
-          </a>
+          <h3 class="font-semibold text-barrel-gray mb-2">Unified record</h3>
+          <p class="text-barrel-gray/60 text-sm">A document, its blobs, and its vector share one id. No glue code between a doc store and a vector index.</p>
         </div>
+        <div class="bg-barrel-black p-6 rounded-xl border border-teal-dark/30">
+          <div class="w-12 h-12 bg-teal-light/20 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          </div>
+          <h3 class="font-semibold text-barrel-gray mb-2">Local search</h3>
+          <p class="text-barrel-gray/60 text-sm">Vector, BM25, and hybrid search in-process, plus BQL queries. Brute-force vector search even in the browser.</p>
+        </div>
+        <div class="bg-barrel-black p-6 rounded-xl border border-teal-dark/30">
+          <div class="w-12 h-12 bg-teal-light/20 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          </div>
+          <h3 class="font-semibold text-barrel-gray mb-2">Offline-first sync</h3>
+          <p class="text-barrel-gray/60 text-sm">HLC version vectors track causality, so sync converges without a coordinator and never silently drops a write.</p>
+        </div>
+        <div class="bg-barrel-black p-6 rounded-xl border border-teal-dark/30">
+          <div class="w-12 h-12 bg-teal-light/20 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+          </div>
+          <h3 class="font-semibold text-barrel-gray mb-2">Encryption at rest</h3>
+          <p class="text-barrel-gray/60 text-sm">AES-256-GCM with per-database keys and a pluggable key provider. Your keys, your data.</p>
+        </div>
+        <div class="bg-barrel-black p-6 rounded-xl border border-teal-dark/30">
+          <div class="w-12 h-12 bg-teal-light/20 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+          </div>
+          <h3 class="font-semibold text-barrel-gray mb-2">Timeline</h3>
+          <p class="text-barrel-gray/60 text-sm">Branch a database, restore it to a point in time, and merge branches back. Version control for state.</p>
+        </div>
+        <div class="bg-barrel-black p-6 rounded-xl border border-coral/30">
+          <div class="w-12 h-12 bg-coral/20 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-coral" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          </div>
+          <h3 class="font-semibold text-barrel-gray mb-2">Agents &amp; MCP</h3>
+          <p class="text-barrel-gray/60 text-sm">Spaces, capability tokens, sessions, and handoffs, exposed over REST and the Model Context Protocol.</p>
+        </div>
+      </div>
 
-        <!-- Barrel Docs Card -->
-        <div class="bg-barrel-black p-8 rounded-xl border border-teal-light/30 hover:border-teal-light/50 transition">
-          <div class="w-14 h-14 bg-teal-light/20 rounded-xl flex items-center justify-center mb-6">
-            <svg class="w-7 h-7 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
-          </div>
-          <div class="flex items-center gap-3 mb-2">
-            <h3 class="text-2xl font-bold text-teal-light">Barrel Docs</h3>
-            <span class="bg-teal-light/20 text-teal-light text-xs px-2 py-0.5 rounded font-medium">Apache 2.0</span>
-          </div>
-          <p class="text-barrel-gray/50 text-sm mb-4">Document Database</p>
-          <p class="text-barrel-gray/70 mb-6">
-            Document database with MVCC, declarative queries, real-time subscriptions, and peer-to-peer replication. Built for edge computing and sync.
-          </p>
-          <ul class="space-y-2 text-sm text-barrel-gray/70 mb-6">
-            <li class="flex items-center gap-2">
-              <span class="text-teal-light">+</span>
-              <span>&lt;1ms read latency</span>
-            </li>
-            <li class="flex items-center gap-2">
-              <span class="text-teal-light">+</span>
-              <span>P2P replication</span>
-            </li>
-            <li class="flex items-center gap-2">
-              <span class="text-teal-light">+</span>
-              <span>Real-time subscriptions</span>
-            </li>
-            <li class="flex items-center gap-2">
-              <span class="text-teal-light">+</span>
-              <span>Automatic path indexing</span>
-            </li>
-          </ul>
-          <a href="/products/docdb" class="text-teal-light hover:text-teal-dark font-semibold">
-            Learn more &rarr;
-          </a>
-        </div>
+      <div class="text-center mt-8">
+        <a href="/products/barrel" class="text-coral hover:text-coral-dark font-semibold">Explore Barrel &rarr;</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Whole or a piece Section -->
+  <section class="py-16 px-4 bg-barrel-black/50">
+    <div class="container mx-auto max-w-5xl">
+      <h2 class="text-3xl font-bold mb-4 text-center">Use the whole database, or just the piece you need</h2>
+      <p class="text-barrel-gray/60 text-center mb-12 max-w-2xl mx-auto">
+        Barrel composes independent Apache 2.0 libraries. Adopt the full database, or depend on a single
+        layer and grow into the rest later. No rewrite, no new vendor.
+      </p>
+
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <a href="/products/vectordb" class="bg-barrel-black p-6 rounded-xl border border-coral/30 hover:border-coral/50 transition block">
+          <h3 class="text-xl font-bold text-coral mb-1">Barrel Vector</h3>
+          <p class="text-barrel-gray/50 text-xs mb-3">Vector layer</p>
+          <p class="text-barrel-gray/70 text-sm">HNSW, DiskANN, FAISS, and BM25 backends with hybrid search and metadata filtering.</p>
+        </a>
+        <a href="/products/docdb" class="bg-barrel-black p-6 rounded-xl border border-teal-light/30 hover:border-teal-light/50 transition block">
+          <h3 class="text-xl font-bold text-teal-light mb-1">Barrel Docs</h3>
+          <p class="text-barrel-gray/50 text-xs mb-3">Document layer</p>
+          <p class="text-barrel-gray/70 text-sm">Version-vector MVCC, BQL queries, attachments, changes feed, and replication.</p>
+        </a>
+        <a href="/products/agents" class="bg-barrel-black p-6 rounded-xl border border-teal-light/30 hover:border-teal-light/50 transition block">
+          <h3 class="text-xl font-bold text-teal-light mb-1">Agents &amp; MCP</h3>
+          <p class="text-barrel-gray/50 text-xs mb-3">Agent layer</p>
+          <p class="text-barrel-gray/70 text-sm">Spaces, capability tokens, sessions, and handoffs over REST and MCP.</p>
+        </a>
+        <a href="/products/sync" class="bg-barrel-black p-6 rounded-xl border border-teal-light/30 hover:border-teal-light/50 transition block">
+          <h3 class="text-xl font-bold text-teal-light mb-1">Sync &amp; Local-first</h3>
+          <p class="text-barrel-gray/50 text-xs mb-3">Browser client</p>
+          <p class="text-barrel-gray/70 text-sm">barrel-lite: offline-first storage, multi-tab, and local vector search in the browser.</p>
+        </a>
       </div>
     </div>
   </section>
 
   <!-- Key Differentiators Section -->
-  <section class="py-16 px-4 bg-barrel-black/50">
+  <section class="py-16 px-4">
     <div class="container mx-auto max-w-5xl">
-      <h2 class="text-3xl font-bold mb-4 text-center">Why Barrel Databases?</h2>
+      <h2 class="text-3xl font-bold mb-4 text-center">Why Barrel?</h2>
       <p class="text-barrel-gray/60 text-center mb-12 max-w-2xl mx-auto">
         Built different. Built in Europe. Built to last.
       </p>
@@ -169,8 +176,8 @@ import Layout from '../layouts/Layout.astro';
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
             </svg>
           </div>
-          <h3 class="font-semibold text-barrel-gray mb-2">Embeddable</h3>
-          <p class="text-barrel-gray/60 text-sm">Use as a library in your Erlang/Elixir apps. No separate process needed.</p>
+          <h3 class="font-semibold text-barrel-gray mb-2">Runs anywhere</h3>
+          <p class="text-barrel-gray/60 text-sm">Embed it in Erlang or Elixir, run it as a server, or sync it to the browser.</p>
         </div>
       </div>
     </div>
@@ -191,8 +198,8 @@ import Layout from '../layouts/Layout.astro';
               Powers <span class="text-teal-light">Barrel Platform</span>
             </h2>
             <p class="text-barrel-gray/70 text-lg mb-6">
-              These databases are the foundation of Barrel Platform — privacy-first AI agent networking for Europe.
-              The same battle-tested code you can run on your own infrastructure.
+              The same open source database powers Barrel Platform, our managed, privacy-first
+              infrastructure for AI agents. Self-host it, or let us run it. Same code either way.
             </p>
             <div class="grid grid-cols-2 gap-4">
               <div class="flex items-center gap-3">
@@ -202,8 +209,8 @@ import Layout from '../layouts/Layout.astro';
                   </svg>
                 </div>
                 <div>
-                  <p class="font-semibold text-barrel-gray">Production Tested</p>
-                  <p class="text-barrel-gray/60 text-sm">Powers real services</p>
+                  <p class="font-semibold text-barrel-gray">No lock-in</p>
+                  <p class="text-barrel-gray/60 text-sm">Open source core</p>
                 </div>
               </div>
               <div class="flex items-center gap-3">
@@ -226,7 +233,7 @@ import Layout from '../layouts/Layout.astro';
               <a href="/contact" class="inline-block bg-coral hover:bg-coral-dark text-white px-6 py-3 rounded-lg font-semibold transition">
                 Contact Us
               </a>
-              <p class="text-xs text-barrel-gray/50 mt-4">Support & managed hosting<br/>available on request</p>
+              <p class="text-xs text-barrel-gray/50 mt-4">Support &amp; managed hosting<br/>available on request</p>
             </div>
           </div>
         </div>
@@ -239,17 +246,16 @@ import Layout from '../layouts/Layout.astro';
     <div class="container mx-auto max-w-4xl text-center">
       <h2 class="text-3xl font-bold mb-4">100% Open Source</h2>
       <p class="text-barrel-gray/60 mb-8 max-w-2xl mx-auto">
-        All components are Apache 2.0 licensed. Fork it, modify it, deploy it anywhere.
+        Every component is Apache 2.0 licensed. Fork it, modify it, deploy it anywhere.
         No vendor lock-in, no usage fees.
       </p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="https://github.com/barrel-db/barrel_vectordb" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-6 py-3 rounded-lg transition flex items-center justify-center gap-2">
+        <a href="https://github.com/barrel-db/barrel" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-6 py-3 rounded-lg transition flex items-center justify-center gap-2">
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-          Barrel Vector
+          Barrel on GitHub
         </a>
-        <a href="https://github.com/barrel-db/barrel_docdb" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-6 py-3 rounded-lg transition flex items-center justify-center gap-2">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-          Barrel Docs
+        <a href="/opensource" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-6 py-3 rounded-lg transition">
+          All Projects
         </a>
       </div>
     </div>
@@ -260,7 +266,7 @@ import Layout from '../layouts/Layout.astro';
     <div class="container mx-auto max-w-4xl text-center">
       <h2 class="text-3xl font-bold mb-4">Ready to Get Started?</h2>
       <p class="text-barrel-gray/60 mb-8">
-        Self-host free with our open source databases, or contact us for managed hosting.
+        Self-host free with the open source database, or contact us for managed hosting.
       </p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
         <a href="https://docs.barrel-db.eu" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
