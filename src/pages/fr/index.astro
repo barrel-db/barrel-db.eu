@@ -103,11 +103,29 @@ import Layout from '../../layouts/LayoutFr.astro';
   <section class="py-16 px-4 bg-barrel-black/50">
     <div class="container mx-auto max-w-5xl">
       <h2 class="text-3xl font-bold mb-4 text-center">Utilisez toute la base de donnees, ou juste la partie dont vous avez besoin</h2>
-      <p class="text-barrel-gray/60 text-center mb-12 max-w-2xl mx-auto">
+      <p class="text-barrel-gray/60 text-center mb-8 max-w-2xl mx-auto">
         Barrel se compose de bibliotheques Apache 2.0 independantes. Adoptez la base de donnees complete, ou dependez d'une
         seule couche et etendez vers le reste plus tard. Pas de reecriture, pas de nouveau fournisseur.
       </p>
 
+      <!-- Barrel: le produit complet -->
+      <a href="/fr/products/barrel" class="block bg-gradient-to-br from-coral/20 via-barrel-black to-teal-dark/20 p-8 rounded-2xl border border-coral/40 hover:border-coral/70 transition mb-8">
+        <div class="flex flex-col md:flex-row items-center gap-6">
+          <div class="flex-1">
+            <div class="flex items-center gap-3 mb-2">
+              <h3 class="text-2xl font-bold text-coral">Barrel</h3>
+              <span class="bg-coral/20 text-coral text-xs px-2 py-0.5 rounded font-medium">La base de donnees complete</span>
+            </div>
+            <p class="text-barrel-gray/70">
+              Documents, blobs et vecteurs sous un seul id, avec BQL, synchronisation, chiffrement, timeline et la
+              couche agent. Embarquez-la, executez-la comme serveur, ou synchronisez-la vers le navigateur.
+            </p>
+          </div>
+          <span class="text-coral font-semibold whitespace-nowrap text-lg">Decouvrir Barrel &rarr;</span>
+        </div>
+      </a>
+
+      <p class="text-barrel-gray/50 text-center text-sm mb-6">Ou commencez avec une seule bibliotheque :</p>
       <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
         <a href="/fr/products/vectordb" class="bg-barrel-black p-6 rounded-xl border border-coral/30 hover:border-coral/50 transition block">
           <h3 class="text-xl font-bold text-coral mb-1">Barrel Vector</h3>

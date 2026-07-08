@@ -103,11 +103,29 @@ import Layout from '../layouts/Layout.astro';
   <section class="py-16 px-4 bg-barrel-black/50">
     <div class="container mx-auto max-w-5xl">
       <h2 class="text-3xl font-bold mb-4 text-center">Use the whole database, or just the piece you need</h2>
-      <p class="text-barrel-gray/60 text-center mb-12 max-w-2xl mx-auto">
+      <p class="text-barrel-gray/60 text-center mb-8 max-w-2xl mx-auto">
         Barrel composes independent Apache 2.0 libraries. Adopt the full database, or depend on a single
         layer and grow into the rest later. No rewrite, no new vendor.
       </p>
 
+      <!-- Barrel: the full product -->
+      <a href="/products/barrel" class="block bg-gradient-to-br from-coral/20 via-barrel-black to-teal-dark/20 p-8 rounded-2xl border border-coral/40 hover:border-coral/70 transition mb-8">
+        <div class="flex flex-col md:flex-row items-center gap-6">
+          <div class="flex-1">
+            <div class="flex items-center gap-3 mb-2">
+              <h3 class="text-2xl font-bold text-coral">Barrel</h3>
+              <span class="bg-coral/20 text-coral text-xs px-2 py-0.5 rounded font-medium">The full database</span>
+            </div>
+            <p class="text-barrel-gray/70">
+              Documents, blobs, and vectors under one id, with BQL, sync, encryption, timeline, and the
+              agent layer. Embed it, run it as a server, or sync it to the browser.
+            </p>
+          </div>
+          <span class="text-coral font-semibold whitespace-nowrap text-lg">Explore Barrel &rarr;</span>
+        </div>
+      </a>
+
+      <p class="text-barrel-gray/50 text-center text-sm mb-6">Or start with a single library:</p>
       <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
         <a href="/products/vectordb" class="bg-barrel-black p-6 rounded-xl border border-coral/30 hover:border-coral/50 transition block">
           <h3 class="text-xl font-bold text-coral mb-1">Barrel Vector</h3>
