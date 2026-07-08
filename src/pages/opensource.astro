@@ -1,8 +1,34 @@
 ---
 import Layout from '../layouts/Layout.astro';
+
+const repoBase = "https://github.com/barrel-db/barrel/tree/main/";
+const docsUrl = "https://docs.barrel-db.eu";
+
+const projects = [
+  { name: "barrel", kind: "The full edge-AI database", lang: "Erlang", repo: "apps/barrel",
+    blurb: "The facade: documents, blobs, and vectors under one id, with BQL, timeline, and the agent layer." },
+  { name: "barrel_docdb", kind: "Document layer", lang: "Erlang", repo: "apps/barrel_docdb",
+    blurb: "Version-vector MVCC, BQL queries, attachments, changes feed, and replication." },
+  { name: "barrel_vectordb", kind: "Vector layer", lang: "Erlang", repo: "apps/barrel_vectordb",
+    blurb: "HNSW, DiskANN, FAISS, and BM25 backends with hybrid search and metadata filtering." },
+  { name: "barrel_embed", kind: "Embedding library", lang: "Erlang", repo: "apps/barrel_embed",
+    blurb: "Embeddings across providers: OpenAI, Ollama, local models, and more." },
+  { name: "barrel_rerank", kind: "Reranking", lang: "Erlang", repo: "apps/barrel_rerank",
+    blurb: "Cross-encoder reranking to sharpen search results." },
+  { name: "barrel_crypto", kind: "Encryption at rest", lang: "Erlang", repo: "apps/barrel_crypto",
+    blurb: "AES-256-GCM envelope, HKDF key derivation, and pluggable key providers." },
+  { name: "barrel_spaces", kind: "Agent layer", lang: "Erlang", repo: "apps/barrel_spaces",
+    blurb: "Spaces, capability tokens, sessions with TTL, and handoffs." },
+  { name: "barrel_server", kind: "REST + MCP server", lang: "Erlang", repo: "apps/barrel_server",
+    blurb: "Exposes Barrel over HTTP (REST/JSON) and the Model Context Protocol." },
+  { name: "barrel_faiss", kind: "FAISS bindings (optional)", lang: "Erlang NIF", repo: "apps/barrel_faiss",
+    blurb: "Erlang NIF bindings for FAISS. An optional backend for the vector layer." },
+  { name: "barrel-lite", kind: "Browser client", lang: "TypeScript", repo: "clients/barrel-lite",
+    blurb: "Offline-first Barrel in the browser: sync, multi-tab, and local vector search." },
+];
 ---
 
-<Layout title="Open Source" description="All Barrel DB projects are 100% open source under Apache 2.0. View source code, contribute, and deploy anywhere.">
+<Layout title="Open Source" description="Every Barrel project is 100% open source under Apache 2.0. View the source, contribute, and deploy anywhere.">
   <section class="py-20 px-4">
     <div class="container mx-auto max-w-5xl">
       <div class="text-center mb-16">
@@ -15,104 +41,39 @@ import Layout from '../layouts/Layout.astro';
         </div>
         <h1 class="text-4xl md:text-5xl font-bold mb-4">100% Open Source</h1>
         <p class="text-xl text-barrel-gray/60 max-w-2xl mx-auto">
-          All Barrel DB projects are Apache 2.0 licensed. Fork it, modify it, deploy it anywhere.
+          Every Barrel project is Apache 2.0 licensed. Fork it, modify it, deploy it anywhere.
           We monetize support and managed infrastructure, not code access.
         </p>
       </div>
 
       <!-- Projects Grid -->
       <div class="mb-16">
-        <h2 class="text-2xl font-bold text-center mb-8">Projects</h2>
+        <h2 class="text-2xl font-bold text-center mb-4">Projects</h2>
+        <p class="text-barrel-gray/60 text-center mb-8 max-w-2xl mx-auto">
+          Barrel is one database made of independent libraries. Use the whole thing, or just the piece you need.
+        </p>
         <div class="grid md:grid-cols-3 gap-6">
-          <!-- barrel_vectordb -->
-          <div class="bg-barrel-black p-6 rounded-xl border border-coral/30 hover:border-coral/50 transition">
-            <div class="flex items-center gap-3 mb-4">
-              <div class="w-10 h-10 bg-coral/20 rounded-lg flex items-center justify-center">
-                <svg class="w-5 h-5 text-coral" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
-                </svg>
+          {projects.map((p) => (
+            <div class="bg-barrel-black p-6 rounded-xl border border-teal-dark/30 hover:border-teal-light/50 transition flex flex-col">
+              <div class="mb-3">
+                <h3 class="font-bold text-teal-light">{p.name}</h3>
+                <span class="text-barrel-gray/50 text-xs">{p.kind}</span>
               </div>
-              <div>
-                <h3 class="font-bold text-coral">barrel_vectordb</h3>
-                <span class="text-barrel-gray/50 text-xs">Vector Database</span>
+              <p class="text-barrel-gray/70 text-sm mb-4 flex-1">{p.blurb}</p>
+              <div class="flex items-center gap-2 mb-4">
+                <span class="bg-teal-light/20 text-teal-light text-xs px-2 py-0.5 rounded">Apache 2.0</span>
+                <span class="bg-teal-dark/30 text-barrel-gray/70 text-xs px-2 py-0.5 rounded">{p.lang}</span>
               </div>
-            </div>
-            <p class="text-barrel-gray/70 text-sm mb-4">
-              High-performance vector database with HNSW, FAISS, DiskANN, and BM25 backends.
-            </p>
-            <div class="flex items-center gap-2 mb-4">
-              <span class="bg-teal-light/20 text-teal-light text-xs px-2 py-0.5 rounded">Apache 2.0</span>
-              <span class="bg-orange-500/20 text-orange-400 text-xs px-2 py-0.5 rounded">Alpha</span>
-            </div>
-            <div class="flex gap-2">
-              <a href="https://github.com/barrel-db/barrel_vectordb" class="flex-1 text-center bg-teal-dark/20 hover:bg-teal-dark/30 text-barrel-gray py-2 rounded-lg transition text-sm">
-                Source
-              </a>
-              <a href="https://docs.barrel-db.eu/vectordb" class="flex-1 text-center bg-coral/20 hover:bg-coral/30 text-coral py-2 rounded-lg transition text-sm">
-                Docs
-              </a>
-            </div>
-          </div>
-
-          <!-- barrel_docdb -->
-          <div class="bg-barrel-black p-6 rounded-xl border border-teal-light/30 hover:border-teal-light/50 transition">
-            <div class="flex items-center gap-3 mb-4">
-              <div class="w-10 h-10 bg-teal-light/20 rounded-lg flex items-center justify-center">
-                <svg class="w-5 h-5 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-              </div>
-              <div>
-                <h3 class="font-bold text-teal-light">barrel_docdb</h3>
-                <span class="text-barrel-gray/50 text-xs">Document Database</span>
+              <div class="flex gap-2">
+                <a href={repoBase + p.repo} class="flex-1 text-center bg-teal-dark/20 hover:bg-teal-dark/30 text-barrel-gray py-2 rounded-lg transition text-sm">
+                  Source
+                </a>
+                <a href={docsUrl} class="flex-1 text-center bg-teal-light/20 hover:bg-teal-light/30 text-teal-light py-2 rounded-lg transition text-sm">
+                  Docs
+                </a>
               </div>
             </div>
-            <p class="text-barrel-gray/70 text-sm mb-4">
-              Document database with MVCC, declarative queries, and P2P replication.
-            </p>
-            <div class="flex items-center gap-2 mb-4">
-              <span class="bg-teal-light/20 text-teal-light text-xs px-2 py-0.5 rounded">Apache 2.0</span>
-              <span class="bg-orange-500/20 text-orange-400 text-xs px-2 py-0.5 rounded">Alpha</span>
-            </div>
-            <div class="flex gap-2">
-              <a href="https://github.com/barrel-db/barrel_docdb" class="flex-1 text-center bg-teal-dark/20 hover:bg-teal-dark/30 text-barrel-gray py-2 rounded-lg transition text-sm">
-                Source
-              </a>
-              <a href="https://docs.barrel-db.eu/docdb" class="flex-1 text-center bg-teal-light/20 hover:bg-teal-light/30 text-teal-light py-2 rounded-lg transition text-sm">
-                Docs
-              </a>
-            </div>
-          </div>
-
-          <!-- barrel_embed -->
-          <div class="bg-barrel-black p-6 rounded-xl border border-purple-500/30 hover:border-purple-500/50 transition">
-            <div class="flex items-center gap-3 mb-4">
-              <div class="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                </svg>
-              </div>
-              <div>
-                <h3 class="font-bold text-purple-400">barrel_embed</h3>
-                <span class="text-barrel-gray/50 text-xs">Embedding Library</span>
-              </div>
-            </div>
-            <p class="text-barrel-gray/70 text-sm mb-4">
-              Erlang embedding library with 15+ providers (OpenAI, Ollama, local models, etc.).
-            </p>
-            <div class="flex items-center gap-2 mb-4">
-              <span class="bg-teal-light/20 text-teal-light text-xs px-2 py-0.5 rounded">Apache 2.0</span>
-              <span class="bg-green-500/20 text-green-400 text-xs px-2 py-0.5 rounded">v1.0.0</span>
-            </div>
-            <div class="flex gap-2">
-              <a href="https://github.com/barrel-db/barrel_embed" class="flex-1 text-center bg-teal-dark/20 hover:bg-teal-dark/30 text-barrel-gray py-2 rounded-lg transition text-sm">
-                Source
-              </a>
-              <a href="https://docs.barrel-db.eu/embed" class="flex-1 text-center bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 py-2 rounded-lg transition text-sm">
-                Docs
-              </a>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
 
@@ -121,7 +82,7 @@ import Layout from '../layouts/Layout.astro';
         <h2 class="text-2xl font-bold text-center mb-8">Apache 2.0 License</h2>
         <div class="bg-barrel-black p-8 rounded-xl border border-teal-dark/30 max-w-3xl mx-auto">
           <p class="text-barrel-gray/70 mb-6">
-            All Barrel DB projects are released under the Apache License, Version 2.0. This means you can:
+            Every Barrel project is released under the Apache License, Version 2.0. This means you can:
           </p>
           <div class="grid md:grid-cols-2 gap-6">
             <div>
@@ -195,7 +156,7 @@ import Layout from '../layouts/Layout.astro';
               </svg>
             </div>
             <h3 class="font-semibold text-barrel-gray mb-2">Code</h3>
-            <p class="text-barrel-gray/60 text-sm">Submit merge requests with fixes and features</p>
+            <p class="text-barrel-gray/60 text-sm">Submit pull requests with fixes and features</p>
           </div>
         </div>
       </div>
@@ -217,7 +178,7 @@ import Layout from '../layouts/Layout.astro';
               <p class="text-sm text-barrel-gray/60 mb-4 text-center">Available Services</p>
               <div class="space-y-2 text-sm">
                 <div class="flex items-center gap-2 text-barrel-gray/70">
-                  <span class="text-teal-light">+</span> Community: GitLab Issues
+                  <span class="text-teal-light">+</span> Community: GitHub Issues
                 </div>
                 <div class="flex items-center gap-2 text-barrel-gray/70">
                   <span class="text-coral">+</span> Professional Support

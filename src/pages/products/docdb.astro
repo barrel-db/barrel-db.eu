@@ -1,58 +1,35 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 
-const curlCode = `# Run with Docker
-docker run -p 8080:8080 barrel-platform/barrel-docdb
+const erlCode = `%% Start the application
+application:ensure_all_started(barrel_docdb).
 
-# Create a database
-curl -X POST http://localhost:8080/db/mydb
+%% Create a database
+{ok, _} = barrel_docdb:create_db(<<"mydb">>).
 
-# Put a document
-curl -X PUT http://localhost:8080/db/mydb/doc1 \\
-  -H "Content-Type: application/json" \\
-  -d '{"type": "user", "name": "Alice"}'
+%% Put a document
+{ok, #{<<"id">> := Id}} = barrel_docdb:put_doc(<<"mydb">>, #{
+    <<"type">> => <<"user">>, <<"name">> => <<"Alice">>
+}).
 
-# Get a document
-curl http://localhost:8080/db/mydb/doc1
+%% Query with BQL
+{ok, Rows, _} = barrel_docdb:query(<<"mydb">>,
+    <<"SELECT * FROM db WHERE type = 'user'">>).
 
-# Query documents (automatic path indexing)
-curl -X POST http://localhost:8080/db/mydb/_find \\
-  -H "Content-Type: application/json" \\
-  -d '{"where": [{"path": ["type"], "value": "user"}]}'
-
-# Subscribe to changes (SSE stream)
-curl http://localhost:8080/db/mydb/_changes/stream`;
-
-const pythonCode = `# Store document in docdb
-doc = docdb.put("documents", {
-    "_id": "doc1",
-    "title": "Machine Learning Basics",
-    "content": "...",
-    "source": "ml-book.pdf"
-})
-
-# Store embedding in vectordb
-embedding = get_embedding(doc["content"])
-vectordb.insert("documents", [{
-    "id": "doc1",
-    "values": embedding,
-    "metadata": {"docdb_id": "doc1"}
-}])
-
-# Search vectors, retrieve full documents
-results = vectordb.search("documents", query_embedding, top_k=5)
-for r in results:
-    full_doc = docdb.get("documents", r["metadata"]["docdb_id"])`;
+%% Subscribe to changes (MQTT-style patterns)
+{ok, _Ref} = barrel_docdb:subscribe(<<"mydb">>, <<"type/user/#">>).`;
 ---
 
-<Layout title="Barrel Docs" description="Document database with MVCC, declarative queries, and peer-to-peer replication">
+<Layout title="Barrel Docs" description="Embeddable document database with version-vector MVCC, BQL queries, and replication. A layer of Barrel, usable standalone.">
   <section class="py-20 px-4">
     <div class="container mx-auto max-w-5xl">
       <!-- Header -->
       <div class="text-center mb-16">
-        <h1 class="text-4xl md:text-5xl font-bold mb-4">Barrel Docs</h1>
+        <span class="bg-teal-light/20 text-teal-light text-sm px-3 py-1 rounded-full">A layer of Barrel</span>
+        <h1 class="text-4xl md:text-5xl font-bold mb-4 mt-4">Barrel Docs</h1>
         <p class="text-xl text-barrel-gray/60 max-w-2xl mx-auto">
-          Embeddable document database with MVCC, declarative queries, real-time subscriptions, and peer-to-peer replication. Built in Erlang.
+          The document layer. Version-vector MVCC, BQL queries, attachments, a changes feed, and
+          replication. Use it inside the full Barrel, or standalone as an embeddable library.
         </p>
       </div>
 
@@ -68,35 +45,35 @@ for r in results:
               <span class="bg-teal-light/20 text-teal-light text-xs px-2 py-1 rounded">CORE</span>
             </div>
             <h3 class="font-bold text-barrel-gray mb-2">MVCC</h3>
-            <p class="text-barrel-gray/60 text-sm mb-3">Multi-Version Concurrency Control with revision trees.</p>
+            <p class="text-barrel-gray/60 text-sm mb-3">Multi-version concurrency with HLC version vectors.</p>
             <ul class="text-xs text-barrel-gray/50 space-y-1">
-              <li>+ Conflict-free writes</li>
-              <li>+ Revision history</li>
-              <li>+ CRDT-style merge</li>
+              <li>+ Causal, coordinator-free</li>
+              <li>+ Retained history</li>
+              <li>+ Conflicts kept, with a merge hook</li>
             </ul>
           </div>
           <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
             <div class="flex items-center gap-2 mb-3">
               <span class="bg-coral/20 text-coral text-xs px-2 py-1 rounded">QUERY</span>
             </div>
-            <h3 class="font-bold text-barrel-gray mb-2">Declarative Queries</h3>
-            <p class="text-barrel-gray/60 text-sm mb-3">Path-based queries with automatic indexing.</p>
+            <h3 class="font-bold text-barrel-gray mb-2">BQL Queries</h3>
+            <p class="text-barrel-gray/60 text-sm mb-3">A PartiQL dialect with automatic path indexing.</p>
             <ul class="text-xs text-barrel-gray/50 space-y-1">
               <li>+ Auto path indexing</li>
               <li>+ No manual indexes</li>
-              <li>+ Federation support</li>
+              <li>+ Live subscriptions</li>
             </ul>
           </div>
           <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
             <div class="flex items-center gap-2 mb-3">
               <span class="bg-purple-500/20 text-purple-400 text-xs px-2 py-1 rounded">SYNC</span>
             </div>
-            <h3 class="font-bold text-barrel-gray mb-2">P2P Replication</h3>
-            <p class="text-barrel-gray/60 text-sm mb-3">Peer-to-peer sync with replication policies.</p>
+            <h3 class="font-bold text-barrel-gray mb-2">Replication</h3>
+            <p class="text-barrel-gray/60 text-sm mb-3">Multi-master sync with replication policies.</p>
             <ul class="text-xs text-barrel-gray/50 space-y-1">
               <li>+ Chain, Group, Fanout</li>
               <li>+ Filtered replication</li>
-              <li>+ Sync writes</li>
+              <li>+ One-shot or continuous</li>
             </ul>
           </div>
           <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
@@ -108,7 +85,7 @@ for r in results:
             <ul class="text-xs text-barrel-gray/50 space-y-1">
               <li>+ Path patterns</li>
               <li>+ Query subscriptions</li>
-              <li>+ SSE streaming</li>
+              <li>+ Changes feed</li>
             </ul>
           </div>
         </div>
@@ -117,24 +94,24 @@ for r in results:
       <!-- Key Features -->
       <div class="grid md:grid-cols-3 gap-6 mb-16">
         <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">Federated Queries</h3>
-          <p class="text-barrel-gray/60 text-sm">Query across multiple databases and merge results</p>
+          <h3 class="font-semibold text-barrel-gray mb-2">Timeline</h3>
+          <p class="text-barrel-gray/60 text-sm">Branch, point-in-time restore, and merge branches back</p>
         </div>
         <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">Tiered Storage</h3>
-          <p class="text-barrel-gray/60 text-sm">Hot/warm/cold tiers with automatic TTL migration</p>
+          <h3 class="font-semibold text-barrel-gray mb-2">TTL and retention</h3>
+          <p class="text-barrel-gray/60 text-sm">Expire documents and bound the retained history</p>
         </div>
         <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
           <h3 class="font-semibold text-barrel-gray mb-2">Attachments</h3>
-          <p class="text-barrel-gray/60 text-sm">Store binary data alongside documents</p>
+          <p class="text-barrel-gray/60 text-sm">Content-addressed blobs, streamed and replicated</p>
         </div>
         <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
           <h3 class="font-semibold text-barrel-gray mb-2">HLC Ordering</h3>
           <p class="text-barrel-gray/60 text-sm">Hybrid Logical Clocks for distributed coordination</p>
         </div>
         <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">Prometheus Metrics</h3>
-          <p class="text-barrel-gray/60 text-sm">Built-in metrics for monitoring and alerting</p>
+          <h3 class="font-semibold text-barrel-gray mb-2">Provenance and audit</h3>
+          <p class="text-barrel-gray/60 text-sm">Every write records actor, session, and source</p>
         </div>
         <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
           <h3 class="font-semibold text-barrel-gray mb-2">Embeddable</h3>
@@ -164,26 +141,6 @@ for r in results:
         </div>
       </div>
 
-      <!-- Performance -->
-      <div class="mb-16">
-        <h2 class="text-2xl font-bold text-center mb-8">Performance</h2>
-        <div class="grid md:grid-cols-3 gap-6">
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30 text-center">
-            <p class="text-3xl font-bold text-coral">&lt;1ms</p>
-            <p class="text-barrel-gray/60">Read latency (p99)</p>
-          </div>
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30 text-center">
-            <p class="text-3xl font-bold text-coral">50K/sec</p>
-            <p class="text-barrel-gray/60">Write throughput</p>
-          </div>
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30 text-center">
-            <p class="text-3xl font-bold text-coral">100K QPS</p>
-            <p class="text-barrel-gray/60">Read throughput</p>
-          </div>
-        </div>
-        <p class="text-center text-barrel-gray/40 text-sm mt-4">Benchmarked on single node, 1KB documents</p>
-      </div>
-
       <!-- Use Cases -->
       <div class="mb-16">
         <h2 class="text-2xl font-bold text-center mb-8">Use Cases</h2>
@@ -197,8 +154,8 @@ for r in results:
             <p class="text-barrel-gray/60 text-sm">Replicate data across regions with conflict resolution</p>
           </div>
           <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-            <h3 class="font-semibold text-barrel-gray mb-2">Tiered Caching</h3>
-            <p class="text-barrel-gray/60 text-sm">Hot/warm/cold data tiers with automatic migration</p>
+            <h3 class="font-semibold text-barrel-gray mb-2">Offline-first apps</h3>
+            <p class="text-barrel-gray/60 text-sm">Local writes that converge when back online</p>
           </div>
           <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
             <h3 class="font-semibold text-barrel-gray mb-2">Event Distribution</h3>
@@ -212,10 +169,11 @@ for r in results:
         <h2 class="text-2xl font-bold text-center mb-8">Quick Start</h2>
         <div class="bg-barrel-black rounded-lg border border-teal-dark/30 overflow-hidden">
           <div class="bg-barrel-black/80 px-4 py-2 border-b border-teal-dark/30">
-            <span class="text-barrel-gray/60 text-sm">cURL</span>
+            <span class="text-barrel-gray/60 text-sm">Erlang</span>
           </div>
-          <pre class="p-4 text-sm overflow-x-auto"><code class="text-barrel-gray/80">{curlCode}</code></pre>
+          <pre class="p-4 text-sm overflow-x-auto"><code class="text-barrel-gray/80">{erlCode}</code></pre>
         </div>
+        <p class="text-center text-barrel-gray/40 text-sm mt-4">For a REST/JSON or MCP surface, run <code>barrel_server</code> over the same database.</p>
       </div>
 
       <!-- When to Use -->
@@ -225,45 +183,43 @@ for r in results:
           <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/50">
             <h3 class="text-teal-light font-semibold mb-4">Use Barrel Docs when:</h3>
             <ul class="space-y-2 text-barrel-gray/80 text-sm">
-              <li>+ Need document versioning</li>
-              <li>+ Offline-first/sync required</li>
-              <li>+ Multi-device sync needed</li>
-              <li>+ Embedded in Erlang/Elixir app</li>
+              <li>+ You need document versioning and history</li>
+              <li>+ Offline-first or sync is required</li>
+              <li>+ Multi-device or multi-region sync is needed</li>
+              <li>+ You want to embed it in an Erlang/Elixir app</li>
             </ul>
           </div>
           <div class="bg-barrel-black p-6 rounded-lg border border-coral/50">
             <h3 class="text-coral font-semibold mb-4">Consider alternatives when:</h3>
             <ul class="space-y-2 text-barrel-gray/80 text-sm">
               <li>+ Simple key-value is enough</li>
-              <li>+ Need SQL/relational queries</li>
-              <li>+ Graph traversal required</li>
-              <li>+ No versioning needed</li>
+              <li>+ You need full relational SQL</li>
+              <li>+ Graph traversal is the core workload</li>
+              <li>+ You also need vectors (then use the full Barrel)</li>
             </ul>
           </div>
         </div>
       </div>
 
-      <!-- Integration with Vector DB -->
+      <!-- One record in Barrel -->
       <div class="mb-16">
-        <h2 class="text-2xl font-bold text-center mb-8">Integration with Barrel Vector</h2>
-        <p class="text-barrel-gray/60 text-center mb-8 max-w-2xl mx-auto">
-          Barrel Docs pairs naturally with Barrel Vector for storing document content alongside embeddings.
-        </p>
-        <div class="bg-barrel-black rounded-lg border border-teal-dark/30 overflow-hidden">
-          <div class="bg-barrel-black/80 px-4 py-2 border-b border-teal-dark/30">
-            <span class="text-barrel-gray/60 text-sm">Python</span>
-          </div>
-          <pre class="p-4 text-sm overflow-x-auto"><code class="text-barrel-gray/80">{pythonCode}</code></pre>
+        <div class="bg-gradient-to-br from-teal-dark/20 via-barrel-black to-coral/10 p-8 rounded-2xl border border-teal-dark/40 text-center">
+          <h2 class="text-2xl font-bold mb-3">One record with vectors</h2>
+          <p class="text-barrel-gray/70 max-w-2xl mx-auto mb-6">
+            In the full Barrel, a document and its embedding share one id, so there is no integration code
+            between a document store and a separate vector index. Store text, get search.
+          </p>
+          <a href="/products/barrel" class="text-coral hover:text-coral-dark font-semibold">Explore Barrel &rarr;</a>
         </div>
       </div>
 
       <!-- CTA -->
       <div class="text-center">
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
-          <a href="https://docs.barrel-db.eu/docdb" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
+          <a href="https://docs.barrel-db.eu" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
             Read the Docs
           </a>
-          <a href="https://github.com/barrel-db/barrel_docdb" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-8 py-3 rounded-lg text-lg transition">
+          <a href="https://github.com/barrel-db/barrel" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-8 py-3 rounded-lg text-lg transition">
             View Source
           </a>
         </div>

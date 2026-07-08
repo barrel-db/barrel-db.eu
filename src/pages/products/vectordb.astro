@@ -1,27 +1,18 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 
-const curlCode = `# Run with Docker
-docker run -p 8080:8080 barrel-platform/barrel-vectordb
+const erlCode = `%% Start the vector store
+{ok, _} = barrel_vectordb:start_link(#{name => docs, dimension => 3}).
 
-# Create a collection
-curl -X POST http://localhost:8080/collections \\
-  -H "Content-Type: application/json" \\
-  -d '{"name": "documents", "dimension": 1536, "metric": "cosine"}'
+%% Add a vector with metadata (or configure an embedder for text)
+ok = barrel_vectordb:add(docs, <<"doc1">>, [0.1, 0.2, 0.3],
+    #{title => <<"Hello">>}).
 
-# Insert vectors
-curl -X POST http://localhost:8080/collections/documents/vectors \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "vectors": [
-      {"id": "doc1", "values": [0.1, 0.2, ...], "metadata": {"title": "Hello"}}
-    ]
-  }'
+%% Vector search
+{ok, Hits} = barrel_vectordb:search_vector(docs, [0.15, 0.25, 0.35], #{k => 10}).
 
-# Search
-curl -X POST http://localhost:8080/collections/documents/search \\
-  -H "Content-Type: application/json" \\
-  -d '{"vector": [0.15, 0.25, ...], "top_k": 10}'`;
+%% Hybrid vector + BM25
+{ok, Hits2} = barrel_vectordb:search_hybrid(docs, <<"hello">>, #{k => 10}).`;
 ---
 
 <Layout title="Barrel Vector" description="High-performance single-node vector database with HNSW indexing">
@@ -29,9 +20,11 @@ curl -X POST http://localhost:8080/collections/documents/search \\
     <div class="container mx-auto max-w-5xl">
       <!-- Header -->
       <div class="text-center mb-16">
-        <h1 class="text-4xl md:text-5xl font-bold mb-4">Barrel Vector</h1>
+        <span class="bg-coral/20 text-coral text-sm px-3 py-1 rounded-full">A layer of Barrel</span>
+        <h1 class="text-4xl md:text-5xl font-bold mb-4 mt-4">Barrel Vector</h1>
         <p class="text-xl text-barrel-gray/60 max-w-2xl mx-auto">
-          High-performance single-node vector database built in Erlang. Fast, embeddable, production-ready.
+          The vector layer. High-performance single-node vector search built in Erlang. Use it inside
+          the full Barrel, or standalone as an embeddable library.
         </p>
       </div>
 
@@ -146,9 +139,9 @@ curl -X POST http://localhost:8080/collections/documents/search \\
         <h2 class="text-2xl font-bold text-center mb-8">Quick Start</h2>
         <div class="bg-barrel-black rounded-lg border border-teal-dark/30 overflow-hidden">
           <div class="bg-barrel-black/80 px-4 py-2 border-b border-teal-dark/30">
-            <span class="text-barrel-gray/60 text-sm">cURL</span>
+            <span class="text-barrel-gray/60 text-sm">Erlang</span>
           </div>
-          <pre class="p-4 text-sm overflow-x-auto"><code class="text-barrel-gray/80">{curlCode}</code></pre>
+          <pre class="p-4 text-sm overflow-x-auto"><code class="text-barrel-gray/80">{erlCode}</code></pre>
         </div>
       </div>
 
@@ -180,10 +173,10 @@ curl -X POST http://localhost:8080/collections/documents/search \\
       <!-- CTA -->
       <div class="text-center">
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
-          <a href="https://docs.barrel-db.eu/vectordb" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
+          <a href="https://docs.barrel-db.eu" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
             Read the Docs
           </a>
-          <a href="https://github.com/barrel-db/barrel_vectordb" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-8 py-3 rounded-lg text-lg transition">
+          <a href="https://github.com/barrel-db/barrel" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-8 py-3 rounded-lg text-lg transition">
             View Source
           </a>
         </div>
