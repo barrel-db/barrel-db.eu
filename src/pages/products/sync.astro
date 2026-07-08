@@ -1,0 +1,111 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const tsCode = `import { Database } from "barrel-lite";
+
+// Open an offline-first database that syncs to a Barrel server
+const db = await Database.open("notes", {
+  remote: { url: "https://edge.example", db: "notes", token: "bsp_..." },
+});
+
+// Local reads and writes; works offline
+await db.put({ id: "n1", title: "Design review" });
+const doc = await db.get("n1");
+
+// Keep converging in the background, vectors included
+db.liveSync({ continuous: true, vectors: true });
+
+// Brute-force vector search over the synced records, in the browser
+const hits = await db.searchLocal(queryVector, { k: 10 });`;
+---
+
+<Layout title="Sync & Local-first" description="barrel-lite: an offline-first Barrel in the browser, with multi-tab sync and local vector search over the barrel_server wire.">
+  <section class="py-20 px-4">
+    <div class="container mx-auto max-w-5xl">
+      <!-- Header -->
+      <div class="text-center mb-16">
+        <span class="bg-teal-light/20 text-teal-light text-sm px-3 py-1 rounded-full">Browser client</span>
+        <h1 class="text-4xl md:text-5xl font-bold mb-4 mt-4">Sync &amp; Local-first</h1>
+        <p class="text-xl text-barrel-gray/60 max-w-2xl mx-auto">
+          barrel-lite is an offline-first Barrel in the browser. Read and write locally, sync when
+          connected, and search vectors on device. TypeScript, zero runtime dependencies.
+        </p>
+      </div>
+
+      <!-- Core capabilities -->
+      <div class="grid md:grid-cols-3 gap-6 mb-16">
+        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
+          <h3 class="font-semibold text-barrel-gray mb-2">Offline-first</h3>
+          <p class="text-barrel-gray/60 text-sm">Reads and writes hit a local OPFS store first; sync is the durability story, not the hot path.</p>
+        </div>
+        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
+          <h3 class="font-semibold text-barrel-gray mb-2">Correct sync</h3>
+          <p class="text-barrel-gray/60 text-sm">HLC version vectors, byte-for-byte compatible with the server, so sync converges and never silently loses a write.</p>
+        </div>
+        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
+          <h3 class="font-semibold text-barrel-gray mb-2">Multi-tab</h3>
+          <p class="text-barrel-gray/60 text-sm">One tab per origin owns the store via Web Locks; other tabs proxy to it and see the same changes.</p>
+        </div>
+        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
+          <h3 class="font-semibold text-barrel-gray mb-2">Continuous updates</h3>
+          <p class="text-barrel-gray/60 text-sm">Adaptive polling with an optional continuous SSE stream that wakes it on server changes.</p>
+        </div>
+        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
+          <h3 class="font-semibold text-barrel-gray mb-2">Local vector search</h3>
+          <p class="text-barrel-gray/60 text-sm">Pull per-document vectors and run brute-force cosine top-k on device, with an optional BQL filter.</p>
+        </div>
+        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
+          <h3 class="font-semibold text-barrel-gray mb-2">Attachments and BQL</h3>
+          <p class="text-barrel-gray/60 text-sm">Content-addressed attachment sync and a local BQL subset matching the server document queries.</p>
+        </div>
+      </div>
+
+      <!-- Quick Start -->
+      <div class="mb-16">
+        <h2 class="text-2xl font-bold text-center mb-8">Quick Start</h2>
+        <div class="bg-barrel-black rounded-lg border border-teal-dark/30 overflow-hidden">
+          <div class="bg-barrel-black/80 px-4 py-2 border-b border-teal-dark/30">
+            <span class="text-barrel-gray/60 text-sm">TypeScript</span>
+          </div>
+          <pre class="p-4 text-sm overflow-x-auto"><code class="text-barrel-gray/80">{tsCode}</code></pre>
+        </div>
+      </div>
+
+      <!-- When to Use -->
+      <div class="mb-16">
+        <h2 class="text-2xl font-bold text-center mb-8">When to Use</h2>
+        <div class="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/50">
+            <h3 class="text-teal-light font-semibold mb-4">Use barrel-lite when:</h3>
+            <ul class="space-y-2 text-barrel-gray/80 text-sm">
+              <li>+ Your app must work offline</li>
+              <li>+ You want on-device search over synced data</li>
+              <li>+ You need a local cache that converges with a server</li>
+              <li>+ You want the same wire and codecs as Barrel</li>
+            </ul>
+          </div>
+          <div class="bg-barrel-black p-6 rounded-lg border border-coral/50">
+            <h3 class="text-coral font-semibold mb-4">Consider alternatives when:</h3>
+            <ul class="space-y-2 text-barrel-gray/80 text-sm">
+              <li>+ You only ever talk to a server online</li>
+              <li>+ You need an ANN index in the browser (search runs server-side)</li>
+              <li>+ You are not on the Barrel wire</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div class="text-center">
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a href="https://docs.barrel-db.eu" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
+            Read the Docs
+          </a>
+          <a href="https://github.com/barrel-db/barrel" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-8 py-3 rounded-lg text-lg transition">
+            View Source
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>

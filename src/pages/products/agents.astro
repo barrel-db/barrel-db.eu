@@ -1,0 +1,125 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const curlCode = `# Create a space (a shared context database)
+curl -X POST https://your-host/spaces \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{"label": "research-team"}'
+
+# Issue a scoped capability token for an agent
+curl -X POST https://your-host/spaces/$SPACE/grants \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{"rights": ["read", "write"]}'
+
+# The agent talks to the same database over MCP at /mcp
+#   tools: db_create, doc_put, query, search, branch_create, ...
+#   resources: live query subscriptions pushed as updates`;
+---
+
+<Layout title="Agents & MCP" description="The agent layer: spaces, capability tokens, sessions, and handoffs, exposed over REST and the Model Context Protocol.">
+  <section class="py-20 px-4">
+    <div class="container mx-auto max-w-5xl">
+      <!-- Header -->
+      <div class="text-center mb-16">
+        <span class="bg-teal-light/20 text-teal-light text-sm px-3 py-1 rounded-full">Agent layer</span>
+        <h1 class="text-4xl md:text-5xl font-bold mb-4 mt-4">Agents &amp; MCP</h1>
+        <p class="text-xl text-barrel-gray/60 max-w-2xl mx-auto">
+          Give agents scoped, shareable memory. Spaces, capability tokens, sessions, and handoffs,
+          exposed over REST and the Model Context Protocol.
+        </p>
+      </div>
+
+      <!-- Core capabilities -->
+      <div class="grid md:grid-cols-2 gap-6 mb-16">
+        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
+          <h3 class="font-semibold text-barrel-gray mb-2">Spaces</h3>
+          <p class="text-barrel-gray/60 text-sm">A space is a shared context database with its own encryption and its own set of grants. Agents and people work in the same space.</p>
+        </div>
+        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
+          <h3 class="font-semibold text-barrel-gray mb-2">Capability tokens</h3>
+          <p class="text-barrel-gray/60 text-sm">Hand an agent a token scoped to one space with read, write, or admin rights. Fail-closed by default; revoke at any time.</p>
+        </div>
+        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
+          <h3 class="font-semibold text-barrel-gray mb-2">Sessions</h3>
+          <p class="text-barrel-gray/60 text-sm">Working memory with a sliding TTL: messages in order, structured data, and summaries, swept when they expire.</p>
+        </div>
+        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
+          <h3 class="font-semibold text-barrel-gray mb-2">Handoffs</h3>
+          <p class="text-barrel-gray/60 text-sm">Pass a task from one agent to another by reference, carrying a capability. The receiver accepts and the sender's grant is revoked.</p>
+        </div>
+      </div>
+
+      <!-- MCP native -->
+      <div class="mb-16">
+        <h2 class="text-2xl font-bold text-center mb-4">MCP-native</h2>
+        <p class="text-barrel-gray/60 text-center mb-8 max-w-2xl mx-auto">
+          barrel_server mounts a Model Context Protocol endpoint, so an agent runtime talks to the database
+          directly, with the same capability scoping as the REST surface.
+        </p>
+        <div class="grid md:grid-cols-3 gap-6">
+          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30 text-center">
+            <h3 class="font-semibold text-barrel-gray mb-2">Tools</h3>
+            <p class="text-barrel-gray/60 text-sm">Documents, BQL queries, search, timeline, and the agent layer as MCP tools.</p>
+          </div>
+          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30 text-center">
+            <h3 class="font-semibold text-barrel-gray mb-2">Live resources</h3>
+            <p class="text-barrel-gray/60 text-sm">Subscribe to a query and receive resource-updated notifications on every change.</p>
+          </div>
+          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30 text-center">
+            <h3 class="font-semibold text-barrel-gray mb-2">Provenance</h3>
+            <p class="text-barrel-gray/60 text-sm">Every write records actor, session, and source, so agent actions stay auditable.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Start -->
+      <div class="mb-16">
+        <h2 class="text-2xl font-bold text-center mb-8">Quick Start</h2>
+        <div class="bg-barrel-black rounded-lg border border-teal-dark/30 overflow-hidden">
+          <div class="bg-barrel-black/80 px-4 py-2 border-b border-teal-dark/30">
+            <span class="text-barrel-gray/60 text-sm">cURL</span>
+          </div>
+          <pre class="p-4 text-sm overflow-x-auto"><code class="text-barrel-gray/80">{curlCode}</code></pre>
+        </div>
+      </div>
+
+      <!-- When to Use -->
+      <div class="mb-16">
+        <h2 class="text-2xl font-bold text-center mb-8">When to Use</h2>
+        <div class="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/50">
+            <h3 class="text-teal-light font-semibold mb-4">Use the agent layer when:</h3>
+            <ul class="space-y-2 text-barrel-gray/80 text-sm">
+              <li>+ Multiple agents share and hand off context</li>
+              <li>+ You need per-agent, revocable access scoping</li>
+              <li>+ You want an MCP-native memory store</li>
+              <li>+ Agent actions must be auditable</li>
+            </ul>
+          </div>
+          <div class="bg-barrel-black p-6 rounded-lg border border-coral/50">
+            <h3 class="text-coral font-semibold mb-4">Consider alternatives when:</h3>
+            <ul class="space-y-2 text-barrel-gray/80 text-sm">
+              <li>+ A single agent with no sharing is enough</li>
+              <li>+ You do not need capability scoping or MCP</li>
+              <li>+ You only need raw storage (then use just Barrel)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div class="text-center">
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a href="https://docs.barrel-db.eu" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
+            Read the Docs
+          </a>
+          <a href="https://github.com/barrel-db/barrel" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-8 py-3 rounded-lg text-lg transition">
+            View Source
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
