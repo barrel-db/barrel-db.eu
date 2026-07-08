@@ -25,17 +25,16 @@ coordinator-free: no node has to be the primary.
 
 When two writes are genuinely concurrent (neither version vector contains the
 other), Barrel picks a deterministic last-write-wins winner and **retains the
-losing version as a conflict sibling**. Nothing is silently dropped. You can:
+losing version as a conflict sibling**. Nothing is silently dropped. You resolve
+a conflict in one of two ways:
 
-- resolve conflicts by choosing a winner, or
-- set a merge function that Barrel calls to produce the resolved value.
+- configure a merge function when you open the database, which Barrel calls to
+  produce the resolved value automatically, or
+- write again: a later write that supersedes both versions clears the conflict.
 
-```erlang
-case barrel:get_conflicts(Db, <<"a">>) of
-    {ok, []}        -> ok;              %% no conflict
-    {ok, Conflicts} -> barrel:resolve_conflict(Db, <<"a">>, Winner, choose)
-end.
-```
+The losing versions stay in the retained history, so you can always see what was
+concurrent. See [Audit & provenance](/docs/guides/audit-provenance) for reading
+past versions.
 
 ## Why not plain last-write-wins?
 
