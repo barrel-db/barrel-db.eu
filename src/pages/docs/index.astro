@@ -1,0 +1,29 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+
+const cards = [
+  { title: "Get started", body: "Install Barrel and store your first documents in a few minutes.", href: "/docs/get-started/introduction", cta: "Introduction" },
+  { title: "Concepts", body: "The one-record data model, version vectors, and the agent layer.", href: "/docs/concepts/data-model", cta: "Data model" },
+  { title: "Guides", body: "Task-oriented walkthroughs: querying, sync, timeline, encryption, and more.", href: "/docs/guides/embedding", cta: "Guides" },
+  { title: "Server", body: "Run barrel_server for a REST/JSON and MCP surface over the same database.", href: "/docs/server/rest-server", cta: "Running the server" },
+  { title: "Reference", body: "The facade API, BQL reference, configuration, and the per-library docs.", href: "/docs/reference/facade-api", cta: "Facade API" },
+];
+---
+
+<DocsLayout title="Documentation" description="Everything you need to build with Barrel, the edge-AI database for agents." slug="" contentClass="">
+  <p class="text-barrel-gray/70">
+    New here? Start with the <a href="/docs/get-started/introduction" class="text-coral hover:underline">Introduction</a>,
+    then run the <a href="/docs/get-started/quickstart" class="text-coral hover:underline">Quickstart</a> to store and search
+    your first documents.
+  </p>
+
+  <div class="grid sm:grid-cols-2 gap-4 mt-8">
+    {cards.map((c) => (
+      <a href={c.href} class="block bg-barrel-black border border-teal-dark/30 hover:border-teal-light/50 rounded-xl p-5 transition no-underline">
+        <h3 class="text-lg font-bold text-teal-light mb-1">{c.title}</h3>
+        <p class="text-barrel-gray/60 text-sm mb-3">{c.body}</p>
+        <span class="text-coral text-sm font-semibold">{c.cta} &rarr;</span>
+      </a>
+    ))}
+  </div>
+</DocsLayout>
