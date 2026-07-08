@@ -6,7 +6,7 @@ interface Props {
   description?: string;
 }
 
-const { title, description = "Bases de donnees IA-natives Open Source - Bases de donnees vectorielles et documentaires haute performance construites en Erlang" } = Astro.props;
+const { title, description = "La base de donnees edge-AI open source pour les agents. Documents, vecteurs et blobs sous un seul id, avec recherche locale, synchronisation, chiffrement et une couche agent via REST et MCP. Concue en Europe, en Erlang." } = Astro.props;
 ---
 
 <!doctype html>
@@ -41,14 +41,26 @@ const { title, description = "Bases de donnees IA-natives Open Source - Bases de
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
               </svg>
             </button>
-            <div class="absolute top-full left-0 mt-2 w-48 bg-barrel-black border border-teal-dark/30 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-              <a href="/fr/products/vectordb" class="block px-4 py-3 hover:bg-teal-dark/20 transition">
+            <div class="absolute top-full left-0 mt-2 w-56 bg-barrel-black border border-teal-dark/30 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+              <a href="/fr/products/barrel" class="block px-4 py-3 hover:bg-teal-dark/20 transition">
+                <span class="font-medium text-coral">Barrel</span>
+                <span class="block text-xs text-barrel-gray/60">La base de donnees edge-AI complete</span>
+              </a>
+              <a href="/fr/products/agents" class="block px-4 py-3 hover:bg-teal-dark/20 transition border-t border-teal-dark/20">
+                <span class="font-medium text-barrel-gray">Agents &amp; MCP</span>
+                <span class="block text-xs text-barrel-gray/60">Espaces, capacites, MCP</span>
+              </a>
+              <a href="/fr/products/sync" class="block px-4 py-3 hover:bg-teal-dark/20 transition border-t border-teal-dark/20">
+                <span class="font-medium text-barrel-gray">Sync &amp; Local-first</span>
+                <span class="block text-xs text-barrel-gray/60">Offline-first, client navigateur</span>
+              </a>
+              <a href="/fr/products/vectordb" class="block px-4 py-3 hover:bg-teal-dark/20 transition border-t border-teal-dark/20">
                 <span class="font-medium text-barrel-gray">Barrel Vector</span>
-                <span class="block text-xs text-barrel-gray/60">Base vectorielle</span>
+                <span class="block text-xs text-barrel-gray/60">Couche vectorielle</span>
               </a>
               <a href="/fr/products/docdb" class="block px-4 py-3 hover:bg-teal-dark/20 transition border-t border-teal-dark/20">
                 <span class="font-medium text-barrel-gray">Barrel Docs</span>
-                <span class="block text-xs text-barrel-gray/60">Base documentaire</span>
+                <span class="block text-xs text-barrel-gray/60">Couche documentaire</span>
               </a>
             </div>
           </div>
@@ -81,11 +93,14 @@ const { title, description = "Bases de donnees IA-natives Open Source - Bases de
               <img src="/logo-symbol-white.svg" alt="Barrel" class="h-8 w-auto" />
               <span class="font-bold text-barrel-gray">Barrel DB</span>
             </div>
-            <p class="text-barrel-gray/60 text-sm">Bases de donnees IA-natives Open Source.</p>
+            <p class="text-barrel-gray/60 text-sm">La base de donnees edge-AI open source. Concue en Europe.</p>
           </div>
           <div>
             <h4 class="font-semibold text-barrel-gray mb-4">Produits</h4>
             <ul class="space-y-2 text-sm">
+              <li><a href="/fr/products/barrel" class="text-barrel-gray/60 hover:text-barrel-gray">Barrel</a></li>
+              <li><a href="/fr/products/agents" class="text-barrel-gray/60 hover:text-barrel-gray">Agents &amp; MCP</a></li>
+              <li><a href="/fr/products/sync" class="text-barrel-gray/60 hover:text-barrel-gray">Sync &amp; Local-first</a></li>
               <li><a href="/fr/products/vectordb" class="text-barrel-gray/60 hover:text-barrel-gray">Barrel Vector</a></li>
               <li><a href="/fr/products/docdb" class="text-barrel-gray/60 hover:text-barrel-gray">Barrel Docs</a></li>
             </ul>
@@ -94,8 +109,7 @@ const { title, description = "Bases de donnees IA-natives Open Source - Bases de
             <h4 class="font-semibold text-barrel-gray mb-4">Open Source</h4>
             <ul class="space-y-2 text-sm">
               <li><a href="https://docs.barrel-db.eu" class="text-barrel-gray/60 hover:text-barrel-gray">Documentation</a></li>
-              <li><a href="https://github.com/barrel-db/barrel_vectordb" class="text-barrel-gray/60 hover:text-barrel-gray">Barrel Vector</a></li>
-              <li><a href="https://github.com/barrel-db/barrel_docdb" class="text-barrel-gray/60 hover:text-barrel-gray">Barrel Docs</a></li>
+              <li><a href="https://github.com/barrel-db/barrel" class="text-barrel-gray/60 hover:text-barrel-gray">Barrel sur GitHub</a></li>
               <li><a href="/fr/opensource" class="text-barrel-gray/60 hover:text-barrel-gray">Tous les Projets</a></li>
             </ul>
           </div>

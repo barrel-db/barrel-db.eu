@@ -1,0 +1,125 @@
+---
+import Layout from '../../../layouts/LayoutFr.astro';
+
+const curlCode = `# Create a space (a shared context database)
+curl -X POST https://your-host/spaces \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{"label": "research-team"}'
+
+# Issue a scoped capability token for an agent
+curl -X POST https://your-host/spaces/$SPACE/grants \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{"rights": ["read", "write"]}'
+
+# The agent talks to the same database over MCP at /mcp
+#   tools: db_create, doc_put, query, search, branch_create, ...
+#   resources: live query subscriptions pushed as updates`;
+---
+
+<Layout title="Agents & MCP" description="La couche agent : espaces, jetons de capacite, sessions et transferts, exposes via REST et le Model Context Protocol.">
+  <section class="py-20 px-4">
+    <div class="container mx-auto max-w-5xl">
+      <!-- Header -->
+      <div class="text-center mb-16">
+        <span class="bg-teal-light/20 text-teal-light text-sm px-3 py-1 rounded-full">Couche agent</span>
+        <h1 class="text-4xl md:text-5xl font-bold mb-4 mt-4">Agents &amp; MCP</h1>
+        <p class="text-xl text-barrel-gray/60 max-w-2xl mx-auto">
+          Donnez aux agents une memoire cloisonnee et partageable. Espaces, jetons de capacite, sessions et transferts,
+          exposes via REST et le Model Context Protocol.
+        </p>
+      </div>
+
+      <!-- Core capabilities -->
+      <div class="grid md:grid-cols-2 gap-6 mb-16">
+        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
+          <h3 class="font-semibold text-barrel-gray mb-2">Espaces</h3>
+          <p class="text-barrel-gray/60 text-sm">Un espace est une base de donnees de contexte partagee avec son propre chiffrement et son propre ensemble d'autorisations. Agents et personnes travaillent dans le meme espace.</p>
+        </div>
+        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
+          <h3 class="font-semibold text-barrel-gray mb-2">Jetons de capacite</h3>
+          <p class="text-barrel-gray/60 text-sm">Remettez a un agent un jeton limite a un espace avec des droits de lecture, d'ecriture ou d'admin. Refus par defaut ; revocable a tout moment.</p>
+        </div>
+        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
+          <h3 class="font-semibold text-barrel-gray mb-2">Sessions</h3>
+          <p class="text-barrel-gray/60 text-sm">Memoire de travail avec un TTL glissant : messages ordonnes, donnees structurees et resumes, purges a leur expiration.</p>
+        </div>
+        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
+          <h3 class="font-semibold text-barrel-gray mb-2">Transferts</h3>
+          <p class="text-barrel-gray/60 text-sm">Passez une tache d'un agent a un autre par reference, en transportant une capacite. Le destinataire accepte et l'autorisation de l'emetteur est revoquee.</p>
+        </div>
+      </div>
+
+      <!-- MCP native -->
+      <div class="mb-16">
+        <h2 class="text-2xl font-bold text-center mb-4">Natif MCP</h2>
+        <p class="text-barrel-gray/60 text-center mb-8 max-w-2xl mx-auto">
+          barrel_server monte un point de terminaison Model Context Protocol, ainsi un runtime d'agent parle directement
+          a la base de donnees, avec le meme cloisonnement de capacites que la surface REST.
+        </p>
+        <div class="grid md:grid-cols-3 gap-6">
+          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30 text-center">
+            <h3 class="font-semibold text-barrel-gray mb-2">Outils</h3>
+            <p class="text-barrel-gray/60 text-sm">Documents, requetes BQL, recherche, timeline et la couche agent comme outils MCP.</p>
+          </div>
+          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30 text-center">
+            <h3 class="font-semibold text-barrel-gray mb-2">Ressources en direct</h3>
+            <p class="text-barrel-gray/60 text-sm">Abonnez-vous a une requete et recevez des notifications resource-updated a chaque changement.</p>
+          </div>
+          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30 text-center">
+            <h3 class="font-semibold text-barrel-gray mb-2">Provenance</h3>
+            <p class="text-barrel-gray/60 text-sm">Chaque ecriture enregistre l'acteur, la session et la source, ainsi les actions des agents restent auditables.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Start -->
+      <div class="mb-16">
+        <h2 class="text-2xl font-bold text-center mb-8">Demarrage Rapide</h2>
+        <div class="bg-barrel-black rounded-lg border border-teal-dark/30 overflow-hidden">
+          <div class="bg-barrel-black/80 px-4 py-2 border-b border-teal-dark/30">
+            <span class="text-barrel-gray/60 text-sm">cURL</span>
+          </div>
+          <pre class="p-4 text-sm overflow-x-auto"><code class="text-barrel-gray/80">{curlCode}</code></pre>
+        </div>
+      </div>
+
+      <!-- When to Use -->
+      <div class="mb-16">
+        <h2 class="text-2xl font-bold text-center mb-8">Quand l'Utiliser</h2>
+        <div class="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/50">
+            <h3 class="text-teal-light font-semibold mb-4">Utilisez la couche agent quand :</h3>
+            <ul class="space-y-2 text-barrel-gray/80 text-sm">
+              <li>+ Plusieurs agents partagent et se transferent du contexte</li>
+              <li>+ Vous avez besoin d'un cloisonnement d'acces revocable par agent</li>
+              <li>+ Vous voulez un magasin de memoire natif MCP</li>
+              <li>+ Les actions des agents doivent etre auditables</li>
+            </ul>
+          </div>
+          <div class="bg-barrel-black p-6 rounded-lg border border-coral/50">
+            <h3 class="text-coral font-semibold mb-4">Considerez des alternatives quand :</h3>
+            <ul class="space-y-2 text-barrel-gray/80 text-sm">
+              <li>+ Un seul agent sans partage suffit</li>
+              <li>+ Vous n'avez pas besoin de cloisonnement de capacites ni de MCP</li>
+              <li>+ Vous n'avez besoin que de stockage brut (utilisez alors juste Barrel)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div class="text-center">
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a href="https://docs.barrel-db.eu" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
+            Lire la Documentation
+          </a>
+          <a href="https://github.com/barrel-db/barrel" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-8 py-3 rounded-lg text-lg transition">
+            Voir le Code Source
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>

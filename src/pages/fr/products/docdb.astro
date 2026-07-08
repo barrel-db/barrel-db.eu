@@ -1,58 +1,35 @@
 ---
-import LayoutFr from '../../../layouts/LayoutFr.astro';
+import Layout from '../../../layouts/LayoutFr.astro';
 
-const curlCode = `# Lancer avec Docker
-docker run -p 8080:8080 barrel-platform/barrel-docdb
+const erlCode = `%% Start the application
+application:ensure_all_started(barrel_docdb).
 
-# Creer une base de donnees
-curl -X POST http://localhost:8080/db/mydb
+%% Create a database
+{ok, _} = barrel_docdb:create_db(<<"mydb">>).
 
-# Inserer un document
-curl -X PUT http://localhost:8080/db/mydb/doc1 \\
-  -H "Content-Type: application/json" \\
-  -d '{"type": "user", "name": "Alice"}'
+%% Put a document
+{ok, #{<<"id">> := Id}} = barrel_docdb:put_doc(<<"mydb">>, #{
+    <<"type">> => <<"user">>, <<"name">> => <<"Alice">>
+}).
 
-# Recuperer un document
-curl http://localhost:8080/db/mydb/doc1
+%% Query with BQL
+{ok, Rows, _} = barrel_docdb:query(<<"mydb">>,
+    <<"SELECT * FROM db WHERE type = 'user'">>).
 
-# Requeter des documents (indexation automatique des chemins)
-curl -X POST http://localhost:8080/db/mydb/_find \\
-  -H "Content-Type: application/json" \\
-  -d '{"where": [{"path": ["type"], "value": "user"}]}'
-
-# S'abonner aux changements (flux SSE)
-curl http://localhost:8080/db/mydb/_changes/stream`;
-
-const pythonCode = `# Stocker un document dans docdb
-doc = docdb.put("documents", {
-    "_id": "doc1",
-    "title": "Bases du Machine Learning",
-    "content": "...",
-    "source": "ml-book.pdf"
-})
-
-# Stocker l'embedding dans vectordb
-embedding = get_embedding(doc["content"])
-vectordb.insert("documents", [{
-    "id": "doc1",
-    "values": embedding,
-    "metadata": {"docdb_id": "doc1"}
-}])
-
-# Rechercher des vecteurs, recuperer les documents complets
-results = vectordb.search("documents", query_embedding, top_k=5)
-for r in results:
-    full_doc = docdb.get("documents", r["metadata"]["docdb_id"])`;
+%% Subscribe to changes (MQTT-style patterns)
+{ok, _Ref} = barrel_docdb:subscribe(<<"mydb">>, <<"type/user/#">>).`;
 ---
 
-<LayoutFr title="Barrel Docs" description="Base de donnees documentaire avec MVCC, requetes declaratives et replication pair-a-pair">
+<Layout title="Barrel Docs" description="Base de donnees documentaire embarquable avec MVCC a vecteurs de version, requetes BQL et replication. Une couche de Barrel, utilisable en autonome.">
   <section class="py-20 px-4">
     <div class="container mx-auto max-w-5xl">
       <!-- Header -->
       <div class="text-center mb-16">
-        <h1 class="text-4xl md:text-5xl font-bold mb-4">Barrel Docs</h1>
+        <span class="bg-teal-light/20 text-teal-light text-sm px-3 py-1 rounded-full">Une couche de Barrel</span>
+        <h1 class="text-4xl md:text-5xl font-bold mb-4 mt-4">Barrel Docs</h1>
         <p class="text-xl text-barrel-gray/60 max-w-2xl mx-auto">
-          Base de donnees documentaire embarquable avec MVCC, requetes declaratives, abonnements temps reel et replication pair-a-pair. Construite en Erlang.
+          La couche documentaire. MVCC a vecteurs de version, requetes BQL, pieces jointes, un flux de changements et
+          replication. Utilisez-la au sein du Barrel complet, ou de maniere autonome comme bibliotheque embarquable.
         </p>
       </div>
 
@@ -68,35 +45,35 @@ for r in results:
               <span class="bg-teal-light/20 text-teal-light text-xs px-2 py-1 rounded">CORE</span>
             </div>
             <h3 class="font-bold text-barrel-gray mb-2">MVCC</h3>
-            <p class="text-barrel-gray/60 text-sm mb-3">Controle de concurrence multi-version avec arbres de revisions.</p>
+            <p class="text-barrel-gray/60 text-sm mb-3">Concurrence multi-version avec des vecteurs de version HLC.</p>
             <ul class="text-xs text-barrel-gray/50 space-y-1">
-              <li>+ Ecritures sans conflit</li>
-              <li>+ Historique des revisions</li>
-              <li>+ Fusion style CRDT</li>
+              <li>+ Causal, sans coordinateur</li>
+              <li>+ Historique conserve</li>
+              <li>+ Conflits conserves, avec un hook de fusion</li>
             </ul>
           </div>
           <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
             <div class="flex items-center gap-2 mb-3">
               <span class="bg-coral/20 text-coral text-xs px-2 py-1 rounded">REQUETE</span>
             </div>
-            <h3 class="font-bold text-barrel-gray mb-2">Requetes Declaratives</h3>
-            <p class="text-barrel-gray/60 text-sm mb-3">Requetes basees sur les chemins avec indexation automatique.</p>
+            <h3 class="font-bold text-barrel-gray mb-2">Requetes BQL</h3>
+            <p class="text-barrel-gray/60 text-sm mb-3">Un dialecte PartiQL avec indexation automatique des chemins.</p>
             <ul class="text-xs text-barrel-gray/50 space-y-1">
               <li>+ Indexation auto des chemins</li>
               <li>+ Pas d'index manuels</li>
-              <li>+ Support federation</li>
+              <li>+ Abonnements en direct</li>
             </ul>
           </div>
           <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
             <div class="flex items-center gap-2 mb-3">
               <span class="bg-purple-500/20 text-purple-400 text-xs px-2 py-1 rounded">SYNC</span>
             </div>
-            <h3 class="font-bold text-barrel-gray mb-2">Replication P2P</h3>
-            <p class="text-barrel-gray/60 text-sm mb-3">Sync pair-a-pair avec politiques de replication.</p>
+            <h3 class="font-bold text-barrel-gray mb-2">Replication</h3>
+            <p class="text-barrel-gray/60 text-sm mb-3">Sync multi-master avec politiques de replication.</p>
             <ul class="text-xs text-barrel-gray/50 space-y-1">
               <li>+ Chain, Group, Fanout</li>
               <li>+ Replication filtree</li>
-              <li>+ Ecritures synchrones</li>
+              <li>+ Ponctuelle ou continue</li>
             </ul>
           </div>
           <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
@@ -108,7 +85,7 @@ for r in results:
             <ul class="text-xs text-barrel-gray/50 space-y-1">
               <li>+ Patterns de chemins</li>
               <li>+ Abonnements requetes</li>
-              <li>+ Streaming SSE</li>
+              <li>+ Flux de changements</li>
             </ul>
           </div>
         </div>
@@ -117,24 +94,24 @@ for r in results:
       <!-- Key Features -->
       <div class="grid md:grid-cols-3 gap-6 mb-16">
         <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">Requetes Federees</h3>
-          <p class="text-barrel-gray/60 text-sm">Requetez plusieurs bases et fusionnez les resultats</p>
+          <h3 class="font-semibold text-barrel-gray mb-2">Timeline</h3>
+          <p class="text-barrel-gray/60 text-sm">Branches, restauration a un instant precis, et fusion des branches</p>
         </div>
         <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">Stockage par Niveaux</h3>
-          <p class="text-barrel-gray/60 text-sm">Niveaux chaud/tiede/froid avec migration TTL automatique</p>
+          <h3 class="font-semibold text-barrel-gray mb-2">TTL et retention</h3>
+          <p class="text-barrel-gray/60 text-sm">Expirez les documents et limitez l'historique conserve</p>
         </div>
         <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
           <h3 class="font-semibold text-barrel-gray mb-2">Pieces Jointes</h3>
-          <p class="text-barrel-gray/60 text-sm">Stockez des donnees binaires avec les documents</p>
+          <p class="text-barrel-gray/60 text-sm">Blobs adresses par contenu, streames et repliques</p>
         </div>
         <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
           <h3 class="font-semibold text-barrel-gray mb-2">Ordonnancement HLC</h3>
           <p class="text-barrel-gray/60 text-sm">Horloges Logiques Hybrides pour coordination distribuee</p>
         </div>
         <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">Metriques Prometheus</h3>
-          <p class="text-barrel-gray/60 text-sm">Metriques integrees pour monitoring et alertes</p>
+          <h3 class="font-semibold text-barrel-gray mb-2">Provenance et audit</h3>
+          <p class="text-barrel-gray/60 text-sm">Chaque ecriture enregistre l'acteur, la session et la source</p>
         </div>
         <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
           <h3 class="font-semibold text-barrel-gray mb-2">Embarquable</h3>
@@ -164,26 +141,6 @@ for r in results:
         </div>
       </div>
 
-      <!-- Performance -->
-      <div class="mb-16">
-        <h2 class="text-2xl font-bold text-center mb-8">Performance</h2>
-        <div class="grid md:grid-cols-3 gap-6">
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30 text-center">
-            <p class="text-3xl font-bold text-coral">&lt;1ms</p>
-            <p class="text-barrel-gray/60">Latence lecture (p99)</p>
-          </div>
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30 text-center">
-            <p class="text-3xl font-bold text-coral">50K/sec</p>
-            <p class="text-barrel-gray/60">Debit d'ecriture</p>
-          </div>
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30 text-center">
-            <p class="text-3xl font-bold text-coral">100K QPS</p>
-            <p class="text-barrel-gray/60">Debit de lecture</p>
-          </div>
-        </div>
-        <p class="text-center text-barrel-gray/40 text-sm mt-4">Benchmark sur noeud unique, documents 1Ko</p>
-      </div>
-
       <!-- Use Cases -->
       <div class="mb-16">
         <h2 class="text-2xl font-bold text-center mb-8">Cas d'Usage</h2>
@@ -197,8 +154,8 @@ for r in results:
             <p class="text-barrel-gray/60 text-sm">Repliquez les donnees entre regions avec resolution de conflits</p>
           </div>
           <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-            <h3 class="font-semibold text-barrel-gray mb-2">Cache par Niveaux</h3>
-            <p class="text-barrel-gray/60 text-sm">Niveaux chaud/tiede/froid avec migration automatique</p>
+            <h3 class="font-semibold text-barrel-gray mb-2">Applications offline-first</h3>
+            <p class="text-barrel-gray/60 text-sm">Ecritures locales qui convergent au retour en ligne</p>
           </div>
           <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
             <h3 class="font-semibold text-barrel-gray mb-2">Distribution d'Evenements</h3>
@@ -212,10 +169,11 @@ for r in results:
         <h2 class="text-2xl font-bold text-center mb-8">Demarrage Rapide</h2>
         <div class="bg-barrel-black rounded-lg border border-teal-dark/30 overflow-hidden">
           <div class="bg-barrel-black/80 px-4 py-2 border-b border-teal-dark/30">
-            <span class="text-barrel-gray/60 text-sm">cURL</span>
+            <span class="text-barrel-gray/60 text-sm">Erlang</span>
           </div>
-          <pre class="p-4 text-sm overflow-x-auto"><code class="text-barrel-gray/80">{curlCode}</code></pre>
+          <pre class="p-4 text-sm overflow-x-auto"><code class="text-barrel-gray/80">{erlCode}</code></pre>
         </div>
+        <p class="text-center text-barrel-gray/40 text-sm mt-4">Pour une surface REST/JSON ou MCP, executez <code>barrel_server</code> sur la meme base de donnees.</p>
       </div>
 
       <!-- When to Use -->
@@ -225,9 +183,9 @@ for r in results:
           <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/50">
             <h3 class="text-teal-light font-semibold mb-4">Utilisez Barrel Docs quand :</h3>
             <ul class="space-y-2 text-barrel-gray/80 text-sm">
-              <li>+ Besoin de versionnement de documents</li>
-              <li>+ Offline-first/sync requis</li>
-              <li>+ Sync multi-appareils necessaire</li>
+              <li>+ Besoin de versionnement et d'historique des documents</li>
+              <li>+ Offline-first ou sync requis</li>
+              <li>+ Sync multi-appareils ou multi-region necessaire</li>
               <li>+ Embarque dans app Erlang/Elixir</li>
             </ul>
           </div>
@@ -235,39 +193,37 @@ for r in results:
             <h3 class="text-coral font-semibold mb-4">Considerez des alternatives quand :</h3>
             <ul class="space-y-2 text-barrel-gray/80 text-sm">
               <li>+ Un simple key-value suffit</li>
-              <li>+ Besoin de requetes SQL/relationnelles</li>
-              <li>+ Traversee de graphes requise</li>
-              <li>+ Pas besoin de versionnement</li>
+              <li>+ Besoin de SQL relationnel complet</li>
+              <li>+ Traversee de graphes comme charge principale</li>
+              <li>+ Vous avez aussi besoin de vecteurs (utilisez alors le Barrel complet)</li>
             </ul>
           </div>
         </div>
       </div>
 
-      <!-- Integration with Vector DB -->
+      <!-- One record in Barrel -->
       <div class="mb-16">
-        <h2 class="text-2xl font-bold text-center mb-8">Integration avec Barrel Vector</h2>
-        <p class="text-barrel-gray/60 text-center mb-8 max-w-2xl mx-auto">
-          Barrel Docs se combine naturellement avec Barrel Vector pour stocker le contenu des documents avec leurs embeddings.
-        </p>
-        <div class="bg-barrel-black rounded-lg border border-teal-dark/30 overflow-hidden">
-          <div class="bg-barrel-black/80 px-4 py-2 border-b border-teal-dark/30">
-            <span class="text-barrel-gray/60 text-sm">Python</span>
-          </div>
-          <pre class="p-4 text-sm overflow-x-auto"><code class="text-barrel-gray/80">{pythonCode}</code></pre>
+        <div class="bg-gradient-to-br from-teal-dark/20 via-barrel-black to-coral/10 p-8 rounded-2xl border border-teal-dark/40 text-center">
+          <h2 class="text-2xl font-bold mb-3">Un enregistrement avec vecteurs</h2>
+          <p class="text-barrel-gray/70 max-w-2xl mx-auto mb-6">
+            Dans le Barrel complet, un document et son embedding partagent un seul id, il n'y a donc pas de code
+            d'integration entre un stockage documentaire et un index vectoriel separe. Stockez du texte, obtenez la recherche.
+          </p>
+          <a href="/fr/products/barrel" class="text-coral hover:text-coral-dark font-semibold">Decouvrir Barrel &rarr;</a>
         </div>
       </div>
 
       <!-- CTA -->
       <div class="text-center">
         <div class="flex flex-col sm:flex-row gap-4 justify-center">
-          <a href="https://docs.barrel-db.eu/docdb" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
+          <a href="https://docs.barrel-db.eu" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
             Lire la Documentation
           </a>
-          <a href="https://github.com/barrel-db/barrel_docdb" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-8 py-3 rounded-lg text-lg transition">
+          <a href="https://github.com/barrel-db/barrel" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-8 py-3 rounded-lg text-lg transition">
             Voir le Code Source
           </a>
         </div>
       </div>
     </div>
   </section>
-</LayoutFr>
+</Layout>
