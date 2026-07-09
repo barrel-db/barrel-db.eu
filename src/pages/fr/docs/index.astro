@@ -1,0 +1,30 @@
+---
+import DocsLayout from '../../../layouts/DocsLayout.astro';
+import { docsNavFr, docsOrderFr } from '../../../data/docs-nav';
+
+const cards = [
+  { title: "Demarrer", body: "Installez Barrel et stockez vos premiers documents en quelques minutes.", href: "/fr/docs/get-started/introduction", cta: "Introduction" },
+  { title: "Concepts", body: "Le modele a un enregistrement, les vecteurs de version, et la couche agent.", href: "/fr/docs/concepts/data-model", cta: "Modele de donnees" },
+  { title: "Guides", body: "Des tutoriels orientes taches : requetes, synchronisation, timeline, chiffrement, et plus.", href: "/fr/docs/guides/embedding", cta: "Guides" },
+  { title: "Serveur", body: "Lancez barrel_server pour une surface REST/JSON et MCP sur la meme base de donnees.", href: "/fr/docs/server/rest-server", cta: "Lancer le serveur" },
+  { title: "Reference", body: "L'API de facade, la reference BQL, la configuration, et les docs par bibliotheque.", href: "/fr/docs/reference/facade-api", cta: "API de facade" },
+];
+---
+
+<DocsLayout title="Documentation" description="Tout ce qu'il faut pour construire avec Barrel, la base de donnees edge-AI pour les agents." slug="" contentClass="" lang="fr" base="/fr/docs" nav={docsNavFr} order={docsOrderFr}>
+  <p class="text-barrel-gray/70">
+    Nouveau ici ? Commencez par l'<a href="/fr/docs/get-started/introduction" class="text-coral hover:underline">Introduction</a>,
+    puis suivez le <a href="/fr/docs/get-started/quickstart" class="text-coral hover:underline">Demarrage rapide</a> pour stocker
+    et rechercher vos premiers documents.
+  </p>
+
+  <div class="grid sm:grid-cols-2 gap-4 mt-8">
+    {cards.map((c) => (
+      <a href={c.href} class="block bg-barrel-black border border-teal-dark/30 hover:border-teal-light/50 rounded-xl p-5 transition no-underline">
+        <h3 class="text-lg font-bold text-teal-light mb-1">{c.title}</h3>
+        <p class="text-barrel-gray/60 text-sm mb-3">{c.body}</p>
+        <span class="text-coral text-sm font-semibold">{c.cta} &rarr;</span>
+      </a>
+    ))}
+  </div>
+</DocsLayout>

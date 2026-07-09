@@ -54,6 +54,7 @@ export const docsNav: DocSection[] = [
     items: [
       { label: "Facade API", slug: "reference/facade-api" },
       { label: "BQL reference", slug: "reference/bql" },
+      { label: "REST API", slug: "reference/rest-api" },
       { label: "Configuration", slug: "reference/configuration" },
       { label: "Libraries", slug: "reference/libraries" },
     ],
@@ -62,3 +63,44 @@ export const docsNav: DocSection[] = [
 
 // Flattened order for prev/next navigation.
 export const docsOrder: DocItem[] = docsNav.flatMap((s) => s.items);
+
+// French labels, derived from the same slug structure so the two navs never
+// drift. A slug without a French label falls back to its English one.
+const frSectionTitle: Record<string, string> = {
+  "Get started": "Demarrer",
+  "Concepts": "Concepts",
+  "Guides": "Guides",
+  "Server": "Serveur",
+  "Reference": "Reference",
+};
+const frLabel: Record<string, string> = {
+  "get-started/introduction": "Introduction",
+  "get-started/installation": "Installation",
+  "get-started/quickstart": "Demarrage rapide",
+  "concepts/data-model": "Modele de donnees",
+  "concepts/version-vectors": "Vecteurs de version",
+  "concepts/agent-layer": "La couche agent",
+  "guides/embedding": "Integrer Barrel",
+  "guides/record-mode": "Mode enregistrement",
+  "guides/query-bql": "Requetes avec BQL",
+  "guides/synchronization": "Synchronisation",
+  "guides/timeline": "Timeline",
+  "guides/encryption": "Chiffrement",
+  "guides/audit-provenance": "Audit et provenance",
+  "guides/barrel-lite": "Client navigateur",
+  "server/rest-server": "Lancer le serveur",
+  "server/spaces": "Espaces et agents",
+  "server/mcp": "Point de terminaison MCP",
+  "reference/facade-api": "API de facade",
+  "reference/bql": "Reference BQL",
+  "reference/rest-api": "API REST (OpenAPI)",
+  "reference/configuration": "Configuration",
+  "reference/libraries": "Bibliotheques",
+};
+
+export const docsNavFr: DocSection[] = docsNav.map((s) => ({
+  title: frSectionTitle[s.title] ?? s.title,
+  items: s.items.map((i) => ({ slug: i.slug, label: frLabel[i.slug] ?? i.label })),
+}));
+
+export const docsOrderFr: DocItem[] = docsNavFr.flatMap((s) => s.items);
