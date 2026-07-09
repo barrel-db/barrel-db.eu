@@ -10,59 +10,26 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: erlang:28
     steps:
       - uses: actions/checkout@v4
 
-      - name: Checkout barrel_vectordb docs
+      - name: Checkout the barrel umbrella
         uses: actions/checkout@v4
         with:
-          repository: barrel-db/barrel_vectordb
-          path: repos/barrel_vectordb
+          repository: barrel-db/barrel
+          path: repos/barrel
           token: ${{ secrets.DOCS_TOKEN }}
 
-      - name: Checkout barrel_docdb docs
-        uses: actions/checkout@v4
-        with:
-          repository: barrel-db/barrel_docdb
-          path: repos/barrel_docdb
-          token: ${{ secrets.DOCS_TOKEN }}
-
-      - name: Checkout barrel_embed docs
-        uses: actions/checkout@v4
-        with:
-          repository: barrel-db/barrel_embed
-          path: repos/barrel_embed
-          token: ${{ secrets.DOCS_TOKEN }}
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install MkDocs
-        run: pip install mkdocs>=1.6 mkdocs-material>=9.5 pymdown-extensions>=10.0
+      # barrel_vectordb builds a NIF through CMake.
+      - name: Install build tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends cmake
 
       - name: Build all docs
-        run: |
-          mkdir -p docs-dist
-
-          # Build vectordb docs
-          cd repos/barrel_vectordb
-          mkdocs build --site-dir ../../docs-dist/vectordb
-          cd ../..
-
-          # Build docdb docs
-          cd repos/barrel_docdb
-          mkdocs build --site-dir ../../docs-dist/docdb
-          cd ../..
-
-          # Build embed docs
-          cd repos/barrel_embed
-          mkdocs build --site-dir ../../docs-dist/embed
-          cd ../..
-
-          # Create index redirect
-          echo '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=/vectordb/"></head></html>' > docs-dist/index.html
+        run: BARREL_DIR="$GITHUB_WORKSPACE/repos/barrel" bash scripts/build-docs.sh
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
