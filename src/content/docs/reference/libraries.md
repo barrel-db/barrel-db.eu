@@ -24,11 +24,22 @@ deeper per-library documentation where it exists.
 
 ## Per-library documentation
 
-Three libraries have their own reference sites with deeper API detail:
+Each library publishes its own reference site: the guides it ships, plus an API
+reference generated from the module documentation, so it cannot drift from the
+source.
 
-- [barrel_docdb](https://docs.barrel-db.eu/docdb) - the document layer.
-- [barrel_vectordb](https://docs.barrel-db.eu/vectordb) - the vector layer.
-- [barrel_embed](https://docs.barrel-db.eu/embed) - embedding providers.
+- [barrel](https://docs.barrel-db.eu/barrel/) - the facade.
+- [barrel_docdb](https://docs.barrel-db.eu/docdb/) - the document layer.
+- [barrel_vectordb](https://docs.barrel-db.eu/vectordb/) - the vector layer.
+- [barrel_embed](https://docs.barrel-db.eu/embed/) - embedding providers.
+- [barrel_server](https://docs.barrel-db.eu/server/) - the REST/JSON and MCP server.
+- [barrel_spaces](https://docs.barrel-db.eu/spaces/) - the agent layer.
+- [barrel_rerank](https://docs.barrel-db.eu/rerank/) - cross-encoder reranking.
+- [barrel_crypto](https://docs.barrel-db.eu/crypto/) - encryption at rest.
+
+`barrel_faiss` links against a system FAISS build, so its reference ships on
+[HexDocs](https://hexdocs.pm/barrel_faiss) rather than here. Every library is on
+HexDocs under its own name.
 
 The source for every library lives in the umbrella repository at
 [github.com/barrel-db/barrel](https://github.com/barrel-db/barrel).

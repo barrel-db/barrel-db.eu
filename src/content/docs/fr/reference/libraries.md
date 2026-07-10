@@ -25,12 +25,22 @@ bibliotheque plus detaillee la ou elle existe.
 
 ## Documentation par bibliotheque
 
-Trois bibliotheques ont leurs propres sites de reference avec plus de details
-d'API :
+Chaque bibliotheque publie son propre site de reference : les guides qu'elle
+embarque, plus une reference d'API generee depuis la documentation des modules,
+qui ne peut donc pas diverger du code.
 
-- [barrel_docdb](https://docs.barrel-db.eu/docdb) - la couche document.
-- [barrel_vectordb](https://docs.barrel-db.eu/vectordb) - la couche vecteur.
-- [barrel_embed](https://docs.barrel-db.eu/embed) - les fournisseurs d'embedding.
+- [barrel](https://docs.barrel-db.eu/barrel/) - la facade.
+- [barrel_docdb](https://docs.barrel-db.eu/docdb/) - la couche document.
+- [barrel_vectordb](https://docs.barrel-db.eu/vectordb/) - la couche vecteur.
+- [barrel_embed](https://docs.barrel-db.eu/embed/) - les fournisseurs d'embedding.
+- [barrel_server](https://docs.barrel-db.eu/server/) - le serveur REST/JSON et MCP.
+- [barrel_spaces](https://docs.barrel-db.eu/spaces/) - la couche agent.
+- [barrel_rerank](https://docs.barrel-db.eu/rerank/) - le reranking cross-encoder.
+- [barrel_crypto](https://docs.barrel-db.eu/crypto/) - le chiffrement au repos.
+
+`barrel_faiss` se lie a une installation FAISS du systeme : sa reference est
+publiee sur [HexDocs](https://hexdocs.pm/barrel_faiss) plutot qu'ici. Chaque
+bibliotheque est sur HexDocs sous son propre nom.
 
 Le code source de chaque bibliotheque vit dans le depot umbrella a
 [github.com/barrel-db/barrel](https://github.com/barrel-db/barrel).
