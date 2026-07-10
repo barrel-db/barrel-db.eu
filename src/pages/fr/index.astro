@@ -17,6 +17,22 @@ const usageCode = `%% Ouvrez une base. Le texte est transforme en vecteur a l'ec
 %% Cherchez dans la couche vectorielle, sur les memes enregistrements.
 {ok, Hits, _} = barrel:query(<<"notes">>,
     <<"SELECT id, _score FROM vector_top_k('edge sync', k => 5) AS v">>).`;
+
+const serverCode = `# Lancez barrel_server pour une surface REST/JSON et MCP sur la meme base.
+$ curl -X PUT localhost:8080/db/notes
+{"ok":true,"db":"notes"}
+
+$ curl -X PUT localhost:8080/db/notes/doc/n1 \\
+    -H 'content-type: application/json' \\
+    -d '{"title":"Design review","text":"Ship the edge sync protocol"}'
+{"id":"n1","ok":true,"rev":"0000019f46b4c08900000000@8c0010c983917d4b"}
+
+# Recherche vectorielle sur les memes enregistrements.
+$ curl -X POST localhost:8080/db/notes/search/vector \\
+    -H 'content-type: application/json' -d '{"vector":[...],"k":5}'
+
+# Les agents parlent MCP sur le meme endpoint.
+$ curl -X POST localhost:8080/mcp -H 'content-type: application/json' -d '{...}'`;
 ---
 
 <Layout title="La base de donnees edge-AI pour les agents">
@@ -121,7 +137,21 @@ const usageCode = `%% Ouvrez une base. Le texte est transforme en vecteur a l'ec
     <div class="container mx-auto max-w-4xl">
       <h2 class="text-3xl font-bold mb-4 text-center">Une seule API. Documents et vecteurs.</h2>
       <p class="text-ink/60 text-center mb-8 max-w-2xl mx-auto">Aucune glu entre un stockage documentaire et un index vectoriel separe. Vous ecrivez un enregistrement une fois, puis vous l'interrogez comme document ou le cherchez comme vecteur.</p>
-      <pre class="bg-surface-2 border border-line/30 rounded-lg p-6 overflow-x-auto text-sm"><code class="text-ink/90">{usageCode}</code></pre>
+      <div class="bg-surface rounded-lg border border-line/30 overflow-hidden mb-6">
+        <div class="bg-surface/80 px-4 py-2 border-b border-line/30">
+          <span class="text-ink/60 text-sm">Embarque (Erlang)</span>
+        </div>
+        <pre class="p-4 text-sm overflow-x-auto"><code class="text-ink/80">{usageCode}</code></pre>
+      </div>
+
+      <p class="text-ink/60 text-center my-8 max-w-2xl mx-auto">Les memes enregistrements, dans les deux cas. Embarquez Barrel dans votre application Erlang, ou lancez <code>barrel_server</code> devant elle et atteignez documents, vecteurs et couche agent via REST et le Model Context Protocol.</p>
+
+      <div class="bg-surface rounded-lg border border-line/30 overflow-hidden mb-6">
+        <div class="bg-surface/80 px-4 py-2 border-b border-line/30">
+          <span class="text-ink/60 text-sm">Via HTTP et MCP (barrel_server)</span>
+        </div>
+        <pre class="p-4 text-sm overflow-x-auto"><code class="text-ink/80">{serverCode}</code></pre>
+      </div>
       <div class="text-center mt-8">
         <a href="/fr/docs/get-started/quickstart" class="text-coral hover:text-coral-dark font-semibold">Lire le guide de demarrage &rarr;</a>
       </div>

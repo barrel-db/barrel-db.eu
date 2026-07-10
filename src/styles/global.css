@@ -83,8 +83,10 @@ html {
 }
 
 /* Code blocks */
+/* Code blocks follow the theme. A fixed dark background here would swallow
+   text-ink, which turns dark in light mode. */
 pre {
-  background-color: var(--color-black);
+  background-color: var(--code-bg);
   border-radius: 0.5rem;
 }
 
