@@ -41,10 +41,32 @@ echo "Building documentation to $OUTPUT_DIR"
 rm -rf "$OUTPUT_DIR"
 mkdir -p "$OUTPUT_DIR"
 
-# The barrel facade's siblings are not on Hex yet, so resolve them locally.
-mkdir -p "$BARREL_DIR/apps/barrel/_checkouts"
-for dep in barrel_crypto barrel_docdb barrel_vectordb barrel_embed; do
-    ln -sfn "../../$dep" "$BARREL_DIR/apps/barrel/_checkouts/$dep"
+# The umbrella apps depend on each other and none are on Hex yet, so an app
+# built on its own must resolve its siblings through _checkouts. rebar reads
+# _checkouts only from the app being built (not from a checkout's own
+# _checkouts), so each app needs its FULL transitive sibling closure, listed
+# explicitly. The closures must be acyclic in build order: an app never lists a
+# sibling that (transitively) depends back on it, or rebar cannot order the
+# compile and a behaviour module can compile before the behaviour it implements.
+# Only the apps whose default profile has a compile-time sibling dependency need
+# checkouts: barrel implements a barrel_vectordb behaviour and pulls the whole
+# library layer; docdb and vectordb call barrel_crypto. barrel_spaces and
+# barrel_server keep their siblings in a `hex' profile, so their default (ex_doc)
+# build documents their own modules without pulling anything.
+checkouts_for() {  # checkouts_for <app> -> its transitive umbrella siblings
+    case "$1" in
+        barrel_docdb|barrel_vectordb) echo "barrel_crypto" ;;
+        barrel) echo "barrel_crypto barrel_docdb barrel_vectordb barrel_embed" ;;
+        *)      echo "" ;;
+    esac
+}
+
+for app in barrel barrel_docdb barrel_vectordb; do
+    co="$BARREL_DIR/apps/$app/_checkouts"
+    rm -rf "$co"; mkdir -p "$co"
+    for dep in $(checkouts_for "$app"); do
+        ln -sfn "../../$dep" "$co/$dep"
+    done
 done
 
 # ex_doc resolves extras and the logo relative to the working directory, so
