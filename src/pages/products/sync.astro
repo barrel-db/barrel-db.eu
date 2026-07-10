@@ -1,6 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import CodeBlock from '../../components/CodeBlock.astro';
+import CodeTabs from '../../components/CodeTabs.astro';
 
 const erlCode = `%% Two Barrel nodes converge over HTTP. One shot, then return.
 {ok, Stats} = barrel_rep:replicate(<<"notes">>,
@@ -81,8 +81,7 @@ const hits = await db.searchLocal(queryVector, { k: 10 });`;
       <!-- Quick Start -->
       <div class="mb-16">
         <h2 class="text-2xl font-bold text-center mb-8">Quick Start</h2>
-        <CodeBlock code={erlCode} lang="erlang" label="Erlang (edge node)" />
-        <CodeBlock code={tsCode} lang="typescript" label="TypeScript (browser)" class="mt-6" />
+        <CodeTabs tabs={[{ label: "Erlang (edge node)", lang: "erlang", code: erlCode }, { label: "TypeScript (browser)", lang: "typescript", code: tsCode }]} />
       </div>
 
       <!-- When to Use -->

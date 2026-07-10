@@ -1,6 +1,6 @@
 ---
 import Layout from '../../../layouts/LayoutFr.astro';
-import CodeBlock from '../../../components/CodeBlock.astro';
+import CodeTabs from '../../../components/CodeTabs.astro';
 
 const erlCode = `%% Start the application
 application:ensure_all_started(barrel_docdb).
@@ -185,8 +185,7 @@ $ curl -H 'accept: text/event-stream' localhost:8080/db/mydb/changes`;
       <!-- Quick Start -->
       <div class="mb-16">
         <h2 class="text-2xl font-bold text-center mb-8">Demarrage Rapide</h2>
-        <CodeBlock code={erlCode} lang="erlang" label="Erlang" />
-        <CodeBlock code={curlCode} lang="bash" label="cURL (via barrel_server)" class="mt-6" />
+        <CodeTabs tabs={[{ label: "Erlang", lang: "erlang", code: erlCode }, { label: "cURL (via barrel_server)", lang: "bash", code: curlCode }]} />
         <p class="text-center text-ink/40 text-sm mt-4">Pour une surface REST/JSON ou MCP, executez <code>barrel_server</code> sur la meme base de donnees.</p>
       </div>
 

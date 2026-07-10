@@ -1,6 +1,6 @@
 ---
 import Layout from '../../../layouts/LayoutFr.astro';
-import CodeBlock from '../../../components/CodeBlock.astro';
+import CodeTabs from '../../../components/CodeTabs.astro';
 
 const erlCode = `%% Deux noeuds Barrel convergent via HTTP. Un seul passage, puis retour.
 {ok, Stats} = barrel_rep:replicate(<<"notes">>,
@@ -81,8 +81,7 @@ const hits = await db.searchLocal(queryVector, { k: 10 });`;
       <!-- Quick Start -->
       <div class="mb-16">
         <h2 class="text-2xl font-bold text-center mb-8">Demarrage Rapide</h2>
-        <CodeBlock code={erlCode} lang="erlang" label="Erlang (noeud edge)" />
-        <CodeBlock code={tsCode} lang="typescript" label="TypeScript (navigateur)" class="mt-6" />
+        <CodeTabs tabs={[{ label: "Erlang (noeud edge)", lang: "erlang", code: erlCode }, { label: "TypeScript (navigateur)", lang: "typescript", code: tsCode }]} />
       </div>
 
       <!-- When to Use -->
