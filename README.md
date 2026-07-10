@@ -4,8 +4,11 @@ Marketing website for Barrel DB open source databases.
 
 ## Overview
 
-- **Website**: https://barrel-db.eu (Astro + Tailwind CSS)
-- **Documentation**: https://docs.barrel-db.eu (MkDocs Material)
+- **Website and documentation**: https://barrel-db.eu (Astro + Tailwind CSS)
+
+The Barrel guides live at `/docs`, written as Astro content collections. The
+per-library API reference lives at `/docs/lib/<name>/`, generated with
+`rebar3 ex_doc` from the umbrella. One site, one deploy.
 
 ## Website Setup
 
@@ -63,80 +66,57 @@ npm run build
 # Deploy ./dist/
 ```
 
-## Documentation Setup
+## Library reference
 
-Documentation is hosted at `docs.barrel-db.eu` with three MkDocs sites:
+The per-library reference is ex_doc output for each app of the
+[barrel umbrella](https://github.com/barrel-db/barrel): the guides each app
+ships, plus an API reference generated from its modules, so it cannot drift from
+the source.
 
-| Path | Project | Source |
-|------|---------|--------|
-| `/vectordb/` | barrel_vectordb | `../barrel_vectordb/docs/` |
-| `/docdb/` | barrel_docdb | `../barrel_docdb/docs/` |
-| `/embed/` | barrel_embed | `../barrel_embed/docs/` |
+| Path | Umbrella app |
+|------|--------------|
+| `/docs/lib/barrel/` | `apps/barrel` |
+| `/docs/lib/docdb/` | `apps/barrel_docdb` |
+| `/docs/lib/vectordb/` | `apps/barrel_vectordb` |
+| `/docs/lib/embed/` | `apps/barrel_embed` |
+| `/docs/lib/server/` | `apps/barrel_server` |
+| `/docs/lib/spaces/` | `apps/barrel_spaces` |
+| `/docs/lib/rerank/` | `apps/barrel_rerank` |
+| `/docs/lib/crypto/` | `apps/barrel_crypto` |
+
+`barrel_faiss` is not built here: it links against a system FAISS build. Its
+reference ships on [HexDocs](https://hexdocs.pm/barrel_faiss).
 
 ### Prerequisites
 
-```bash
-pip install mkdocs-material
-```
+Erlang/OTP with `rebar3` on your `PATH`, plus CMake (`barrel_vectordb` builds a
+NIF). Point `BARREL_DIR` at your umbrella checkout; it defaults to `../barrel`.
 
-### Building Documentation
+### Building
 
-Each project has its own `mkdocs.yml`:
-
-```bash
-# Build barrel_vectordb docs
-cd ../barrel_vectordb
-mkdocs build --site-dir ../barrel-db.eu/docs-dist/vectordb
-
-# Build barrel_docdb docs
-cd ../barrel_docdb
-mkdocs build --site-dir ../barrel-db.eu/docs-dist/docdb
-
-# Build barrel_embed docs
-cd ../barrel_embed
-mkdocs build --site-dir ../barrel-db.eu/docs-dist/embed
-```
-
-Or use the build script:
+`npm run build` generates the reference before building the site, so you rarely
+need to run it directly:
 
 ```bash
-./scripts/build-docs.sh
+BARREL_DIR=../barrel npm run build
 ```
 
-### Docs Deployment
+To regenerate only the reference, into `public/docs/lib/`:
 
-Deploy `docs-dist/` to docs.barrel-db.eu. Example nginx config:
-
-```nginx
-server {
-    server_name docs.barrel-db.eu;
-    root /var/www/docs.barrel-db.eu;
-
-    location /vectordb/ {
-        try_files $uri $uri/ /vectordb/index.html;
-    }
-
-    location /docdb/ {
-        try_files $uri $uri/ /docdb/index.html;
-    }
-
-    location /embed/ {
-        try_files $uri $uri/ /embed/index.html;
-    }
-
-    location = / {
-        return 302 /vectordb/;
-    }
-}
+```bash
+BARREL_DIR=../barrel npm run build:docs
 ```
+
+The output is gitignored. `astro dev` serves `public/` but does not resolve a
+directory to its `index.html`, so `/docs/lib/barrel/` 404s under `npm run dev`
+while `/docs/lib/barrel/readme.html` works. Use `npm run preview` to exercise
+the real URLs.
 
 ## Related Repositories
 
 | Repository | Description |
 |------------|-------------|
-| [barrel_vectordb](https://github.com/barrel-db/barrel_vectordb) | Vector database |
-| [barrel_docdb](https://github.com/barrel-db/barrel_docdb) | Document database |
-| [barrel_embed](https://github.com/barrel-db/barrel_embed) | Embedding library |
+| [barrel](https://github.com/barrel-db/barrel) | The Barrel umbrella: every library, one repository |
 
 ## Branches
 

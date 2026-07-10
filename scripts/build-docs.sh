@@ -1,8 +1,12 @@
 #!/bin/bash
-# Build the per-library reference sites for docs.barrel-db.eu.
+# Build the per-library reference sites into the Astro site, at /docs/lib/<name>/.
 #
 # Each site is ex_doc output for one app of the barrel umbrella: the guides
-# checked into the app, plus an API reference generated from its modules.
+# checked into the app, plus an API reference generated from its modules. The
+# output lands in public/, so `astro build` copies it into dist/ and one deploy
+# serves the guides and the reference from the same origin.
+#
+# Run this before `astro build`; `npm run build` does it for you.
 #
 # Point BARREL_DIR at the umbrella checkout (defaults to ../barrel).
 
@@ -10,7 +14,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-OUTPUT_DIR="$PROJECT_DIR/docs-dist"
+OUTPUT_DIR="${OUTPUT_DIR:-$PROJECT_DIR/public/docs/lib}"
 BARREL_DIR="${BARREL_DIR:-$PROJECT_DIR/../barrel}"
 
 if [ ! -d "$BARREL_DIR/apps" ]; then
@@ -52,22 +56,23 @@ for site in $SITES; do
     (cd "$BARREL_DIR/apps/$app" && rebar3 ex_doc --output "$OUTPUT_DIR/$path")
 done
 
-# Root redirect: barrel is the product, the rest are its pieces.
+# /docs/lib/ itself is not a site; send it to the page that lists them.
+# data-pagefind-ignore keeps this stub out of the search index.
 cat > "$OUTPUT_DIR/index.html" << 'EOF'
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Barrel documentation</title>
-    <meta http-equiv="refresh" content="0; url=/barrel/">
+    <title>Barrel library reference</title>
+    <meta http-equiv="refresh" content="0; url=/docs/reference/libraries">
 </head>
-<body>
-    <p>Redirecting to the <a href="/barrel/">Barrel API reference</a>.</p>
+<body data-pagefind-ignore>
+    <p>Redirecting to the <a href="/docs/reference/libraries">library reference</a>.</p>
 </body>
 </html>
 EOF
 
 echo "Done. Sites:"
 for site in $SITES; do
-    echo "  $OUTPUT_DIR/${site%%:*}/"
+    echo "  /docs/lib/${site%%:*}/"
 done

@@ -4,9 +4,10 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build && pagefind --site dist",
+    "build": "bash scripts/build-docs.sh && astro build && pagefind --site dist",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "build:docs": "bash scripts/build-docs.sh"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",
