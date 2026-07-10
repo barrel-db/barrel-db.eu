@@ -107,10 +107,10 @@ To regenerate only the reference, into `public/docs/lib/`:
 BARREL_DIR=../barrel npm run build:docs
 ```
 
-The output is gitignored. `astro dev` serves `public/` but does not resolve a
-directory to its `index.html`, so `/docs/lib/barrel/` 404s under `npm run dev`
-while `/docs/lib/barrel/readme.html` works. Use `npm run preview` to exercise
-the real URLs.
+The output is gitignored. Vite does not resolve a directory to its `index.html`,
+so a small dev-only middleware in `astro.config.mjs` rewrites `/docs/lib/<name>/`
+to `<name>/index.html`; the same URLs then work under `npm run dev`,
+`npm run preview`, and any static host.
 
 ## Related Repositories
 
