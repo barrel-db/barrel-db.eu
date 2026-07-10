@@ -90,6 +90,38 @@ pre {
   border-radius: 0.5rem;
 }
 
+/* Shiki runs with defaultColor: false, so every token carries both palettes as
+   custom properties. Pick one from the theme rather than shipping two
+   stylesheets. */
+:root[data-theme='light'] .astro-code {
+  color: var(--shiki-light);
+  background-color: var(--shiki-light-bg);
+}
+:root[data-theme='light'] .astro-code span {
+  color: var(--shiki-light);
+  font-style: var(--shiki-light-font-style);
+  font-weight: var(--shiki-light-font-weight);
+  text-decoration: var(--shiki-light-text-decoration);
+}
+
+:root[data-theme='dark'] .astro-code {
+  color: var(--shiki-dark);
+  background-color: var(--shiki-dark-bg);
+}
+:root[data-theme='dark'] .astro-code span {
+  color: var(--shiki-dark);
+  font-style: var(--shiki-dark-font-style);
+  font-weight: var(--shiki-dark-font-weight);
+  text-decoration: var(--shiki-dark-text-decoration);
+}
+
+.astro-code {
+  padding: 1rem;
+  overflow-x: auto;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
 code {
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
 }

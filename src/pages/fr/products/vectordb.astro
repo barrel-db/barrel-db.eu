@@ -1,5 +1,6 @@
 ---
 import Layout from '../../../layouts/LayoutFr.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
 
 const erlCode = `%% Start the vector store
 {ok, _} = barrel_vectordb:start_link(#{name => docs, dimension => 3}).
@@ -13,6 +14,19 @@ ok = barrel_vectordb:add(docs, <<"doc1">>, [0.1, 0.2, 0.3],
 
 %% Hybrid vector + BM25
 {ok, Hits2} = barrel_vectordb:search_hybrid(docs, <<"hello">>, #{k => 10}).`;
+
+const curlCode = `# Atteignez la couche vectorielle via HTTP en lancant barrel_server.
+$ curl -X POST localhost:8080/db/docs/vector \\
+    -H 'content-type: application/json' \\
+    -d '{"id":"doc1","text":"Hello","vector":[0.1,0.2,0.3]}'
+
+# Recherche vectorielle.
+$ curl -X POST localhost:8080/db/docs/search/vector \\
+    -H 'content-type: application/json' -d '{"vector":[0.15,0.25,0.35],"k":10}'
+
+# Hybride vecteur + BM25.
+$ curl -X POST localhost:8080/db/docs/search/hybrid \\
+    -H 'content-type: application/json' -d '{"query":"hello","k":10}'`;
 ---
 
 <Layout title="Barrel Vector" description="Base de donnees vectorielle mono-noeud haute performance avec indexation HNSW">
@@ -137,12 +151,8 @@ ok = barrel_vectordb:add(docs, <<"doc1">>, [0.1, 0.2, 0.3],
       <!-- Quick Start -->
       <div class="mb-16">
         <h2 class="text-2xl font-bold text-center mb-8">Demarrage Rapide</h2>
-        <div class="bg-surface rounded-lg border border-line/30 overflow-hidden">
-          <div class="bg-surface/80 px-4 py-2 border-b border-line/30">
-            <span class="text-ink/60 text-sm">Erlang</span>
-          </div>
-          <pre class="p-4 text-sm overflow-x-auto"><code class="text-ink/80">{erlCode}</code></pre>
-        </div>
+        <CodeBlock code={erlCode} lang="erlang" label="Erlang" />
+        <CodeBlock code={curlCode} lang="bash" label="cURL (via barrel_server)" class="mt-6" />
       </div>
 
       <!-- When to Use -->

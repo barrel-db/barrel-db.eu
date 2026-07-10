@@ -28,6 +28,16 @@ function devDirectoryIndex() {
 
 // https://astro.build/config
 export default defineConfig({
+  markdown: {
+    // Highlight for both themes at build time. defaultColor: false emits
+    // --shiki-light and --shiki-dark custom properties instead of baking one
+    // palette in, and global.css picks between them from data-theme.
+    shikiConfig: {
+      themes: { light: 'github-light', dark: 'github-dark' },
+      defaultColor: false,
+      wrap: false,
+    },
+  },
   vite: {
     plugins: [tailwindcss(), devDirectoryIndex()]
   }

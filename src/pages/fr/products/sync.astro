@@ -1,5 +1,23 @@
 ---
 import Layout from '../../../layouts/LayoutFr.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+
+const erlCode = `%% Deux noeuds Barrel convergent via HTTP. Un seul passage, puis retour.
+{ok, Stats} = barrel_rep:replicate(<<"notes">>,
+    <<"http://edge.example/db/notes">>, #{direction => push}).
+
+%% Ou synchronisez en continu. La tache est persistee, elle reprend
+%% depuis son point de reprise apres un redemarrage.
+{ok, TaskId} = barrel_rep_tasks:start_task(#{
+    source    => <<"notes">>,
+    target    => <<"http://edge.example/db/notes">>,
+    mode      => continuous,
+    direction => push
+}).
+
+ok = barrel_rep_tasks:pause_task(TaskId),
+ok = barrel_rep_tasks:resume_task(TaskId),
+Tasks = barrel_rep_tasks:list_tasks().`;
 
 const tsCode = `import { Database } from "barrel-lite";
 
@@ -63,12 +81,8 @@ const hits = await db.searchLocal(queryVector, { k: 10 });`;
       <!-- Quick Start -->
       <div class="mb-16">
         <h2 class="text-2xl font-bold text-center mb-8">Demarrage Rapide</h2>
-        <div class="bg-surface rounded-lg border border-line/30 overflow-hidden">
-          <div class="bg-surface/80 px-4 py-2 border-b border-line/30">
-            <span class="text-ink/60 text-sm">TypeScript</span>
-          </div>
-          <pre class="p-4 text-sm overflow-x-auto"><code class="text-ink/80">{tsCode}</code></pre>
-        </div>
+        <CodeBlock code={erlCode} lang="erlang" label="Erlang (noeud edge)" />
+        <CodeBlock code={tsCode} lang="typescript" label="TypeScript (navigateur)" class="mt-6" />
       </div>
 
       <!-- When to Use -->

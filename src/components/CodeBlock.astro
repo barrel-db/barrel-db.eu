@@ -1,0 +1,25 @@
+---
+import { Code } from 'astro:components';
+
+interface Props {
+  code: string;
+  lang?: string;
+  label?: string;
+  class?: string;
+}
+
+const { code, lang = 'erlang', label, class: className = '' } = Astro.props;
+
+// Same dual-theme setup as markdown, so a highlighted block on a page and one
+// in a doc look identical and both follow the theme toggle.
+const themes = { light: 'github-light', dark: 'github-dark' };
+---
+
+<div class={`bg-surface rounded-lg border border-line/30 overflow-hidden ${className}`}>
+  {label && (
+    <div class="bg-surface/80 px-4 py-2 border-b border-line/30">
+      <span class="text-ink/60 text-sm">{label}</span>
+    </div>
+  )}
+  <Code code={code} lang={lang} themes={themes} defaultColor={false} />
+</div>
