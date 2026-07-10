@@ -22,8 +22,8 @@ contexte partage.
 
 Un espace est une base de donnees avec un nom genere (`sp_` + 16 caracteres) plus
 un document de registre dans la base de donnees systeme `_barrel_spaces`. Les
-bases de donnees d'espace s'ouvrent a travers le gestionnaire de cycle de vie de
-la facade, ainsi les espaces inactifs se ferment eux-memes et des centaines
+bases de donnees d'espace s'ouvrent a travers le gestionnaire de cycle de vie des
+bases de Barrel, ainsi les espaces inactifs se ferment eux-memes et des centaines
 d'espaces ephemeres restent bon marche.
 
 ```erlang

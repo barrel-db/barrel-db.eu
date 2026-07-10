@@ -1,5 +1,5 @@
 ---
-title: Facade API
+title: Barrel API
 description: The barrel module, the single entry point to the embedded database, grouped by area.
 ---
 

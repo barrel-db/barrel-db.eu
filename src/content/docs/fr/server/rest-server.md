@@ -5,7 +5,7 @@ description: Exposez une base de donnees barrel via HTTP/1.1 et HTTP/2 avec barr
 
 `barrel_server` expose la base de donnees `barrel` via HTTP/1.1 et HTTP/2
 (REST/JSON) en utilisant `livery`. Il ne detient aucune logique de base de
-donnees : chaque handler appelle la facade `barrel` a travers un gestionnaire de
+donnees : chaque handler appelle le module `barrel` a travers un gestionnaire de
 cycle de vie de base de donnees. Lisez ceci quand vous voulez atteindre une base
 de donnees barrel sur le reseau au lieu de l'embarquer.
 
@@ -35,7 +35,7 @@ demarrage de l'app, par exemple dans `sys.config`.
 ## Endpoints
 
 Les bases de donnees s'ouvrent paresseusement au premier usage a travers le
-gestionnaire de cycle de vie de la facade (`barrel_dbs`) : les handles sont mis en
+gestionnaire de cycle de vie des bases de Barrel (`barrel_dbs`) : les handles sont mis en
 cache par nom, les bases inactives se ferment apres `dbs_idle_timeout` (app env
 barrel, 5 minutes par defaut, 0 desactive), et `dbs_max_open` evince la moins
 recemment utilisee au-dela d'un plafond.

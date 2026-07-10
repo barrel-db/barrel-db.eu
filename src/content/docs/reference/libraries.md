@@ -4,21 +4,21 @@ description: The independent libraries that make up Barrel, and where to find ea
 ---
 
 Barrel is one database made of independent Apache 2.0 libraries. You use the full
-`barrel` facade, or depend on a single library. This page lists them and links the
+full `barrel` API, or depend on a single library. This page lists them and links the
 deeper per-library documentation where it exists.
 
 ## The stack
 
 | Library | Role |
 |---------|------|
-| `barrel` | The facade you use in these docs: documents, blobs, and vectors under one id. |
+| `barrel` | The API you use in these docs: documents, blobs, and vectors under one id. |
 | `barrel_docdb` | The document layer: version-vector MVCC, BQL, attachments, replication. |
 | `barrel_vectordb` | The vector layer: HNSW, DiskANN, FAISS, and BM25 with hybrid search. |
 | `barrel_embed` | Embedding generation across providers (OpenAI, Ollama, local, and more). |
 | `barrel_rerank` | Cross-encoder reranking. |
 | `barrel_crypto` | Encryption-at-rest primitives and key providers. |
 | `barrel_spaces` | The agent layer: spaces, capability tokens, sessions, handoffs. |
-| `barrel_server` | The REST/JSON and MCP server over the facade. |
+| `barrel_server` | The REST/JSON and MCP server over the `barrel` API. |
 | `barrel_faiss` | Optional Erlang NIF bindings for FAISS. |
 | `barrel-lite` | The offline-first TypeScript browser client. |
 
@@ -28,7 +28,7 @@ Each library publishes its own reference site: the guides it ships, plus an API
 reference generated from the module documentation, so it cannot drift from the
 source.
 
-- [barrel](/docs/lib/barrel/) - the facade.
+- [barrel](/docs/lib/barrel/) - the full database.
 - [barrel_docdb](/docs/lib/docdb/) - the document layer.
 - [barrel_vectordb](/docs/lib/vectordb/) - the vector layer.
 - [barrel_embed](/docs/lib/embed/) - embedding providers.

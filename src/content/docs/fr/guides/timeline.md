@@ -78,7 +78,7 @@ fenetre est la fenetre de retention : un T sous le plancher de l'historique echo
 avec `pitr_window_exceeded`, tout comme un document dont l'historique pre-T a deja
 ete balaye (la bifurcation avorte proprement, rien n'est laisse derriere).
 
-## Comment (facade, y compris mode enregistrement)
+## Comment (l'API `barrel`, y compris mode enregistrement)
 
 ```erlang
 {ok, Db} = barrel:open(main, #{embedding => #{fields => [<<"title">>]},
@@ -151,7 +151,7 @@ Les branches utilisent toute l'API existante, y compris la replication sous
 - Un rembobinage PITR lui-meme n'est pas fusionne (les versions restaurees
   precedent la bifurcation) ; "revenir le parent a T" est une operation
   differente et n'est pas dans la v1.
-- Les branches de facade simples (hors mode enregistrement) ne portent pas de
+- Les branches `barrel` simples (hors mode enregistrement) ne portent pas de
   vecteurs : ils vivent uniquement dans le store vectoriel, que la branche obtient
   neuf. Reajoutez-les ou utilisez le mode enregistrement.
 - Le conflict_merger du parent est une config au moment de l'ouverture de la base

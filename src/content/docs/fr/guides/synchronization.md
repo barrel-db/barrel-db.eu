@@ -232,7 +232,7 @@ adaptatif, pas de SSE). Activez CORS et emettez-lui un jeton de capacite. Voir
   enregistrement le texte et les metadonnees se repliquent comme des documents et
   l'index se reconstruit localement. La synchronisation de vecteurs quantifies est
   prevue avec le client TypeScript.
-- **Facade.** `barrel` (la facade embarquable) n'expose pas la replication ;
+- **API Barrel.** `barrel` (la base embarquable complete) n'expose pas la replication ;
   appelez `barrel_rep` et `barrel_rep_tasks` sur le nom docdb sous-jacent.
 - **Provenance.** L'acteur/session/source qu'une ecriture porte (voir
   [audit-provenance](/fr/docs/guides/audit-provenance)) ne voyage pas sur le

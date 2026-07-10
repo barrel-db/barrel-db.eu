@@ -52,7 +52,7 @@ export const docsNav: DocSection[] = [
   {
     title: "Reference",
     items: [
-      { label: "Facade API", slug: "reference/facade-api" },
+      { label: "Barrel API", slug: "reference/barrel-api" },
       { label: "BQL reference", slug: "reference/bql" },
       { label: "REST API", slug: "reference/rest-api" },
       { label: "Configuration", slug: "reference/configuration" },
@@ -91,7 +91,7 @@ const frLabel: Record<string, string> = {
   "server/rest-server": "Lancer le serveur",
   "server/spaces": "Espaces et agents",
   "server/mcp": "Point de terminaison MCP",
-  "reference/facade-api": "API de facade",
+  "reference/barrel-api": "API Barrel",
   "reference/bql": "Reference BQL",
   "reference/rest-api": "API REST (OpenAPI)",
   "reference/configuration": "Configuration",

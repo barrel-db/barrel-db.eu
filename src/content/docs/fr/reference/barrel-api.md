@@ -1,5 +1,5 @@
 ---
-title: API de facade
+title: API Barrel
 description: Le module barrel, le point d'entree unique de la base de donnees embarquee, groupe par domaine.
 ---
 
