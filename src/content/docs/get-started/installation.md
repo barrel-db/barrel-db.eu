@@ -19,7 +19,7 @@ Add `barrel` to your `rebar.config`:
 
 ```erlang
 {deps, [
-    {barrel, "~> 0.2"}
+    {barrel, "~> 1.0"}
 ]}.
 ```
 
@@ -39,7 +39,7 @@ on it directly instead:
 
 ```erlang
 {deps, [
-    {barrel_docdb, "~> 0.9"},     %% documents only
+    {barrel_docdb, "~> 1.0"},     %% documents only
     {barrel_vectordb, "~> 2.1"}   %% vectors only
 ]}.
 ```
@@ -50,7 +50,7 @@ To expose the same database over HTTP (REST/JSON) and MCP, add `barrel_server`:
 
 ```erlang
 {deps, [
-    {barrel_server, "~> 0.2"}
+    {barrel_server, "~> 1.0"}
 ]}.
 ```
 
