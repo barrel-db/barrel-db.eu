@@ -4,26 +4,26 @@ import Layout from '../../layouts/LayoutFr.astro';
 
 <Layout title="La base de donnees edge-AI pour les agents">
   <!-- Hero Section -->
-  <section class="py-24 px-4 bg-gradient-to-b from-barrel-black to-teal-dark/10">
+  <section class="py-24 px-4 bg-gradient-to-b from-surface to-line/10">
     <div class="container mx-auto text-center max-w-5xl">
       <div class="flex items-center justify-center gap-4 mb-6">
-        <div class="flex items-center gap-2 bg-teal-dark/20 px-3 py-1.5 rounded-full border border-teal-dark/30">
-          <svg class="w-4 h-4 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="flex items-center gap-2 bg-line/20 px-3 py-1.5 rounded-full border border-line/30">
+          <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
           </svg>
-          <span class="text-teal-light text-sm font-medium">Open Source</span>
+          <span class="text-accent text-sm font-medium">Open Source</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="text-2xl">🇪🇺</span>
-          <span class="text-barrel-gray/60 text-sm font-medium uppercase tracking-wider">Europeen</span>
+          <span class="text-ink/60 text-sm font-medium uppercase tracking-wider">Europeen</span>
         </div>
       </div>
       <h1 class="text-5xl md:text-6xl font-bold mb-6">
-        <span class="bg-gradient-to-r from-coral to-teal-light bg-clip-text text-transparent">La base de donnees edge-AI pour les agents</span>
+        <span class="bg-gradient-to-r from-coral to-accent bg-clip-text text-transparent">La base de donnees edge-AI pour les agents</span>
         <br />
-        <span class="text-barrel-gray">Concue en Europe</span>
+        <span class="text-ink">Concue en Europe</span>
       </h1>
-      <p class="text-xl text-barrel-gray/70 mb-8 max-w-3xl mx-auto">
+      <p class="text-xl text-ink/70 mb-8 max-w-3xl mx-auto">
         Une base de donnees embarquable pour documents, blobs et vecteurs sous un seul id, avec recherche locale,
         synchronisation offline-first, chiffrement et une couche agent via REST et MCP. Erlang. Apache 2.0.
       </p>
@@ -31,7 +31,7 @@ import Layout from '../../layouts/LayoutFr.astro';
         <a href="/docs" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
           Documentation
         </a>
-        <a href="https://github.com/barrel-db/barrel" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-8 py-3 rounded-lg text-lg transition flex items-center justify-center gap-2">
+        <a href="https://github.com/barrel-db/barrel" class="border border-line/50 hover:border-accent text-ink px-8 py-3 rounded-lg text-lg transition flex items-center justify-center gap-2">
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
           Voir le Code
         </a>
@@ -43,53 +43,53 @@ import Layout from '../../layouts/LayoutFr.astro';
   <section class="py-16 px-4">
     <div class="container mx-auto max-w-5xl">
       <h2 class="text-3xl font-bold mb-4 text-center">Un enregistrement. Documents, blobs et vecteurs.</h2>
-      <p class="text-barrel-gray/60 text-center mb-12 max-w-2xl mx-auto">
+      <p class="text-ink/60 text-center mb-12 max-w-2xl mx-auto">
         Barrel conserve un document, ses pieces jointes et son embedding sous un seul id, ainsi la memoire d'un agent
         tient en une ecriture et une lecture. Embarquez-le comme bibliotheque, executez-le comme serveur, ou synchronisez-le vers le navigateur.
       </p>
 
       <div class="grid md:grid-cols-3 gap-6">
-        <div class="bg-barrel-black p-6 rounded-xl border border-teal-dark/30">
+        <div class="bg-surface p-6 rounded-xl border border-line/30">
           <div class="w-12 h-12 bg-coral/20 rounded-lg flex items-center justify-center mb-4">
             <svg class="w-6 h-6 text-coral" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
           </div>
-          <h3 class="font-semibold text-barrel-gray mb-2">Enregistrement unifie</h3>
-          <p class="text-barrel-gray/60 text-sm">Un document, ses blobs et son vecteur partagent un seul id. Pas de code de liaison entre un stockage documentaire et un index vectoriel.</p>
+          <h3 class="font-semibold text-ink mb-2">Enregistrement unifie</h3>
+          <p class="text-ink/60 text-sm">Un document, ses blobs et son vecteur partagent un seul id. Pas de code de liaison entre un stockage documentaire et un index vectoriel.</p>
         </div>
-        <div class="bg-barrel-black p-6 rounded-xl border border-teal-dark/30">
-          <div class="w-12 h-12 bg-teal-light/20 rounded-lg flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        <div class="bg-surface p-6 rounded-xl border border-line/30">
+          <div class="w-12 h-12 bg-accent/20 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
           </div>
-          <h3 class="font-semibold text-barrel-gray mb-2">Recherche locale</h3>
-          <p class="text-barrel-gray/60 text-sm">Recherche vectorielle, BM25 et hybride en processus, plus les requetes BQL. Recherche vectorielle en force brute, meme dans le navigateur.</p>
+          <h3 class="font-semibold text-ink mb-2">Recherche locale</h3>
+          <p class="text-ink/60 text-sm">Recherche vectorielle, BM25 et hybride en processus, plus les requetes BQL. Recherche vectorielle en force brute, meme dans le navigateur.</p>
         </div>
-        <div class="bg-barrel-black p-6 rounded-xl border border-teal-dark/30">
-          <div class="w-12 h-12 bg-teal-light/20 rounded-lg flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        <div class="bg-surface p-6 rounded-xl border border-line/30">
+          <div class="w-12 h-12 bg-accent/20 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
           </div>
-          <h3 class="font-semibold text-barrel-gray mb-2">Sync offline-first</h3>
-          <p class="text-barrel-gray/60 text-sm">Les vecteurs de version HLC suivent la causalite, ainsi la synchronisation converge sans coordinateur et ne perd jamais silencieusement une ecriture.</p>
+          <h3 class="font-semibold text-ink mb-2">Sync offline-first</h3>
+          <p class="text-ink/60 text-sm">Les vecteurs de version HLC suivent la causalite, ainsi la synchronisation converge sans coordinateur et ne perd jamais silencieusement une ecriture.</p>
         </div>
-        <div class="bg-barrel-black p-6 rounded-xl border border-teal-dark/30">
-          <div class="w-12 h-12 bg-teal-light/20 rounded-lg flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+        <div class="bg-surface p-6 rounded-xl border border-line/30">
+          <div class="w-12 h-12 bg-accent/20 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
           </div>
-          <h3 class="font-semibold text-barrel-gray mb-2">Chiffrement au repos</h3>
-          <p class="text-barrel-gray/60 text-sm">AES-256-GCM avec des cles par base de donnees et un fournisseur de cles enfichable. Vos cles, vos donnees.</p>
+          <h3 class="font-semibold text-ink mb-2">Chiffrement au repos</h3>
+          <p class="text-ink/60 text-sm">AES-256-GCM avec des cles par base de donnees et un fournisseur de cles enfichable. Vos cles, vos donnees.</p>
         </div>
-        <div class="bg-barrel-black p-6 rounded-xl border border-teal-dark/30">
-          <div class="w-12 h-12 bg-teal-light/20 rounded-lg flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+        <div class="bg-surface p-6 rounded-xl border border-line/30">
+          <div class="w-12 h-12 bg-accent/20 rounded-lg flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
           </div>
-          <h3 class="font-semibold text-barrel-gray mb-2">Timeline</h3>
-          <p class="text-barrel-gray/60 text-sm">Creez une branche d'une base de donnees, restaurez-la a un instant precis, et fusionnez les branches. Gestion de versions pour votre etat.</p>
+          <h3 class="font-semibold text-ink mb-2">Timeline</h3>
+          <p class="text-ink/60 text-sm">Creez une branche d'une base de donnees, restaurez-la a un instant precis, et fusionnez les branches. Gestion de versions pour votre etat.</p>
         </div>
-        <div class="bg-barrel-black p-6 rounded-xl border border-coral/30">
+        <div class="bg-surface p-6 rounded-xl border border-coral/30">
           <div class="w-12 h-12 bg-coral/20 rounded-lg flex items-center justify-center mb-4">
             <svg class="w-6 h-6 text-coral" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
           </div>
-          <h3 class="font-semibold text-barrel-gray mb-2">Agents &amp; MCP</h3>
-          <p class="text-barrel-gray/60 text-sm">Espaces, jetons de capacite, sessions et transferts, exposes via REST et le Model Context Protocol.</p>
+          <h3 class="font-semibold text-ink mb-2">Agents &amp; MCP</h3>
+          <p class="text-ink/60 text-sm">Espaces, jetons de capacite, sessions et transferts, exposes via REST et le Model Context Protocol.</p>
         </div>
       </div>
 
@@ -100,23 +100,23 @@ import Layout from '../../layouts/LayoutFr.astro';
   </section>
 
   <!-- Whole or a piece Section -->
-  <section class="py-16 px-4 bg-barrel-black/50">
+  <section class="py-16 px-4 bg-surface/50">
     <div class="container mx-auto max-w-5xl">
       <h2 class="text-3xl font-bold mb-4 text-center">Utilisez toute la base de donnees, ou juste la partie dont vous avez besoin</h2>
-      <p class="text-barrel-gray/60 text-center mb-8 max-w-2xl mx-auto">
+      <p class="text-ink/60 text-center mb-8 max-w-2xl mx-auto">
         Barrel se compose de bibliotheques Apache 2.0 independantes. Adoptez la base de donnees complete, ou dependez d'une
         seule couche et etendez vers le reste plus tard. Pas de reecriture, pas de nouveau fournisseur.
       </p>
 
       <!-- Barrel: le produit complet -->
-      <a href="/fr/products/barrel" class="block bg-gradient-to-br from-coral/20 via-barrel-black to-teal-dark/20 p-8 rounded-2xl border border-coral/40 hover:border-coral/70 transition mb-8">
+      <a href="/fr/products/barrel" class="block bg-gradient-to-br from-coral/20 via-surface to-line/20 p-8 rounded-2xl border border-coral/40 hover:border-coral/70 transition mb-8">
         <div class="flex flex-col md:flex-row items-center gap-6">
           <div class="flex-1">
             <div class="flex items-center gap-3 mb-2">
               <h3 class="text-2xl font-bold text-coral">Barrel</h3>
               <span class="bg-coral/20 text-coral text-xs px-2 py-0.5 rounded font-medium">La base de donnees complete</span>
             </div>
-            <p class="text-barrel-gray/70">
+            <p class="text-ink/70">
               Documents, blobs et vecteurs sous un seul id, avec BQL, synchronisation, chiffrement, timeline et la
               couche agent. Embarquez-la, executez-la comme serveur, ou synchronisez-la vers le navigateur.
             </p>
@@ -125,27 +125,27 @@ import Layout from '../../layouts/LayoutFr.astro';
         </div>
       </a>
 
-      <p class="text-barrel-gray/50 text-center text-sm mb-6">Ou commencez avec une seule bibliotheque :</p>
+      <p class="text-ink/50 text-center text-sm mb-6">Ou commencez avec une seule bibliotheque :</p>
       <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <a href="/fr/products/vectordb" class="bg-barrel-black p-6 rounded-xl border border-coral/30 hover:border-coral/50 transition block">
+        <a href="/fr/products/vectordb" class="bg-surface p-6 rounded-xl border border-coral/30 hover:border-coral/50 transition block">
           <h3 class="text-xl font-bold text-coral mb-1">Barrel Vector</h3>
-          <p class="text-barrel-gray/50 text-xs mb-3">Couche vectorielle</p>
-          <p class="text-barrel-gray/70 text-sm">Backends HNSW, DiskANN, FAISS et BM25 avec recherche hybride et filtrage par metadonnees.</p>
+          <p class="text-ink/50 text-xs mb-3">Couche vectorielle</p>
+          <p class="text-ink/70 text-sm">Backends HNSW, DiskANN, FAISS et BM25 avec recherche hybride et filtrage par metadonnees.</p>
         </a>
-        <a href="/fr/products/docdb" class="bg-barrel-black p-6 rounded-xl border border-teal-light/30 hover:border-teal-light/50 transition block">
-          <h3 class="text-xl font-bold text-teal-light mb-1">Barrel Docs</h3>
-          <p class="text-barrel-gray/50 text-xs mb-3">Couche documentaire</p>
-          <p class="text-barrel-gray/70 text-sm">MVCC a vecteurs de version, requetes BQL, pieces jointes, flux de changements et replication.</p>
+        <a href="/fr/products/docdb" class="bg-surface p-6 rounded-xl border border-accent/30 hover:border-accent/50 transition block">
+          <h3 class="text-xl font-bold text-accent mb-1">Barrel Docs</h3>
+          <p class="text-ink/50 text-xs mb-3">Couche documentaire</p>
+          <p class="text-ink/70 text-sm">MVCC a vecteurs de version, requetes BQL, pieces jointes, flux de changements et replication.</p>
         </a>
-        <a href="/fr/products/agents" class="bg-barrel-black p-6 rounded-xl border border-teal-light/30 hover:border-teal-light/50 transition block">
-          <h3 class="text-xl font-bold text-teal-light mb-1">Agents &amp; MCP</h3>
-          <p class="text-barrel-gray/50 text-xs mb-3">Couche agent</p>
-          <p class="text-barrel-gray/70 text-sm">Espaces, jetons de capacite, sessions et transferts via REST et MCP.</p>
+        <a href="/fr/products/agents" class="bg-surface p-6 rounded-xl border border-accent/30 hover:border-accent/50 transition block">
+          <h3 class="text-xl font-bold text-accent mb-1">Agents &amp; MCP</h3>
+          <p class="text-ink/50 text-xs mb-3">Couche agent</p>
+          <p class="text-ink/70 text-sm">Espaces, jetons de capacite, sessions et transferts via REST et MCP.</p>
         </a>
-        <a href="/fr/products/sync" class="bg-barrel-black p-6 rounded-xl border border-teal-light/30 hover:border-teal-light/50 transition block">
-          <h3 class="text-xl font-bold text-teal-light mb-1">Sync &amp; Local-first</h3>
-          <p class="text-barrel-gray/50 text-xs mb-3">Client navigateur</p>
-          <p class="text-barrel-gray/70 text-sm">barrel-lite : stockage offline-first, multi-onglets et recherche vectorielle locale dans le navigateur.</p>
+        <a href="/fr/products/sync" class="bg-surface p-6 rounded-xl border border-accent/30 hover:border-accent/50 transition block">
+          <h3 class="text-xl font-bold text-accent mb-1">Sync &amp; Local-first</h3>
+          <p class="text-ink/50 text-xs mb-3">Client navigateur</p>
+          <p class="text-ink/70 text-sm">barrel-lite : stockage offline-first, multi-onglets et recherche vectorielle locale dans le navigateur.</p>
         </a>
       </div>
     </div>
@@ -155,47 +155,47 @@ import Layout from '../../layouts/LayoutFr.astro';
   <section class="py-16 px-4">
     <div class="container mx-auto max-w-5xl">
       <h2 class="text-3xl font-bold mb-4 text-center">Pourquoi Barrel ?</h2>
-      <p class="text-barrel-gray/60 text-center mb-12 max-w-2xl mx-auto">
+      <p class="text-ink/60 text-center mb-12 max-w-2xl mx-auto">
         Concue differemment. Concue en Europe. Concue pour durer.
       </p>
 
       <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div class="bg-barrel-black p-6 rounded-xl border border-teal-dark/30 text-center">
-          <div class="w-12 h-12 bg-teal-light/20 rounded-lg mx-auto flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="bg-surface p-6 rounded-xl border border-line/30 text-center">
+          <div class="w-12 h-12 bg-accent/20 rounded-lg mx-auto flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
             </svg>
           </div>
-          <h3 class="font-semibold text-barrel-gray mb-2">Open Source</h3>
-          <p class="text-barrel-gray/60 text-sm">Sous licence Apache 2.0. Forkez, modifiez, deployez ou vous voulez.</p>
+          <h3 class="font-semibold text-ink mb-2">Open Source</h3>
+          <p class="text-ink/60 text-sm">Sous licence Apache 2.0. Forkez, modifiez, deployez ou vous voulez.</p>
         </div>
 
-        <div class="bg-barrel-black p-6 rounded-xl border border-teal-dark/30 text-center">
-          <div class="w-12 h-12 bg-teal-light/20 rounded-lg mx-auto flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="bg-surface p-6 rounded-xl border border-line/30 text-center">
+          <div class="w-12 h-12 bg-accent/20 rounded-lg mx-auto flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
             </svg>
           </div>
-          <h3 class="font-semibold text-barrel-gray mb-2">Construit en Erlang</h3>
-          <p class="text-barrel-gray/60 text-sm">VM eprouvee. Tolerante aux pannes par conception. Pas de pauses GC.</p>
+          <h3 class="font-semibold text-ink mb-2">Construit en Erlang</h3>
+          <p class="text-ink/60 text-sm">VM eprouvee. Tolerante aux pannes par conception. Pas de pauses GC.</p>
         </div>
 
-        <div class="bg-barrel-black p-6 rounded-xl border border-teal-dark/30 text-center">
-          <div class="w-12 h-12 bg-teal-light/20 rounded-lg mx-auto flex items-center justify-center mb-4">
+        <div class="bg-surface p-6 rounded-xl border border-line/30 text-center">
+          <div class="w-12 h-12 bg-accent/20 rounded-lg mx-auto flex items-center justify-center mb-4">
             <span class="text-xl">🇪🇺</span>
           </div>
-          <h3 class="font-semibold text-barrel-gray mb-2">Made in Europe</h3>
-          <p class="text-barrel-gray/60 text-sm">Entreprise europeenne. Pas de Cloud Act US. Conforme RGPD par conception.</p>
+          <h3 class="font-semibold text-ink mb-2">Made in Europe</h3>
+          <p class="text-ink/60 text-sm">Entreprise europeenne. Pas de Cloud Act US. Conforme RGPD par conception.</p>
         </div>
 
-        <div class="bg-barrel-black p-6 rounded-xl border border-teal-dark/30 text-center">
-          <div class="w-12 h-12 bg-teal-light/20 rounded-lg mx-auto flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="bg-surface p-6 rounded-xl border border-line/30 text-center">
+          <div class="w-12 h-12 bg-accent/20 rounded-lg mx-auto flex items-center justify-center mb-4">
+            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
             </svg>
           </div>
-          <h3 class="font-semibold text-barrel-gray mb-2">Fonctionne partout</h3>
-          <p class="text-barrel-gray/60 text-sm">Embarquez-le en Erlang ou Elixir, executez-le comme serveur, ou synchronisez-le vers le navigateur.</p>
+          <h3 class="font-semibold text-ink mb-2">Fonctionne partout</h3>
+          <p class="text-ink/60 text-sm">Embarquez-le en Erlang ou Elixir, executez-le comme serveur, ou synchronisez-le vers le navigateur.</p>
         </div>
       </div>
     </div>
@@ -204,54 +204,54 @@ import Layout from '../../layouts/LayoutFr.astro';
   <!-- Powers Barrel Platform Section -->
   <section class="py-16 px-4">
     <div class="container mx-auto max-w-5xl">
-      <div class="bg-gradient-to-br from-teal-dark/30 via-barrel-black to-coral/10 p-8 md:p-12 rounded-2xl border border-teal-dark/50 relative overflow-hidden">
-        <div class="absolute top-4 right-4 flex items-center gap-2 bg-barrel-black/80 px-3 py-1.5 rounded-full">
+      <div class="bg-gradient-to-br from-line/30 via-surface to-coral/10 p-8 md:p-12 rounded-2xl border border-line/50 relative overflow-hidden">
+        <div class="absolute top-4 right-4 flex items-center gap-2 bg-surface/80 px-3 py-1.5 rounded-full">
           <span class="text-xl">🇪🇺</span>
-          <span class="text-barrel-gray/80 text-sm font-medium">Made in Europe</span>
+          <span class="text-ink/80 text-sm font-medium">Made in Europe</span>
         </div>
 
         <div class="flex flex-col md:flex-row gap-8 items-center">
           <div class="flex-1">
             <h2 class="text-3xl md:text-4xl font-bold mb-4">
-              Alimente <span class="text-teal-light">Barrel Platform</span>
+              Alimente <span class="text-accent">Barrel Platform</span>
             </h2>
-            <p class="text-barrel-gray/70 text-lg mb-6">
+            <p class="text-ink/70 text-lg mb-6">
               La meme base de donnees open source alimente Barrel Platform, notre infrastructure geree et axee sur la
               confidentialite pour les agents IA. Auto-hebergez-la, ou laissez-nous l'executer. Le meme code dans les deux cas.
             </p>
             <div class="grid grid-cols-2 gap-4">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-teal-dark/30 rounded-lg flex items-center justify-center">
-                  <svg class="w-5 h-5 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-10 h-10 bg-line/30 rounded-lg flex items-center justify-center">
+                  <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                   </svg>
                 </div>
                 <div>
-                  <p class="font-semibold text-barrel-gray">Sans verrouillage</p>
-                  <p class="text-barrel-gray/60 text-sm">Coeur open source</p>
+                  <p class="font-semibold text-ink">Sans verrouillage</p>
+                  <p class="text-ink/60 text-sm">Coeur open source</p>
                 </div>
               </div>
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-teal-dark/30 rounded-lg flex items-center justify-center">
-                  <svg class="w-5 h-5 text-teal-light" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-10 h-10 bg-line/30 rounded-lg flex items-center justify-center">
+                  <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                   </svg>
                 </div>
                 <div>
-                  <p class="font-semibold text-barrel-gray">Confidentialite d'Abord</p>
-                  <p class="text-barrel-gray/60 text-sm">RGPD par conception</p>
+                  <p class="font-semibold text-ink">Confidentialite d'Abord</p>
+                  <p class="text-ink/60 text-sm">RGPD par conception</p>
                 </div>
               </div>
             </div>
           </div>
 
           <div class="flex-shrink-0">
-            <div class="bg-barrel-black/50 p-6 rounded-xl border border-teal-dark/30 text-center">
-              <p class="text-sm text-barrel-gray/60 mb-4">Besoin d'aide ?</p>
+            <div class="bg-surface/50 p-6 rounded-xl border border-line/30 text-center">
+              <p class="text-sm text-ink/60 mb-4">Besoin d'aide ?</p>
               <a href="/fr/contact" class="inline-block bg-coral hover:bg-coral-dark text-white px-6 py-3 rounded-lg font-semibold transition">
                 Contactez-nous
               </a>
-              <p class="text-xs text-barrel-gray/50 mt-4">Support &amp; hebergement manage<br/>disponibles sur demande</p>
+              <p class="text-xs text-ink/50 mt-4">Support &amp; hebergement manage<br/>disponibles sur demande</p>
             </div>
           </div>
         </div>
@@ -260,19 +260,19 @@ import Layout from '../../layouts/LayoutFr.astro';
   </section>
 
   <!-- Open Source Section -->
-  <section class="py-16 px-4 bg-barrel-black/50">
+  <section class="py-16 px-4 bg-surface/50">
     <div class="container mx-auto max-w-4xl text-center">
       <h2 class="text-3xl font-bold mb-4">100% Open Source</h2>
-      <p class="text-barrel-gray/60 mb-8 max-w-2xl mx-auto">
+      <p class="text-ink/60 mb-8 max-w-2xl mx-auto">
         Chaque composant est sous licence Apache 2.0. Forkez, modifiez, deployez ou vous voulez.
         Pas de verrouillage, pas de frais d'utilisation.
       </p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="https://github.com/barrel-db/barrel" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-6 py-3 rounded-lg transition flex items-center justify-center gap-2">
+        <a href="https://github.com/barrel-db/barrel" class="border border-line/50 hover:border-accent text-ink px-6 py-3 rounded-lg transition flex items-center justify-center gap-2">
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
           Barrel sur GitHub
         </a>
-        <a href="/fr/opensource" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-6 py-3 rounded-lg transition">
+        <a href="/fr/opensource" class="border border-line/50 hover:border-accent text-ink px-6 py-3 rounded-lg transition">
           Tous les Projets
         </a>
       </div>
@@ -280,17 +280,17 @@ import Layout from '../../layouts/LayoutFr.astro';
   </section>
 
   <!-- CTA Section -->
-  <section class="py-20 px-4 bg-gradient-to-t from-barrel-black to-teal-dark/10">
+  <section class="py-20 px-4 bg-gradient-to-t from-surface to-line/10">
     <div class="container mx-auto max-w-4xl text-center">
       <h2 class="text-3xl font-bold mb-4">Pret a Commencer ?</h2>
-      <p class="text-barrel-gray/60 mb-8">
+      <p class="text-ink/60 mb-8">
         Auto-hebergez gratuitement avec la base de donnees open source, ou contactez-nous pour l'hebergement manage.
       </p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
         <a href="/docs" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
           Lire la Doc
         </a>
-        <a href="/fr/contact" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-8 py-3 rounded-lg text-lg transition">
+        <a href="/fr/contact" class="border border-line/50 hover:border-accent text-ink px-8 py-3 rounded-lg text-lg transition">
           Contactez-nous
         </a>
       </div>

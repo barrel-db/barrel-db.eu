@@ -25,9 +25,9 @@ application:ensure_all_started(barrel_docdb).
     <div class="container mx-auto max-w-5xl">
       <!-- Header -->
       <div class="text-center mb-16">
-        <span class="bg-teal-light/20 text-teal-light text-sm px-3 py-1 rounded-full">A layer of Barrel</span>
+        <span class="bg-accent/20 text-accent text-sm px-3 py-1 rounded-full">A layer of Barrel</span>
         <h1 class="text-4xl md:text-5xl font-bold mb-4 mt-4">Barrel Docs</h1>
-        <p class="text-xl text-barrel-gray/60 max-w-2xl mx-auto">
+        <p class="text-xl text-ink/60 max-w-2xl mx-auto">
           The document layer. Version-vector MVCC, BQL queries, attachments, a changes feed, and
           replication. Use it inside the full Barrel, or standalone as an embeddable library.
         </p>
@@ -36,53 +36,53 @@ application:ensure_all_started(barrel_docdb).
       <!-- Core Capabilities -->
       <div class="mb-16">
         <h2 class="text-2xl font-bold text-center mb-4">Core Capabilities</h2>
-        <p class="text-barrel-gray/60 text-center mb-8 max-w-2xl mx-auto">
+        <p class="text-ink/60 text-center mb-8 max-w-2xl mx-auto">
           Everything you need for document storage, querying, and distributed sync.
         </p>
         <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-light/50">
+          <div class="bg-surface p-6 rounded-lg border border-accent/50">
             <div class="flex items-center gap-2 mb-3">
-              <span class="bg-teal-light/20 text-teal-light text-xs px-2 py-1 rounded">CORE</span>
+              <span class="bg-accent/20 text-accent text-xs px-2 py-1 rounded">CORE</span>
             </div>
-            <h3 class="font-bold text-barrel-gray mb-2">MVCC</h3>
-            <p class="text-barrel-gray/60 text-sm mb-3">Multi-version concurrency with HLC version vectors.</p>
-            <ul class="text-xs text-barrel-gray/50 space-y-1">
+            <h3 class="font-bold text-ink mb-2">MVCC</h3>
+            <p class="text-ink/60 text-sm mb-3">Multi-version concurrency with HLC version vectors.</p>
+            <ul class="text-xs text-ink/50 space-y-1">
               <li>+ Causal, coordinator-free</li>
               <li>+ Retained history</li>
               <li>+ Conflicts kept, with a merge hook</li>
             </ul>
           </div>
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
+          <div class="bg-surface p-6 rounded-lg border border-line/30">
             <div class="flex items-center gap-2 mb-3">
               <span class="bg-coral/20 text-coral text-xs px-2 py-1 rounded">QUERY</span>
             </div>
-            <h3 class="font-bold text-barrel-gray mb-2">BQL Queries</h3>
-            <p class="text-barrel-gray/60 text-sm mb-3">A PartiQL dialect with automatic path indexing.</p>
-            <ul class="text-xs text-barrel-gray/50 space-y-1">
+            <h3 class="font-bold text-ink mb-2">BQL Queries</h3>
+            <p class="text-ink/60 text-sm mb-3">A PartiQL dialect with automatic path indexing.</p>
+            <ul class="text-xs text-ink/50 space-y-1">
               <li>+ Auto path indexing</li>
               <li>+ No manual indexes</li>
               <li>+ Live subscriptions</li>
             </ul>
           </div>
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
+          <div class="bg-surface p-6 rounded-lg border border-line/30">
             <div class="flex items-center gap-2 mb-3">
               <span class="bg-purple-500/20 text-purple-400 text-xs px-2 py-1 rounded">SYNC</span>
             </div>
-            <h3 class="font-bold text-barrel-gray mb-2">Replication</h3>
-            <p class="text-barrel-gray/60 text-sm mb-3">Multi-master sync with replication policies.</p>
-            <ul class="text-xs text-barrel-gray/50 space-y-1">
+            <h3 class="font-bold text-ink mb-2">Replication</h3>
+            <p class="text-ink/60 text-sm mb-3">Multi-master sync with replication policies.</p>
+            <ul class="text-xs text-ink/50 space-y-1">
               <li>+ Chain, Group, Fanout</li>
               <li>+ Filtered replication</li>
               <li>+ One-shot or continuous</li>
             </ul>
           </div>
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
+          <div class="bg-surface p-6 rounded-lg border border-line/30">
             <div class="flex items-center gap-2 mb-3">
               <span class="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-1 rounded">REALTIME</span>
             </div>
-            <h3 class="font-bold text-barrel-gray mb-2">Subscriptions</h3>
-            <p class="text-barrel-gray/60 text-sm mb-3">Real-time notifications via MQTT-style patterns.</p>
-            <ul class="text-xs text-barrel-gray/50 space-y-1">
+            <h3 class="font-bold text-ink mb-2">Subscriptions</h3>
+            <p class="text-ink/60 text-sm mb-3">Real-time notifications via MQTT-style patterns.</p>
+            <ul class="text-xs text-ink/50 space-y-1">
               <li>+ Path patterns</li>
               <li>+ Query subscriptions</li>
               <li>+ Changes feed</li>
@@ -93,29 +93,29 @@ application:ensure_all_started(barrel_docdb).
 
       <!-- Key Features -->
       <div class="grid md:grid-cols-3 gap-6 mb-16">
-        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">Timeline</h3>
-          <p class="text-barrel-gray/60 text-sm">Branch, point-in-time restore, and merge branches back</p>
+        <div class="bg-surface p-6 rounded-lg border border-line/30">
+          <h3 class="font-semibold text-ink mb-2">Timeline</h3>
+          <p class="text-ink/60 text-sm">Branch, point-in-time restore, and merge branches back</p>
         </div>
-        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">TTL and retention</h3>
-          <p class="text-barrel-gray/60 text-sm">Expire documents and bound the retained history</p>
+        <div class="bg-surface p-6 rounded-lg border border-line/30">
+          <h3 class="font-semibold text-ink mb-2">TTL and retention</h3>
+          <p class="text-ink/60 text-sm">Expire documents and bound the retained history</p>
         </div>
-        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">Attachments</h3>
-          <p class="text-barrel-gray/60 text-sm">Content-addressed blobs, streamed and replicated</p>
+        <div class="bg-surface p-6 rounded-lg border border-line/30">
+          <h3 class="font-semibold text-ink mb-2">Attachments</h3>
+          <p class="text-ink/60 text-sm">Content-addressed blobs, streamed and replicated</p>
         </div>
-        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">HLC Ordering</h3>
-          <p class="text-barrel-gray/60 text-sm">Hybrid Logical Clocks for distributed coordination</p>
+        <div class="bg-surface p-6 rounded-lg border border-line/30">
+          <h3 class="font-semibold text-ink mb-2">HLC Ordering</h3>
+          <p class="text-ink/60 text-sm">Hybrid Logical Clocks for distributed coordination</p>
         </div>
-        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">Provenance and audit</h3>
-          <p class="text-barrel-gray/60 text-sm">Every write records actor, session, and source</p>
+        <div class="bg-surface p-6 rounded-lg border border-line/30">
+          <h3 class="font-semibold text-ink mb-2">Provenance and audit</h3>
+          <p class="text-ink/60 text-sm">Every write records actor, session, and source</p>
         </div>
-        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">Embeddable</h3>
-          <p class="text-barrel-gray/60 text-sm">Use as a library in Erlang/Elixir apps</p>
+        <div class="bg-surface p-6 rounded-lg border border-line/30">
+          <h3 class="font-semibold text-ink mb-2">Embeddable</h3>
+          <p class="text-ink/60 text-sm">Use as a library in Erlang/Elixir apps</p>
         </div>
       </div>
 
@@ -123,20 +123,20 @@ application:ensure_all_started(barrel_docdb).
       <div class="mb-16">
         <h2 class="text-2xl font-bold text-center mb-8">Replication Policies</h2>
         <div class="grid md:grid-cols-3 gap-6">
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30 text-center">
+          <div class="bg-surface p-6 rounded-lg border border-line/30 text-center">
             <p class="text-3xl font-bold text-coral mb-2">Chain</p>
-            <p class="text-barrel-gray/60 text-sm">A &rarr; B &rarr; C</p>
-            <p class="text-barrel-gray/40 text-xs mt-2">Sequential replication with sync writes</p>
+            <p class="text-ink/60 text-sm">A &rarr; B &rarr; C</p>
+            <p class="text-ink/40 text-xs mt-2">Sequential replication with sync writes</p>
           </div>
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30 text-center">
+          <div class="bg-surface p-6 rounded-lg border border-line/30 text-center">
             <p class="text-3xl font-bold text-coral mb-2">Group</p>
-            <p class="text-barrel-gray/60 text-sm">A &harr; B &harr; C</p>
-            <p class="text-barrel-gray/40 text-xs mt-2">Multi-master with conflict resolution</p>
+            <p class="text-ink/60 text-sm">A &harr; B &harr; C</p>
+            <p class="text-ink/40 text-xs mt-2">Multi-master with conflict resolution</p>
           </div>
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30 text-center">
+          <div class="bg-surface p-6 rounded-lg border border-line/30 text-center">
             <p class="text-3xl font-bold text-coral mb-2">Fanout</p>
-            <p class="text-barrel-gray/60 text-sm">A &rarr; B, C, D</p>
-            <p class="text-barrel-gray/40 text-xs mt-2">Event distribution to multiple targets</p>
+            <p class="text-ink/60 text-sm">A &rarr; B, C, D</p>
+            <p class="text-ink/40 text-xs mt-2">Event distribution to multiple targets</p>
           </div>
         </div>
       </div>
@@ -145,21 +145,21 @@ application:ensure_all_started(barrel_docdb).
       <div class="mb-16">
         <h2 class="text-2xl font-bold text-center mb-8">Use Cases</h2>
         <div class="grid md:grid-cols-2 gap-6">
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-            <h3 class="font-semibold text-barrel-gray mb-2">Edge Computing</h3>
-            <p class="text-barrel-gray/60 text-sm">Deploy nodes that sync to cloud when connected</p>
+          <div class="bg-surface p-6 rounded-lg border border-line/30">
+            <h3 class="font-semibold text-ink mb-2">Edge Computing</h3>
+            <p class="text-ink/60 text-sm">Deploy nodes that sync to cloud when connected</p>
           </div>
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-            <h3 class="font-semibold text-barrel-gray mb-2">Multi-Region</h3>
-            <p class="text-barrel-gray/60 text-sm">Replicate data across regions with conflict resolution</p>
+          <div class="bg-surface p-6 rounded-lg border border-line/30">
+            <h3 class="font-semibold text-ink mb-2">Multi-Region</h3>
+            <p class="text-ink/60 text-sm">Replicate data across regions with conflict resolution</p>
           </div>
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-            <h3 class="font-semibold text-barrel-gray mb-2">Offline-first apps</h3>
-            <p class="text-barrel-gray/60 text-sm">Local writes that converge when back online</p>
+          <div class="bg-surface p-6 rounded-lg border border-line/30">
+            <h3 class="font-semibold text-ink mb-2">Offline-first apps</h3>
+            <p class="text-ink/60 text-sm">Local writes that converge when back online</p>
           </div>
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-            <h3 class="font-semibold text-barrel-gray mb-2">Event Distribution</h3>
-            <p class="text-barrel-gray/60 text-sm">Fan-out patterns for event streaming architectures</p>
+          <div class="bg-surface p-6 rounded-lg border border-line/30">
+            <h3 class="font-semibold text-ink mb-2">Event Distribution</h3>
+            <p class="text-ink/60 text-sm">Fan-out patterns for event streaming architectures</p>
           </div>
         </div>
       </div>
@@ -167,31 +167,31 @@ application:ensure_all_started(barrel_docdb).
       <!-- Quick Start -->
       <div class="mb-16">
         <h2 class="text-2xl font-bold text-center mb-8">Quick Start</h2>
-        <div class="bg-barrel-black rounded-lg border border-teal-dark/30 overflow-hidden">
-          <div class="bg-barrel-black/80 px-4 py-2 border-b border-teal-dark/30">
-            <span class="text-barrel-gray/60 text-sm">Erlang</span>
+        <div class="bg-surface rounded-lg border border-line/30 overflow-hidden">
+          <div class="bg-surface/80 px-4 py-2 border-b border-line/30">
+            <span class="text-ink/60 text-sm">Erlang</span>
           </div>
-          <pre class="p-4 text-sm overflow-x-auto"><code class="text-barrel-gray/80">{erlCode}</code></pre>
+          <pre class="p-4 text-sm overflow-x-auto"><code class="text-ink/80">{erlCode}</code></pre>
         </div>
-        <p class="text-center text-barrel-gray/40 text-sm mt-4">For a REST/JSON or MCP surface, run <code>barrel_server</code> over the same database.</p>
+        <p class="text-center text-ink/40 text-sm mt-4">For a REST/JSON or MCP surface, run <code>barrel_server</code> over the same database.</p>
       </div>
 
       <!-- When to Use -->
       <div class="mb-16">
         <h2 class="text-2xl font-bold text-center mb-8">When to Use</h2>
         <div class="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/50">
-            <h3 class="text-teal-light font-semibold mb-4">Use Barrel Docs when:</h3>
-            <ul class="space-y-2 text-barrel-gray/80 text-sm">
+          <div class="bg-surface p-6 rounded-lg border border-line/50">
+            <h3 class="text-accent font-semibold mb-4">Use Barrel Docs when:</h3>
+            <ul class="space-y-2 text-ink/80 text-sm">
               <li>+ You need document versioning and history</li>
               <li>+ Offline-first or sync is required</li>
               <li>+ Multi-device or multi-region sync is needed</li>
               <li>+ You want to embed it in an Erlang/Elixir app</li>
             </ul>
           </div>
-          <div class="bg-barrel-black p-6 rounded-lg border border-coral/50">
+          <div class="bg-surface p-6 rounded-lg border border-coral/50">
             <h3 class="text-coral font-semibold mb-4">Consider alternatives when:</h3>
-            <ul class="space-y-2 text-barrel-gray/80 text-sm">
+            <ul class="space-y-2 text-ink/80 text-sm">
               <li>+ Simple key-value is enough</li>
               <li>+ You need full relational SQL</li>
               <li>+ Graph traversal is the core workload</li>
@@ -203,9 +203,9 @@ application:ensure_all_started(barrel_docdb).
 
       <!-- One record in Barrel -->
       <div class="mb-16">
-        <div class="bg-gradient-to-br from-teal-dark/20 via-barrel-black to-coral/10 p-8 rounded-2xl border border-teal-dark/40 text-center">
+        <div class="bg-gradient-to-br from-line/20 via-surface to-coral/10 p-8 rounded-2xl border border-line/40 text-center">
           <h2 class="text-2xl font-bold mb-3">One record with vectors</h2>
-          <p class="text-barrel-gray/70 max-w-2xl mx-auto mb-6">
+          <p class="text-ink/70 max-w-2xl mx-auto mb-6">
             In the full Barrel, a document and its embedding share one id, so there is no integration code
             between a document store and a separate vector index. Store text, get search.
           </p>
@@ -219,7 +219,7 @@ application:ensure_all_started(barrel_docdb).
           <a href="/docs" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
             Read the Docs
           </a>
-          <a href="https://github.com/barrel-db/barrel" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-8 py-3 rounded-lg text-lg transition">
+          <a href="https://github.com/barrel-db/barrel" class="border border-line/50 hover:border-accent text-ink px-8 py-3 rounded-lg text-lg transition">
             View Source
           </a>
         </div>

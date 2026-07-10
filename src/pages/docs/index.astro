@@ -11,7 +11,7 @@ const cards = [
 ---
 
 <DocsLayout title="Documentation" description="Everything you need to build with Barrel, the edge-AI database for agents." slug="" contentClass="">
-  <p class="text-barrel-gray/70">
+  <p class="text-ink/70">
     New here? Start with the <a href="/docs/get-started/introduction" class="text-coral hover:underline">Introduction</a>,
     then run the <a href="/docs/get-started/quickstart" class="text-coral hover:underline">Quickstart</a> to store and search
     your first documents.
@@ -19,9 +19,9 @@ const cards = [
 
   <div class="grid sm:grid-cols-2 gap-4 mt-8">
     {cards.map((c) => (
-      <a href={c.href} class="block bg-barrel-black border border-teal-dark/30 hover:border-teal-light/50 rounded-xl p-5 transition no-underline">
-        <h3 class="text-lg font-bold text-teal-light mb-1">{c.title}</h3>
-        <p class="text-barrel-gray/60 text-sm mb-3">{c.body}</p>
+      <a href={c.href} class="block bg-surface border border-line/30 hover:border-accent/50 rounded-xl p-5 transition no-underline">
+        <h3 class="text-lg font-bold text-accent mb-1">{c.title}</h3>
+        <p class="text-ink/60 text-sm mb-3">{c.body}</p>
         <span class="text-coral text-sm font-semibold">{c.cta} &rarr;</span>
       </a>
     ))}

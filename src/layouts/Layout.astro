@@ -1,5 +1,7 @@
 ---
 import '../styles/global.css';
+import ThemeScript from '../components/ThemeScript.astro';
+import ThemeToggle from '../components/ThemeToggle.astro';
 
 interface Props {
   title: string;
@@ -12,6 +14,7 @@ const { title, description = "The open source edge-AI database for agents. Docum
 <!doctype html>
 <html lang="en" class="scroll-smooth">
   <head>
+    <ThemeScript />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/logo-symbol-coral.svg" />
@@ -25,51 +28,52 @@ const { title, description = "The open source edge-AI database for agents. Docum
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
   </head>
-  <body class="bg-barrel-black text-barrel-gray min-h-screen flex flex-col">
-    <header class="border-b border-teal-dark/30">
+  <body class="bg-surface text-ink min-h-screen flex flex-col">
+    <header class="border-b border-line/30">
       <nav class="container mx-auto px-4 py-4 flex items-center justify-between">
         <a href="/" class="flex items-center gap-3 hover:opacity-80 transition">
           <img src="/logo-symbol-coral.svg" alt="Barrel" class="h-10 w-auto" />
-          <span class="text-xl font-bold text-barrel-gray">Barrel DB</span>
+          <span class="text-xl font-bold text-ink">Barrel DB</span>
         </a>
         <div class="hidden md:flex items-center gap-6">
           <a href="/products/barrel" class="text-coral hover:text-coral-dark transition font-semibold">Barrel</a>
           <!-- Products Dropdown -->
           <div class="relative group">
-            <button class="text-barrel-gray/70 hover:text-barrel-gray transition flex items-center gap-1">
+            <button class="text-ink/70 hover:text-ink transition flex items-center gap-1">
               Libraries
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
               </svg>
             </button>
-            <div class="absolute top-full left-0 mt-2 w-56 bg-barrel-black border border-teal-dark/30 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
-              <a href="/products/agents" class="block px-4 py-3 hover:bg-teal-dark/20 transition">
-                <span class="font-medium text-barrel-gray">Agents &amp; MCP</span>
-                <span class="block text-xs text-barrel-gray/60">Spaces, capabilities, MCP</span>
+            <div class="absolute top-full left-0 mt-2 w-56 bg-surface border border-line/30 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+              <a href="/products/agents" class="block px-4 py-3 hover:bg-line/20 transition">
+                <span class="font-medium text-ink">Agents &amp; MCP</span>
+                <span class="block text-xs text-ink/60">Spaces, capabilities, MCP</span>
               </a>
-              <a href="/products/sync" class="block px-4 py-3 hover:bg-teal-dark/20 transition border-t border-teal-dark/20">
-                <span class="font-medium text-barrel-gray">Sync &amp; Local-first</span>
-                <span class="block text-xs text-barrel-gray/60">Offline-first, browser client</span>
+              <a href="/products/sync" class="block px-4 py-3 hover:bg-line/20 transition border-t border-line/20">
+                <span class="font-medium text-ink">Sync &amp; Local-first</span>
+                <span class="block text-xs text-ink/60">Offline-first, browser client</span>
               </a>
-              <a href="/products/vectordb" class="block px-4 py-3 hover:bg-teal-dark/20 transition border-t border-teal-dark/20">
-                <span class="font-medium text-barrel-gray">Barrel Vector</span>
-                <span class="block text-xs text-barrel-gray/60">Vector layer</span>
+              <a href="/products/vectordb" class="block px-4 py-3 hover:bg-line/20 transition border-t border-line/20">
+                <span class="font-medium text-ink">Barrel Vector</span>
+                <span class="block text-xs text-ink/60">Vector layer</span>
               </a>
-              <a href="/products/docdb" class="block px-4 py-3 hover:bg-teal-dark/20 transition border-t border-teal-dark/20">
-                <span class="font-medium text-barrel-gray">Barrel Docs</span>
-                <span class="block text-xs text-barrel-gray/60">Document layer</span>
+              <a href="/products/docdb" class="block px-4 py-3 hover:bg-line/20 transition border-t border-line/20">
+                <span class="font-medium text-ink">Barrel Docs</span>
+                <span class="block text-xs text-ink/60">Document layer</span>
               </a>
             </div>
           </div>
-          <a href="/docs" class="text-barrel-gray/70 hover:text-barrel-gray transition">Docs</a>
-          <a href="/opensource" class="text-barrel-gray/70 hover:text-barrel-gray transition">Open Source</a>
-          <a href="/contact" class="text-barrel-gray/70 hover:text-barrel-gray transition">Contact</a>
+          <a href="/docs" class="text-ink/70 hover:text-ink transition">Docs</a>
+          <a href="/opensource" class="text-ink/70 hover:text-ink transition">Open Source</a>
+          <a href="/contact" class="text-ink/70 hover:text-ink transition">Contact</a>
         </div>
         <div class="flex items-center gap-3">
+          <ThemeToggle />
           <!-- Language Switcher -->
-          <div class="hidden md:flex items-center border border-teal-dark/50 rounded-lg overflow-hidden">
-            <span class="bg-teal-dark/30 text-barrel-gray px-3 py-1.5 text-sm font-medium">EN</span>
-            <a href="/fr" class="text-barrel-gray/60 hover:text-barrel-gray hover:bg-teal-dark/20 px-3 py-1.5 text-sm transition">FR</a>
+          <div class="hidden md:flex items-center border border-line/50 rounded-lg overflow-hidden">
+            <span class="bg-line/30 text-ink px-3 py-1.5 text-sm font-medium">EN</span>
+            <a href="/fr" class="text-ink/60 hover:text-ink hover:bg-line/20 px-3 py-1.5 text-sm transition">FR</a>
           </div>
           <a href="/docs" class="bg-coral hover:bg-coral-dark text-white px-4 py-2 rounded-lg transition font-medium">
             Get Started
@@ -82,47 +86,47 @@ const { title, description = "The open source edge-AI database for agents. Docum
       <slot />
     </main>
 
-    <footer class="border-t border-teal-dark/30 py-12 mt-auto">
+    <footer class="border-t border-line/30 py-12 mt-auto">
       <div class="container mx-auto px-4">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <div class="flex items-center gap-2 mb-4">
               <img src="/logo-symbol-white.svg" alt="Barrel" class="h-8 w-auto" />
-              <span class="font-bold text-barrel-gray">Barrel DB</span>
+              <span class="font-bold text-ink">Barrel DB</span>
             </div>
-            <p class="text-barrel-gray/60 text-sm">The open source edge-AI database. Built in Europe.</p>
+            <p class="text-ink/60 text-sm">The open source edge-AI database. Built in Europe.</p>
           </div>
           <div>
-            <h4 class="font-semibold text-barrel-gray mb-4">Products</h4>
+            <h4 class="font-semibold text-ink mb-4">Products</h4>
             <ul class="space-y-2 text-sm">
-              <li><a href="/products/barrel" class="text-barrel-gray/60 hover:text-barrel-gray">Barrel</a></li>
-              <li><a href="/products/agents" class="text-barrel-gray/60 hover:text-barrel-gray">Agents &amp; MCP</a></li>
-              <li><a href="/products/sync" class="text-barrel-gray/60 hover:text-barrel-gray">Sync &amp; Local-first</a></li>
-              <li><a href="/products/vectordb" class="text-barrel-gray/60 hover:text-barrel-gray">Barrel Vector</a></li>
-              <li><a href="/products/docdb" class="text-barrel-gray/60 hover:text-barrel-gray">Barrel Docs</a></li>
+              <li><a href="/products/barrel" class="text-ink/60 hover:text-ink">Barrel</a></li>
+              <li><a href="/products/agents" class="text-ink/60 hover:text-ink">Agents &amp; MCP</a></li>
+              <li><a href="/products/sync" class="text-ink/60 hover:text-ink">Sync &amp; Local-first</a></li>
+              <li><a href="/products/vectordb" class="text-ink/60 hover:text-ink">Barrel Vector</a></li>
+              <li><a href="/products/docdb" class="text-ink/60 hover:text-ink">Barrel Docs</a></li>
             </ul>
           </div>
           <div>
-            <h4 class="font-semibold text-barrel-gray mb-4">Open Source</h4>
+            <h4 class="font-semibold text-ink mb-4">Open Source</h4>
             <ul class="space-y-2 text-sm">
-              <li><a href="/docs" class="text-barrel-gray/60 hover:text-barrel-gray">Documentation</a></li>
-              <li><a href="https://github.com/barrel-db/barrel" class="text-barrel-gray/60 hover:text-barrel-gray">Barrel on GitHub</a></li>
-              <li><a href="/opensource" class="text-barrel-gray/60 hover:text-barrel-gray">All Projects</a></li>
+              <li><a href="/docs" class="text-ink/60 hover:text-ink">Documentation</a></li>
+              <li><a href="https://github.com/barrel-db/barrel" class="text-ink/60 hover:text-ink">Barrel on GitHub</a></li>
+              <li><a href="/opensource" class="text-ink/60 hover:text-ink">All Projects</a></li>
             </ul>
           </div>
           <div>
-            <h4 class="font-semibold text-barrel-gray mb-4">Community</h4>
+            <h4 class="font-semibold text-ink mb-4">Community</h4>
             <ul class="space-y-2 text-sm">
-              <li><a href="https://matrix.to/#/#barrel-db:matrix.org" class="text-barrel-gray/60 hover:text-barrel-gray">Matrix Chat</a></li>
-              <li><a href="/contact" class="text-barrel-gray/60 hover:text-barrel-gray">Contact</a></li>
-              <li class="flex items-center gap-1.5 text-barrel-gray/60">
+              <li><a href="https://matrix.to/#/#barrel-db:matrix.org" class="text-ink/60 hover:text-ink">Matrix Chat</a></li>
+              <li><a href="/contact" class="text-ink/60 hover:text-ink">Contact</a></li>
+              <li class="flex items-center gap-1.5 text-ink/60">
                 <span>🇪🇺</span> European Company
               </li>
-              <li class="text-barrel-gray/60">GDPR Compliant</li>
+              <li class="text-ink/60">GDPR Compliant</li>
             </ul>
           </div>
         </div>
-        <div class="border-t border-teal-dark/30 mt-8 pt-8 text-center text-barrel-gray/60 text-sm">
+        <div class="border-t border-line/30 mt-8 pt-8 text-center text-ink/60 text-sm">
           <p>&copy; 2026 Enki Bridge. Apache 2.0 License.</p>
           <p class="mt-1 flex items-center justify-center gap-1.5">
             <span>🇪🇺</span> Built in Europe

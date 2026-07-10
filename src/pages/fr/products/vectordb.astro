@@ -22,7 +22,7 @@ ok = barrel_vectordb:add(docs, <<"doc1">>, [0.1, 0.2, 0.3],
       <div class="text-center mb-16">
         <span class="bg-coral/20 text-coral text-sm px-3 py-1 rounded-full">Une couche de Barrel</span>
         <h1 class="text-4xl md:text-5xl font-bold mb-4 mt-4">Barrel Vector</h1>
-        <p class="text-xl text-barrel-gray/60 max-w-2xl mx-auto">
+        <p class="text-xl text-ink/60 max-w-2xl mx-auto">
           La couche vectorielle. Recherche vectorielle mono-noeud haute performance construite en Erlang. Utilisez-la
           au sein du Barrel complet, ou de maniere autonome comme bibliotheque embarquable.
         </p>
@@ -31,53 +31,53 @@ ok = barrel_vectordb:add(docs, <<"doc1">>, [0.1, 0.2, 0.3],
       <!-- Backends -->
       <div class="mb-16">
         <h2 class="text-2xl font-bold text-center mb-4">Choisissez Votre Backend</h2>
-        <p class="text-barrel-gray/60 text-center mb-8 max-w-2xl mx-auto">
+        <p class="text-ink/60 text-center mb-8 max-w-2xl mx-auto">
           Quatre backends d'indexation, une seule API. Choisissez celui adapte a votre charge de travail.
         </p>
         <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-light/50">
+          <div class="bg-surface p-6 rounded-lg border border-accent/50">
             <div class="flex items-center gap-2 mb-3">
-              <span class="bg-teal-light/20 text-teal-light text-xs px-2 py-1 rounded">DEFAUT</span>
+              <span class="bg-accent/20 text-accent text-xs px-2 py-1 rounded">DEFAUT</span>
             </div>
-            <h3 class="font-bold text-barrel-gray mb-2">HNSW</h3>
-            <p class="text-barrel-gray/60 text-sm mb-3">Implementation Erlang pure. Ideal pour la plupart des cas.</p>
-            <ul class="text-xs text-barrel-gray/50 space-y-1">
+            <h3 class="font-bold text-ink mb-2">HNSW</h3>
+            <p class="text-ink/60 text-sm mb-3">Implementation Erlang pure. Ideal pour la plupart des cas.</p>
+            <ul class="text-xs text-ink/50 space-y-1">
               <li>+ Recherche rapide &lt;5ms</li>
               <li>+ Aucune dependance</li>
               <li>+ Bon rappel</li>
             </ul>
           </div>
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
+          <div class="bg-surface p-6 rounded-lg border border-line/30">
             <div class="flex items-center gap-2 mb-3">
               <span class="bg-coral/20 text-coral text-xs px-2 py-1 rounded">GPU</span>
             </div>
-            <h3 class="font-bold text-barrel-gray mb-2">FAISS</h3>
-            <p class="text-barrel-gray/60 text-sm mb-3">Bibliotheque Meta via NIF. Ideal pour grande echelle + GPU.</p>
-            <ul class="text-xs text-barrel-gray/50 space-y-1">
+            <h3 class="font-bold text-ink mb-2">FAISS</h3>
+            <p class="text-ink/60 text-sm mb-3">Bibliotheque Meta via NIF. Ideal pour grande echelle + GPU.</p>
+            <ul class="text-xs text-ink/50 space-y-1">
               <li>+ Acceleration GPU</li>
               <li>+ Echelle milliard</li>
               <li>+ IVF, compression PQ</li>
             </ul>
           </div>
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
+          <div class="bg-surface p-6 rounded-lg border border-line/30">
             <div class="flex items-center gap-2 mb-3">
               <span class="bg-purple-500/20 text-purple-400 text-xs px-2 py-1 rounded">DISQUE</span>
             </div>
-            <h3 class="font-bold text-barrel-gray mb-2">DiskANN</h3>
-            <p class="text-barrel-gray/60 text-sm mb-3">Index optimise SSD en Erlang pur. Ideal pour grands jeux de donnees sur disque.</p>
-            <ul class="text-xs text-barrel-gray/50 space-y-1">
+            <h3 class="font-bold text-ink mb-2">DiskANN</h3>
+            <p class="text-ink/60 text-sm mb-3">Index optimise SSD en Erlang pur. Ideal pour grands jeux de donnees sur disque.</p>
+            <ul class="text-xs text-ink/50 space-y-1">
               <li>+ Optimise SSD</li>
               <li>+ Faible empreinte memoire</li>
               <li>+ Aucune dependance</li>
             </ul>
           </div>
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
+          <div class="bg-surface p-6 rounded-lg border border-line/30">
             <div class="flex items-center gap-2 mb-3">
               <span class="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-1 rounded">MOTS-CLES</span>
             </div>
-            <h3 class="font-bold text-barrel-gray mb-2">BM25</h3>
-            <p class="text-barrel-gray/60 text-sm mb-3">Recherche plein texte en Erlang pur. Combinez avec vecteurs pour hybride.</p>
-            <ul class="text-xs text-barrel-gray/50 space-y-1">
+            <h3 class="font-bold text-ink mb-2">BM25</h3>
+            <p class="text-ink/60 text-sm mb-3">Recherche plein texte en Erlang pur. Combinez avec vecteurs pour hybride.</p>
+            <ul class="text-xs text-ink/50 space-y-1">
               <li>+ Recherche plein texte</li>
               <li>+ Hybride avec RRF</li>
               <li>+ Aucune dependance</li>
@@ -88,29 +88,29 @@ ok = barrel_vectordb:add(docs, <<"doc1">>, [0.1, 0.2, 0.3],
 
       <!-- Key Features -->
       <div class="grid md:grid-cols-3 gap-6 mb-16">
-        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">Recherche Hybride</h3>
-          <p class="text-barrel-gray/60 text-sm">Combinez vecteur + BM25 avec fusion RRF pour de meilleurs resultats</p>
+        <div class="bg-surface p-6 rounded-lg border border-line/30">
+          <h3 class="font-semibold text-ink mb-2">Recherche Hybride</h3>
+          <p class="text-ink/60 text-sm">Combinez vecteur + BM25 avec fusion RRF pour de meilleurs resultats</p>
         </div>
-        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">Metriques Multiples</h3>
-          <p class="text-barrel-gray/60 text-sm">Distance Cosinus, Euclidienne, Produit Scalaire</p>
+        <div class="bg-surface p-6 rounded-lg border border-line/30">
+          <h3 class="font-semibold text-ink mb-2">Metriques Multiples</h3>
+          <p class="text-ink/60 text-sm">Distance Cosinus, Euclidienne, Produit Scalaire</p>
         </div>
-        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">Filtrage Metadonnees</h3>
-          <p class="text-barrel-gray/60 text-sm">Filtrez les vecteurs par metadonnees JSON arbitraires</p>
+        <div class="bg-surface p-6 rounded-lg border border-line/30">
+          <h3 class="font-semibold text-ink mb-2">Filtrage Metadonnees</h3>
+          <p class="text-ink/60 text-sm">Filtrez les vecteurs par metadonnees JSON arbitraires</p>
         </div>
-        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">Persistance</h3>
-          <p class="text-barrel-gray/60 text-sm">Stockage RocksDB avec recuperation apres crash</p>
+        <div class="bg-surface p-6 rounded-lg border border-line/30">
+          <h3 class="font-semibold text-ink mb-2">Persistance</h3>
+          <p class="text-ink/60 text-sm">Stockage RocksDB avec recuperation apres crash</p>
         </div>
-        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">API HTTP</h3>
-          <p class="text-barrel-gray/60 text-sm">Interface REST simple pour toutes les operations</p>
+        <div class="bg-surface p-6 rounded-lg border border-line/30">
+          <h3 class="font-semibold text-ink mb-2">API HTTP</h3>
+          <p class="text-ink/60 text-sm">Interface REST simple pour toutes les operations</p>
         </div>
-        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">Embarquable</h3>
-          <p class="text-barrel-gray/60 text-sm">Utilisez comme bibliotheque dans les apps Erlang/Elixir</p>
+        <div class="bg-surface p-6 rounded-lg border border-line/30">
+          <h3 class="font-semibold text-ink mb-2">Embarquable</h3>
+          <p class="text-ink/60 text-sm">Utilisez comme bibliotheque dans les apps Erlang/Elixir</p>
         </div>
       </div>
 
@@ -118,30 +118,30 @@ ok = barrel_vectordb:add(docs, <<"doc1">>, [0.1, 0.2, 0.3],
       <div class="mb-16">
         <h2 class="text-2xl font-bold text-center mb-8">Performance</h2>
         <div class="grid md:grid-cols-3 gap-6">
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30 text-center">
+          <div class="bg-surface p-6 rounded-lg border border-line/30 text-center">
             <p class="text-3xl font-bold text-coral">&lt;5ms</p>
-            <p class="text-barrel-gray/60">Recherche (p99, top-10)</p>
+            <p class="text-ink/60">Recherche (p99, top-10)</p>
           </div>
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30 text-center">
+          <div class="bg-surface p-6 rounded-lg border border-line/30 text-center">
             <p class="text-3xl font-bold text-coral">10K/sec</p>
-            <p class="text-barrel-gray/60">Debit d'insertion</p>
+            <p class="text-ink/60">Debit d'insertion</p>
           </div>
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30 text-center">
+          <div class="bg-surface p-6 rounded-lg border border-line/30 text-center">
             <p class="text-3xl font-bold text-coral">1K QPS</p>
-            <p class="text-barrel-gray/60">Debit de recherche</p>
+            <p class="text-ink/60">Debit de recherche</p>
           </div>
         </div>
-        <p class="text-center text-barrel-gray/40 text-sm mt-4">Benchmark sur 1M vecteurs, 1536 dimensions</p>
+        <p class="text-center text-ink/40 text-sm mt-4">Benchmark sur 1M vecteurs, 1536 dimensions</p>
       </div>
 
       <!-- Quick Start -->
       <div class="mb-16">
         <h2 class="text-2xl font-bold text-center mb-8">Demarrage Rapide</h2>
-        <div class="bg-barrel-black rounded-lg border border-teal-dark/30 overflow-hidden">
-          <div class="bg-barrel-black/80 px-4 py-2 border-b border-teal-dark/30">
-            <span class="text-barrel-gray/60 text-sm">Erlang</span>
+        <div class="bg-surface rounded-lg border border-line/30 overflow-hidden">
+          <div class="bg-surface/80 px-4 py-2 border-b border-line/30">
+            <span class="text-ink/60 text-sm">Erlang</span>
           </div>
-          <pre class="p-4 text-sm overflow-x-auto"><code class="text-barrel-gray/80">{erlCode}</code></pre>
+          <pre class="p-4 text-sm overflow-x-auto"><code class="text-ink/80">{erlCode}</code></pre>
         </div>
       </div>
 
@@ -149,18 +149,18 @@ ok = barrel_vectordb:add(docs, <<"doc1">>, [0.1, 0.2, 0.3],
       <div class="mb-16">
         <h2 class="text-2xl font-bold text-center mb-8">Quand l'Utiliser</h2>
         <div class="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/50">
-            <h3 class="text-teal-light font-semibold mb-4">Utilisez Barrel Vector quand :</h3>
-            <ul class="space-y-2 text-barrel-gray/80 text-sm">
+          <div class="bg-surface p-6 rounded-lg border border-line/50">
+            <h3 class="text-accent font-semibold mb-4">Utilisez Barrel Vector quand :</h3>
+            <ul class="space-y-2 text-ink/80 text-sm">
               <li>+ Deploiement mono-machine</li>
               <li>+ &lt;10M vecteurs</li>
               <li>+ Configuration simple preferee</li>
               <li>+ Embarque dans app Erlang/Elixir</li>
             </ul>
           </div>
-          <div class="bg-barrel-black p-6 rounded-lg border border-coral/50">
+          <div class="bg-surface p-6 rounded-lg border border-coral/50">
             <h3 class="text-coral font-semibold mb-4">Considerez des alternatives quand :</h3>
-            <ul class="space-y-2 text-barrel-gray/80 text-sm">
+            <ul class="space-y-2 text-ink/80 text-sm">
               <li>+ Besoin d'un cluster distribue</li>
               <li>+ &gt;10M vecteurs</li>
               <li>+ Failover automatique requis</li>
@@ -176,7 +176,7 @@ ok = barrel_vectordb:add(docs, <<"doc1">>, [0.1, 0.2, 0.3],
           <a href="/docs" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
             Lire la Documentation
           </a>
-          <a href="https://github.com/barrel-db/barrel" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-8 py-3 rounded-lg text-lg transition">
+          <a href="https://github.com/barrel-db/barrel" class="border border-line/50 hover:border-accent text-ink px-8 py-3 rounded-lg text-lg transition">
             Voir le Code Source
           </a>
         </div>

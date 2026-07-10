@@ -24,9 +24,9 @@ const hits = await db.searchLocal(queryVector, { k: 10 });`;
     <div class="container mx-auto max-w-5xl">
       <!-- Header -->
       <div class="text-center mb-16">
-        <span class="bg-teal-light/20 text-teal-light text-sm px-3 py-1 rounded-full">Client navigateur</span>
+        <span class="bg-accent/20 text-accent text-sm px-3 py-1 rounded-full">Client navigateur</span>
         <h1 class="text-4xl md:text-5xl font-bold mb-4 mt-4">Sync &amp; Local-first</h1>
-        <p class="text-xl text-barrel-gray/60 max-w-2xl mx-auto">
+        <p class="text-xl text-ink/60 max-w-2xl mx-auto">
           barrel-lite est un Barrel offline-first dans le navigateur. Lisez et ecrivez localement, synchronisez quand
           vous etes connecte, et recherchez les vecteurs sur l'appareil. TypeScript, zero dependance a l'execution.
         </p>
@@ -34,40 +34,40 @@ const hits = await db.searchLocal(queryVector, { k: 10 });`;
 
       <!-- Core capabilities -->
       <div class="grid md:grid-cols-3 gap-6 mb-16">
-        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">Offline-first</h3>
-          <p class="text-barrel-gray/60 text-sm">Lectures et ecritures passent d'abord par un stockage OPFS local ; la synchronisation assure la durabilite, pas le chemin critique.</p>
+        <div class="bg-surface p-6 rounded-lg border border-line/30">
+          <h3 class="font-semibold text-ink mb-2">Offline-first</h3>
+          <p class="text-ink/60 text-sm">Lectures et ecritures passent d'abord par un stockage OPFS local ; la synchronisation assure la durabilite, pas le chemin critique.</p>
         </div>
-        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">Sync correcte</h3>
-          <p class="text-barrel-gray/60 text-sm">Vecteurs de version HLC, compatibles octet par octet avec le serveur, ainsi la synchronisation converge et ne perd jamais silencieusement une ecriture.</p>
+        <div class="bg-surface p-6 rounded-lg border border-line/30">
+          <h3 class="font-semibold text-ink mb-2">Sync correcte</h3>
+          <p class="text-ink/60 text-sm">Vecteurs de version HLC, compatibles octet par octet avec le serveur, ainsi la synchronisation converge et ne perd jamais silencieusement une ecriture.</p>
         </div>
-        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">Multi-onglets</h3>
-          <p class="text-barrel-gray/60 text-sm">Un onglet par origine possede le stockage via Web Locks ; les autres onglets lui deleguent et voient les memes changements.</p>
+        <div class="bg-surface p-6 rounded-lg border border-line/30">
+          <h3 class="font-semibold text-ink mb-2">Multi-onglets</h3>
+          <p class="text-ink/60 text-sm">Un onglet par origine possede le stockage via Web Locks ; les autres onglets lui deleguent et voient les memes changements.</p>
         </div>
-        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">Mises a jour continues</h3>
-          <p class="text-barrel-gray/60 text-sm">Polling adaptatif avec un flux SSE continu optionnel qui le reveille lors des changements serveur.</p>
+        <div class="bg-surface p-6 rounded-lg border border-line/30">
+          <h3 class="font-semibold text-ink mb-2">Mises a jour continues</h3>
+          <p class="text-ink/60 text-sm">Polling adaptatif avec un flux SSE continu optionnel qui le reveille lors des changements serveur.</p>
         </div>
-        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">Recherche vectorielle locale</h3>
-          <p class="text-barrel-gray/60 text-sm">Recuperez les vecteurs par document et executez un top-k cosinus en force brute sur l'appareil, avec un filtre BQL optionnel.</p>
+        <div class="bg-surface p-6 rounded-lg border border-line/30">
+          <h3 class="font-semibold text-ink mb-2">Recherche vectorielle locale</h3>
+          <p class="text-ink/60 text-sm">Recuperez les vecteurs par document et executez un top-k cosinus en force brute sur l'appareil, avec un filtre BQL optionnel.</p>
         </div>
-        <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/30">
-          <h3 class="font-semibold text-barrel-gray mb-2">Pieces jointes et BQL</h3>
-          <p class="text-barrel-gray/60 text-sm">Synchronisation des pieces jointes adressees par contenu et un sous-ensemble BQL local correspondant aux requetes documentaires du serveur.</p>
+        <div class="bg-surface p-6 rounded-lg border border-line/30">
+          <h3 class="font-semibold text-ink mb-2">Pieces jointes et BQL</h3>
+          <p class="text-ink/60 text-sm">Synchronisation des pieces jointes adressees par contenu et un sous-ensemble BQL local correspondant aux requetes documentaires du serveur.</p>
         </div>
       </div>
 
       <!-- Quick Start -->
       <div class="mb-16">
         <h2 class="text-2xl font-bold text-center mb-8">Demarrage Rapide</h2>
-        <div class="bg-barrel-black rounded-lg border border-teal-dark/30 overflow-hidden">
-          <div class="bg-barrel-black/80 px-4 py-2 border-b border-teal-dark/30">
-            <span class="text-barrel-gray/60 text-sm">TypeScript</span>
+        <div class="bg-surface rounded-lg border border-line/30 overflow-hidden">
+          <div class="bg-surface/80 px-4 py-2 border-b border-line/30">
+            <span class="text-ink/60 text-sm">TypeScript</span>
           </div>
-          <pre class="p-4 text-sm overflow-x-auto"><code class="text-barrel-gray/80">{tsCode}</code></pre>
+          <pre class="p-4 text-sm overflow-x-auto"><code class="text-ink/80">{tsCode}</code></pre>
         </div>
       </div>
 
@@ -75,18 +75,18 @@ const hits = await db.searchLocal(queryVector, { k: 10 });`;
       <div class="mb-16">
         <h2 class="text-2xl font-bold text-center mb-8">Quand l'Utiliser</h2>
         <div class="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-          <div class="bg-barrel-black p-6 rounded-lg border border-teal-dark/50">
-            <h3 class="text-teal-light font-semibold mb-4">Utilisez barrel-lite quand :</h3>
-            <ul class="space-y-2 text-barrel-gray/80 text-sm">
+          <div class="bg-surface p-6 rounded-lg border border-line/50">
+            <h3 class="text-accent font-semibold mb-4">Utilisez barrel-lite quand :</h3>
+            <ul class="space-y-2 text-ink/80 text-sm">
               <li>+ Votre app doit fonctionner hors ligne</li>
               <li>+ Vous voulez une recherche sur l'appareil sur des donnees synchronisees</li>
               <li>+ Vous avez besoin d'un cache local qui converge avec un serveur</li>
               <li>+ Vous voulez le meme protocole et les memes codecs que Barrel</li>
             </ul>
           </div>
-          <div class="bg-barrel-black p-6 rounded-lg border border-coral/50">
+          <div class="bg-surface p-6 rounded-lg border border-coral/50">
             <h3 class="text-coral font-semibold mb-4">Considerez des alternatives quand :</h3>
-            <ul class="space-y-2 text-barrel-gray/80 text-sm">
+            <ul class="space-y-2 text-ink/80 text-sm">
               <li>+ Vous ne communiquez qu'avec un serveur en ligne</li>
               <li>+ Vous avez besoin d'un index ANN dans le navigateur (la recherche s'execute cote serveur)</li>
               <li>+ Vous n'utilisez pas le protocole Barrel</li>
@@ -101,7 +101,7 @@ const hits = await db.searchLocal(queryVector, { k: 10 });`;
           <a href="/docs" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
             Lire la Documentation
           </a>
-          <a href="https://github.com/barrel-db/barrel" class="border border-teal-dark/50 hover:border-teal-light text-barrel-gray px-8 py-3 rounded-lg text-lg transition">
+          <a href="https://github.com/barrel-db/barrel" class="border border-line/50 hover:border-accent text-ink px-8 py-3 rounded-lg text-lg transition">
             Voir le Code Source
           </a>
         </div>

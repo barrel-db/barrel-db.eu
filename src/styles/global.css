@@ -10,15 +10,53 @@
   --color-gray-light: #F3F3F2;
 }
 
+/* Semantic slots. The brand hues above are fixed; which one fills a slot
+   depends on the theme. `accent` and `line` swap teal-light and teal-dark
+   between themes so text keeps its contrast against the surface behind it:
+   teal-light on #222929 reads, teal-light on white does not.
+
+   An inline script in the layouts stamps data-theme on <html> before paint,
+   seeded from localStorage or prefers-color-scheme. */
+:root,
+:root[data-theme="dark"] {
+  --surface: #222929;
+  --surface-2: #1a1f1f;
+  --ink: #F3F3F2;
+  --accent: #75B6B2;
+  --line: #006B77;
+  --code-bg: #1a1f1f;
+  --code-ink: #E9967A;
+}
+
+:root[data-theme="light"] {
+  --surface: #FFFFFF;
+  --surface-2: #F3F3F2;
+  --ink: #222929;
+  --accent: #006B77;
+  --line: #75B6B2;
+  --code-bg: #F3F3F2;
+  --code-ink: #A8433E;
+}
+
 /* Custom Tailwind theme extension */
 @theme {
   --color-coral: #C65E59;
   --color-coral-dark: #a84d49;
   --color-teal-light: #75B6B2;
   --color-teal-dark: #006B77;
-  --color-barrel-black: #222929;
-  --color-barrel-gray: #F3F3F2;
+
+  /* Theme-aware. Utilities resolve these per element, so bg-surface/95 and
+     text-ink/60 keep working through the indirection. */
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-accent: var(--accent);
+  --color-line: var(--line);
 }
+
+/* Colour scheme so form controls and scrollbars follow the theme. */
+:root[data-theme="dark"] { color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
 
 /* Base styles */
 body {

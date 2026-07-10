@@ -1,5 +1,7 @@
 ---
 import '../styles/global.css';
+import ThemeScript from '../components/ThemeScript.astro';
+import ThemeToggle from '../components/ThemeToggle.astro';
 import { docsNav, docsOrder, type DocSection, type DocItem } from '../data/docs-nav';
 
 interface Heading { depth: number; slug: string; text: string; }
@@ -37,6 +39,7 @@ const otherLabel = lang === 'fr' ? 'EN' : 'FR';
 <!doctype html>
 <html lang={lang} class="scroll-smooth">
   <head>
+    <ThemeScript />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/logo-symbol-coral.svg" />
@@ -47,40 +50,41 @@ const otherLabel = lang === 'fr' ? 'EN' : 'FR';
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link href="/pagefind/pagefind-ui.css" rel="stylesheet" />
   </head>
-  <body class="bg-barrel-black text-barrel-gray min-h-screen flex flex-col">
+  <body class="bg-surface text-ink min-h-screen flex flex-col">
     <!-- Header -->
-    <header class="border-b border-teal-dark/30 sticky top-0 z-30 bg-barrel-black/95 backdrop-blur">
+    <header class="border-b border-line/30 sticky top-0 z-30 bg-surface/95 backdrop-blur">
       <nav class="container mx-auto px-4 py-3 flex items-center justify-between">
         <a href={home} class="flex items-center gap-3 hover:opacity-80 transition">
           <img src="/logo-symbol-coral.svg" alt="Barrel" class="h-8 w-auto" />
-          <span class="text-lg font-bold text-barrel-gray">Barrel DB</span>
-          <span class="text-barrel-gray/40">/</span>
-          <span class="text-barrel-gray/70">Docs</span>
+          <span class="text-lg font-bold text-ink">Barrel DB</span>
+          <span class="text-ink/40">/</span>
+          <span class="text-ink/70">Docs</span>
         </a>
         <div class="hidden md:flex items-center gap-6 text-sm">
           <a href={mk('/products/barrel')} class="text-coral hover:text-coral-dark transition font-semibold">Barrel</a>
-          <a href={mk('/opensource')} class="text-barrel-gray/70 hover:text-barrel-gray transition">Open Source</a>
-          <a href={mk('/contact')} class="text-barrel-gray/70 hover:text-barrel-gray transition">Contact</a>
-          <a href="https://github.com/barrel-db/barrel" class="text-barrel-gray/70 hover:text-barrel-gray transition">GitHub</a>
-          <a href={otherBase} class="text-barrel-gray/50 hover:text-barrel-gray border border-teal-dark/40 rounded px-2 py-0.5 transition">{otherLabel}</a>
+          <a href={mk('/opensource')} class="text-ink/70 hover:text-ink transition">Open Source</a>
+          <a href={mk('/contact')} class="text-ink/70 hover:text-ink transition">Contact</a>
+          <a href="https://github.com/barrel-db/barrel" class="text-ink/70 hover:text-ink transition">GitHub</a>
+          <a href={otherBase} class="text-ink/50 hover:text-ink border border-line/40 rounded px-2 py-0.5 transition">{otherLabel}</a>
+          <ThemeToggle label={lang === 'fr' ? 'Basculer entre theme clair et sombre' : 'Toggle light and dark theme'} />
         </div>
       </nav>
     </header>
 
     <div class="flex-1 w-full max-w-7xl mx-auto flex gap-8 px-4">
       <!-- Sidebar -->
-      <aside class="hidden lg:block w-60 shrink-0 border-r border-teal-dark/20 py-8 pr-4">
+      <aside class="hidden lg:block w-60 shrink-0 border-r border-line/20 py-8 pr-4">
         <nav class="sticky top-20 space-y-6 text-sm">
           <div id="search" class="mb-2"></div>
           {nav.map((section) => (
             <div>
-              <p class="text-barrel-gray/40 uppercase text-xs font-semibold tracking-wider mb-2">{section.title}</p>
+              <p class="text-ink/40 uppercase text-xs font-semibold tracking-wider mb-2">{section.title}</p>
               <ul class="space-y-1">
                 {section.items.map((item) => (
                   <li>
                     <a
                       href={`${base}/${item.slug}`}
-                      class={`block px-2 py-1 rounded transition ${item.slug === slug ? 'bg-teal-dark/30 text-teal-light font-medium' : 'text-barrel-gray/70 hover:text-barrel-gray hover:bg-teal-dark/10'}`}
+                      class={`block px-2 py-1 rounded transition ${item.slug === slug ? 'bg-line/30 text-accent font-medium' : 'text-ink/70 hover:text-ink hover:bg-line/10'}`}
                     >{item.label}</a>
                   </li>
                 ))}
@@ -94,22 +98,22 @@ const otherLabel = lang === 'fr' ? 'EN' : 'FR';
       <main class="flex-1 min-w-0 py-8">
         <article class:list={[contentClass, "max-w-3xl"]} data-pagefind-body>
           <h1 class="text-4xl font-bold mb-3">{title}</h1>
-          {description && <p class="text-lg text-barrel-gray/60 mb-8">{description}</p>}
+          {description && <p class="text-lg text-ink/60 mb-8">{description}</p>}
           <slot />
         </article>
 
         <!-- Prev / Next -->
-        <nav class="max-w-3xl mt-16 pt-8 border-t border-teal-dark/20 flex justify-between gap-4 text-sm">
+        <nav class="max-w-3xl mt-16 pt-8 border-t border-line/20 flex justify-between gap-4 text-sm">
           {prev ? (
-            <a href={`${base}/${prev.slug}`} class="group flex-1 p-4 rounded-lg border border-teal-dark/30 hover:border-teal-light/50 transition">
-              <span class="block text-barrel-gray/40 text-xs mb-1">{t.prev}</span>
-              <span class="text-barrel-gray group-hover:text-teal-light">&larr; {prev.label}</span>
+            <a href={`${base}/${prev.slug}`} class="group flex-1 p-4 rounded-lg border border-line/30 hover:border-accent/50 transition">
+              <span class="block text-ink/40 text-xs mb-1">{t.prev}</span>
+              <span class="text-ink group-hover:text-accent">&larr; {prev.label}</span>
             </a>
           ) : <span class="flex-1"></span>}
           {next ? (
-            <a href={`${base}/${next.slug}`} class="group flex-1 p-4 rounded-lg border border-teal-dark/30 hover:border-teal-light/50 transition text-right">
-              <span class="block text-barrel-gray/40 text-xs mb-1">{t.next}</span>
-              <span class="text-barrel-gray group-hover:text-teal-light">{next.label} &rarr;</span>
+            <a href={`${base}/${next.slug}`} class="group flex-1 p-4 rounded-lg border border-line/30 hover:border-accent/50 transition text-right">
+              <span class="block text-ink/40 text-xs mb-1">{t.next}</span>
+              <span class="text-ink group-hover:text-accent">{next.label} &rarr;</span>
             </a>
           ) : <span class="flex-1"></span>}
         </nav>
@@ -119,13 +123,13 @@ const otherLabel = lang === 'fr' ? 'EN' : 'FR';
       {toc.length > 0 && (
         <aside class="hidden xl:block w-56 shrink-0 py-8">
           <div class="sticky top-20 text-sm">
-            <p class="text-barrel-gray/40 uppercase text-xs font-semibold tracking-wider mb-3">{t.onThisPage}</p>
-            <ul class="space-y-2 border-l border-teal-dark/20">
+            <p class="text-ink/40 uppercase text-xs font-semibold tracking-wider mb-3">{t.onThisPage}</p>
+            <ul class="space-y-2 border-l border-line/20">
               {toc.map((h) => (
                 <li>
                   <a
                     href={`#${h.slug}`}
-                    class={`block border-l -ml-px pl-3 py-0.5 border-transparent text-barrel-gray/60 hover:text-teal-light hover:border-teal-light transition ${h.depth === 3 ? 'pl-6' : ''}`}
+                    class={`block border-l -ml-px pl-3 py-0.5 border-transparent text-ink/60 hover:text-accent hover:border-accent transition ${h.depth === 3 ? 'pl-6' : ''}`}
                   >{h.text}</a>
                 </li>
               ))}
@@ -135,9 +139,9 @@ const otherLabel = lang === 'fr' ? 'EN' : 'FR';
       )}
     </div>
 
-    <footer class="border-t border-teal-dark/30 py-6 mt-auto">
-      <div class="container mx-auto px-4 text-center text-barrel-gray/50 text-sm">
-        <p>&copy; 2026 Enki Bridge. Apache 2.0. &middot; <a href="/" class="hover:text-barrel-gray">barrel-db.eu</a></p>
+    <footer class="border-t border-line/30 py-6 mt-auto">
+      <div class="container mx-auto px-4 text-center text-ink/50 text-sm">
+        <p>&copy; 2026 Enki Bridge. Apache 2.0. &middot; <a href="/" class="hover:text-ink">barrel-db.eu</a></p>
       </div>
     </footer>
 
@@ -150,47 +154,47 @@ const otherLabel = lang === 'fr' ? 'EN' : 'FR';
       }
       .docs-content h3 {
         font-size: 1.25rem; font-weight: 600; margin: 2rem 0 0.75rem;
-        color: var(--color-teal-light); scroll-margin-top: 5rem;
+        color: var(--accent); scroll-margin-top: 5rem;
       }
       .docs-content h4 { font-size: 1.05rem; font-weight: 600; margin: 1.5rem 0 0.5rem; }
-      .docs-content p { color: color-mix(in srgb, var(--color-barrel-gray) 80%, transparent); margin: 1rem 0; }
+      .docs-content p { color: color-mix(in srgb, var(--ink) 80%, transparent); margin: 1rem 0; }
       .docs-content a { color: var(--color-coral); text-decoration: none; }
       .docs-content a:hover { text-decoration: underline; }
-      .docs-content ul, .docs-content ol { margin: 1rem 0; padding-left: 1.5rem; color: color-mix(in srgb, var(--color-barrel-gray) 80%, transparent); }
+      .docs-content ul, .docs-content ol { margin: 1rem 0; padding-left: 1.5rem; color: color-mix(in srgb, var(--ink) 80%, transparent); }
       .docs-content ul { list-style: disc; }
       .docs-content ol { list-style: decimal; }
       .docs-content li { margin: 0.4rem 0; }
-      .docs-content li::marker { color: var(--color-teal-light); }
+      .docs-content li::marker { color: var(--accent); }
       .docs-content :not(pre) > code {
-        background: #1a1f1f; color: #E9967A; font-family: 'JetBrains Mono', monospace;
+        background: var(--code-bg); color: var(--code-ink); font-family: 'JetBrains Mono', monospace;
         font-size: 0.85em; padding: 0.15rem 0.4rem; border-radius: 0.3rem;
       }
       .docs-content pre {
         margin: 1.25rem 0; padding: 1rem; border-radius: 0.6rem;
-        border: 1px solid color-mix(in srgb, var(--color-teal-dark) 30%, transparent);
+        border: 1px solid color-mix(in srgb, var(--line) 30%, transparent);
         overflow-x: auto; font-size: 0.85rem;
       }
       .docs-content pre code { font-family: 'JetBrains Mono', monospace; }
       .docs-content blockquote {
         border-left: 3px solid var(--color-coral); padding-left: 1rem; margin: 1.25rem 0;
-        color: color-mix(in srgb, var(--color-barrel-gray) 65%, transparent);
+        color: color-mix(in srgb, var(--ink) 65%, transparent);
       }
       .docs-content table { width: 100%; border-collapse: collapse; margin: 1.25rem 0; font-size: 0.9rem; }
       .docs-content th, .docs-content td {
-        border: 1px solid color-mix(in srgb, var(--color-teal-dark) 30%, transparent);
+        border: 1px solid color-mix(in srgb, var(--line) 30%, transparent);
         padding: 0.5rem 0.75rem; text-align: left;
       }
-      .docs-content th { background: color-mix(in srgb, var(--color-teal-dark) 25%, transparent); color: var(--color-barrel-gray); }
-      .docs-content hr { border: 0; border-top: 1px solid color-mix(in srgb, var(--color-teal-dark) 30%, transparent); margin: 2rem 0; }
+      .docs-content th { background: color-mix(in srgb, var(--line) 25%, transparent); color: var(--ink); }
+      .docs-content hr { border: 0; border-top: 1px solid color-mix(in srgb, var(--line) 30%, transparent); margin: 2rem 0; }
 
-      /* Pagefind search UI, themed to match the dark site */
+      /* Pagefind search UI, themed from the semantic slots */
       :root {
         --pagefind-ui-scale: 0.85;
-        --pagefind-ui-primary: var(--color-teal-light);
-        --pagefind-ui-text: var(--color-barrel-gray);
-        --pagefind-ui-background: #1a1f1f;
-        --pagefind-ui-border: color-mix(in srgb, var(--color-teal-dark) 45%, transparent);
-        --pagefind-ui-tag: var(--color-teal-dark);
+        --pagefind-ui-primary: var(--accent);
+        --pagefind-ui-text: var(--ink);
+        --pagefind-ui-background: var(--surface-2);
+        --pagefind-ui-border: color-mix(in srgb, var(--line) 45%, transparent);
+        --pagefind-ui-tag: var(--line);
         --pagefind-ui-border-width: 1px;
         --pagefind-ui-border-radius: 0.5rem;
         --pagefind-ui-font: 'Roboto', sans-serif;
