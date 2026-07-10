@@ -33,6 +33,7 @@ export const docsNav: DocSection[] = [
     items: [
       { label: "Embedding Barrel", slug: "guides/embedding" },
       { label: "Record mode", slug: "guides/record-mode" },
+      { label: "Index a codebase for an agent", slug: "guides/code-indexing" },
       { label: "Querying with BQL", slug: "guides/query-bql" },
       { label: "Synchronization", slug: "guides/synchronization" },
       { label: "Timeline", slug: "guides/timeline" },
@@ -82,6 +83,7 @@ const frLabel: Record<string, string> = {
   "concepts/agent-layer": "La couche agent",
   "guides/embedding": "Integrer Barrel",
   "guides/record-mode": "Mode enregistrement",
+  "guides/code-indexing": "Indexer une base de code pour un agent",
   "guides/query-bql": "Requetes avec BQL",
   "guides/synchronization": "Synchronisation",
   "guides/timeline": "Timeline",
