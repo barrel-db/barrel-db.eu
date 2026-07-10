@@ -1,5 +1,22 @@
 ---
 import Layout from '../../layouts/LayoutFr.astro';
+const usageCode = `%% Ouvrez une base. Le texte est transforme en vecteur a l'ecriture.
+{ok, _} = barrel:open(<<"notes">>, #{embedding => #{provider => openai}}).
+
+%% Une seule ecriture stocke le document, son vecteur et ses blobs sous un id.
+{ok, _} = barrel:put_doc(<<"notes">>, #{
+    <<"id">>    => <<"n1">>,
+    <<"title">> => <<"Design review">>,
+    <<"text">>  => <<"Ship the edge sync protocol">>
+}).
+
+%% Interrogez la couche documentaire avec BQL.
+{ok, Rows, _} = barrel:query(<<"notes">>,
+    <<"SELECT id, title FROM db WHERE title LIKE 'Design%'">>).
+
+%% Cherchez dans la couche vectorielle, sur les memes enregistrements.
+{ok, Hits, _} = barrel:query(<<"notes">>,
+    <<"SELECT id, _score FROM vector_top_k('edge sync', k => 5) AS v">>).`;
 ---
 
 <Layout title="La base de donnees edge-AI pour les agents">
@@ -95,6 +112,18 @@ import Layout from '../../layouts/LayoutFr.astro';
 
       <div class="text-center mt-8">
         <a href="/fr/products/barrel" class="text-coral hover:text-coral-dark font-semibold">Decouvrir Barrel &rarr;</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- General usage: documents and vectors through one API -->
+  <section class="py-16 px-4">
+    <div class="container mx-auto max-w-4xl">
+      <h2 class="text-3xl font-bold mb-4 text-center">Une seule API. Documents et vecteurs.</h2>
+      <p class="text-ink/60 text-center mb-8 max-w-2xl mx-auto">Aucune glu entre un stockage documentaire et un index vectoriel separe. Vous ecrivez un enregistrement une fois, puis vous l'interrogez comme document ou le cherchez comme vecteur.</p>
+      <pre class="bg-surface-2 border border-line/30 rounded-lg p-6 overflow-x-auto text-sm"><code class="text-ink/90">{usageCode}</code></pre>
+      <div class="text-center mt-8">
+        <a href="/fr/docs/get-started/quickstart" class="text-coral hover:text-coral-dark font-semibold">Lire le guide de demarrage &rarr;</a>
       </div>
     </div>
   </section>

@@ -1,5 +1,22 @@
 ---
 import Layout from '../layouts/Layout.astro';
+const usageCode = `%% Open a database. Text is embedded into a vector on write.
+{ok, _} = barrel:open(<<"notes">>, #{embedding => #{provider => openai}}).
+
+%% One write stores the document, its vector, and its blobs under one id.
+{ok, _} = barrel:put_doc(<<"notes">>, #{
+    <<"id">>    => <<"n1">>,
+    <<"title">> => <<"Design review">>,
+    <<"text">>  => <<"Ship the edge sync protocol">>
+}).
+
+%% Query the document layer with BQL.
+{ok, Rows, _} = barrel:query(<<"notes">>,
+    <<"SELECT id, title FROM db WHERE title LIKE 'Design%'">>).
+
+%% Search the vector layer over the very same records.
+{ok, Hits, _} = barrel:query(<<"notes">>,
+    <<"SELECT id, _score FROM vector_top_k('edge sync', k => 5) AS v">>).`;
 ---
 
 <Layout title="The edge-AI database for agents">
@@ -95,6 +112,18 @@ import Layout from '../layouts/Layout.astro';
 
       <div class="text-center mt-8">
         <a href="/products/barrel" class="text-coral hover:text-coral-dark font-semibold">Explore Barrel &rarr;</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- General usage: documents and vectors through one API -->
+  <section class="py-16 px-4">
+    <div class="container mx-auto max-w-4xl">
+      <h2 class="text-3xl font-bold mb-4 text-center">One API. Documents and vectors.</h2>
+      <p class="text-ink/60 text-center mb-8 max-w-2xl mx-auto">No glue between a document store and a separate vector index. You write a record once, then query it as documents or search it as vectors.</p>
+      <pre class="bg-surface-2 border border-line/30 rounded-lg p-6 overflow-x-auto text-sm"><code class="text-ink/90">{usageCode}</code></pre>
+      <div class="text-center mt-8">
+        <a href="/docs/get-started/quickstart" class="text-coral hover:text-coral-dark font-semibold">Read the quickstart &rarr;</a>
       </div>
     </div>
   </section>
