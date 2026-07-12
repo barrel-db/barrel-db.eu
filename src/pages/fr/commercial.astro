@@ -1,0 +1,227 @@
+---
+import Layout from '../../layouts/LayoutFr.astro';
+
+const offers = [
+  {
+    id: 'rag',
+    title: 'Pilote RAG Prive',
+    accent: 'coral',
+    text: 'Deployez Barrel DB pour de la recherche semantique privee et du RAG sur vos propres donnees. Nous aidons sur l\'ingestion, les embeddings, la recherche hybride, le filtrage par metadonnees, l\'evaluation et le deploiement.',
+    bullets: [
+      'Barrel Vector + documents sous un seul id',
+      'embeddings locaux, Ollama ou compatibles OpenAI',
+      'recherche hybride vecteur/BM25',
+      'evaluation et reglage',
+    ],
+    cta: 'Discuter d\'un pilote RAG',
+    subject: 'Pilote%20RAG%20Prive',
+  },
+  {
+    id: 'agent-memory',
+    title: 'Pilote Memoire d\'Agent',
+    accent: 'accent',
+    text: 'Utilisez Barrel comme couche de memoire persistante pour vos agents IA et outils MCP. Stockez documents, vecteurs, blobs, sessions et capacites derriere une seule API.',
+    bullets: [
+      'acces REST et MCP',
+      'espaces, sessions, handoffs',
+      'modele de capacites securise',
+      'deploiement pret pour l\'observabilite',
+    ],
+    cta: 'Discuter de la memoire d\'agent',
+    subject: 'Pilote%20Memoire%20Agent',
+  },
+  {
+    id: 'edge-sync',
+    title: 'Pilote Edge Sync / Local-first',
+    accent: 'accent',
+    text: 'Construisez des deploiements offline-first ou edge avec synchronisation, versioning et recherche locale. Gardez les donnees pres des utilisateurs et synchronisez des que la connectivite le permet.',
+    bullets: [
+      'synchronisation de documents et gestion des conflits',
+      'recherche vectorielle locale',
+      'schemas de deploiement navigateur/edge',
+      'stockage local chiffre',
+    ],
+    cta: 'Discuter de l\'edge sync',
+    subject: 'Pilote%20Edge%20Sync',
+  },
+  {
+    id: 'managed',
+    title: 'Barrel DB Manage',
+    accent: 'coral',
+    text: 'Faites tourner Barrel DB avec l\'aide operationnelle d\'Enki Bridge. Disponible pour des partenaires de conception selectionnes et des utilisateurs en production.',
+    bullets: [
+      'deploiement et mises a jour',
+      'supervision et sauvegardes',
+      'revue de securite',
+      'canal de support prive',
+      'SLAs personnalises',
+    ],
+    cta: 'Demander Barrel manage',
+    subject: 'Barrel%20DB%20Manage',
+  },
+];
+
+const audience = [
+  'equipes europeennes construisant des systemes d\'IA privee',
+  'equipes Erlang/Elixir voulant un stockage vecteur/document embarque',
+  'entreprises qui ne peuvent pas envoyer leurs donnees a un SaaS vectoriel tiers',
+  'applications edge/local-first',
+  'equipes exposant des donnees aux agents via REST ou MCP',
+];
+
+const steps = [
+  {
+    n: '1',
+    title: 'Appel d\'architecture',
+    text: 'Un court appel pour comprendre ce que vous construisez, vos donnees et vos contraintes. Sans cout ni engagement.',
+  },
+  {
+    n: '2',
+    title: 'Pilote a perimetre fixe ou revue de production',
+    text: 'Un engagement de partenaire de conception avec un livrable clair : un pilote RAG, une couche de memoire d\'agent, un deploiement edge, ou la revue d\'une installation en production.',
+  },
+  {
+    n: '3',
+    title: 'Deploiement, support ou service manage',
+    text: 'Un support commercial continu, de l\'aide pour votre propre deploiement, ou un deploiement Barrel manage et selectionne, opere par Enki Bridge.',
+  },
+];
+---
+
+<Layout
+  title="Support Commercial & Barrel DB Manage"
+  description="Pilotes commerciaux, hebergement manage et support entreprise pour l'IA privee, le RAG, la memoire d'agent et les systemes edge/local-first construits sur Barrel DB, par Enki Bridge."
+>
+  <!-- Hero -->
+  <section class="py-24 px-4 bg-gradient-to-b from-surface to-line/10">
+    <div class="container mx-auto text-center max-w-4xl">
+      <div class="flex items-center justify-center gap-4 mb-6">
+        <div class="flex items-center gap-2 bg-line/20 px-3 py-1.5 rounded-full border border-line/30">
+          <span class="text-accent text-sm font-medium">Support commercial</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">🇪🇺</span>
+          <span class="text-ink/60 text-sm font-medium uppercase tracking-wider">Enki Bridge</span>
+        </div>
+      </div>
+      <h1 class="text-4xl md:text-5xl font-bold mb-6">
+        Faites tourner Barrel DB en production
+        <br />
+        avec <span class="bg-gradient-to-r from-coral to-accent bg-clip-text text-transparent">Enki Bridge</span>
+      </h1>
+      <p class="text-xl text-ink/70 mb-8 max-w-3xl mx-auto">
+        Pilotes commerciaux, hebergement manage et support entreprise pour l'IA privee, le RAG,
+        la memoire d'agent et les systemes edge/local-first construits sur Barrel DB.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="mailto:hello@barrel-db.eu?subject=Commercial%20Barrel%20DB" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
+          Contacter Enki Bridge
+        </a>
+        <a href="/fr/docs" class="border border-line/50 hover:border-accent text-ink px-8 py-3 rounded-lg text-lg transition">
+          Lire la documentation
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Commercial offers -->
+  <section class="py-16 px-4">
+    <div class="container mx-auto max-w-5xl">
+      <h2 class="text-3xl font-bold mb-4 text-center">Offres commerciales</h2>
+      <p class="text-ink/60 text-center mb-12 max-w-2xl mx-auto">
+        Des pilotes a perimetre fixe et un support commercial batis sur la base de donnees open source. Commencez par une offre, etendez ensuite.
+      </p>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        {offers.map((o) => (
+          <div id={o.id} class={`scroll-mt-24 flex flex-col bg-surface p-6 rounded-xl border ${o.accent === 'coral' ? 'border-coral/30' : 'border-line/30'}`}>
+            <h3 class={`text-xl font-bold mb-3 ${o.accent === 'coral' ? 'text-coral' : 'text-accent'}`}>{o.title}</h3>
+            <p class="text-ink/70 text-sm mb-4">{o.text}</p>
+            <ul class="space-y-2 mb-6">
+              {o.bullets.map((b) => (
+                <li class="flex items-start gap-2 text-ink/80 text-sm">
+                  <svg class={`w-5 h-5 flex-shrink-0 mt-0.5 ${o.accent === 'coral' ? 'text-coral' : 'text-accent'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
+            <a
+              href={`mailto:hello@barrel-db.eu?subject=${o.subject}`}
+              class="mt-auto text-coral hover:text-coral-dark font-semibold text-sm"
+            >
+              {o.cta} &rarr;
+            </a>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Open source stays open -->
+  <section class="py-16 px-4 bg-surface/50">
+    <div class="container mx-auto max-w-4xl">
+      <div class="bg-gradient-to-br from-line/30 via-surface to-coral/10 p-8 md:p-12 rounded-2xl border border-line/50">
+        <h2 class="text-3xl font-bold mb-4">Un coeur open source, du support commercial quand vous en avez besoin</h2>
+        <p class="text-ink/70 text-lg">
+          Barrel DB est sous licence Apache 2.0. Vous pouvez l'auto-heberger, l'embarquer, le forker et le
+          faire tourner sans frais d'usage. Le support commercial s'adresse aux equipes qui veulent de l'aide
+          sur l'architecture de production, le deploiement, l'exploitation ou un support dedie.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Who this is for -->
+  <section class="py-16 px-4">
+    <div class="container mx-auto max-w-5xl">
+      <h2 class="text-3xl font-bold mb-4 text-center">Pour qui</h2>
+      <p class="text-ink/60 text-center mb-12 max-w-2xl mx-auto">
+        Le support commercial convient aux equipes qui font tourner Barrel DB la ou leurs donnees ne peuvent pas sortir, ou la ou la production compte.
+      </p>
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {audience.map((a) => (
+          <div class="bg-surface p-6 rounded-xl border border-line/30 flex items-start gap-3">
+            <svg class="w-5 h-5 text-accent flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <span class="text-ink/80">{a}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- How engagements work -->
+  <section class="py-16 px-4 bg-surface/50">
+    <div class="container mx-auto max-w-5xl">
+      <h2 class="text-3xl font-bold mb-4 text-center">Comment se deroulent les missions</h2>
+      <p class="text-ink/60 text-center mb-12 max-w-2xl mx-auto">
+        Commencez petit avec un pilote a perimetre fixe, puis continuez avec du support ou un deploiement manage.
+      </p>
+      <div class="grid md:grid-cols-3 gap-6">
+        {steps.map((s) => (
+          <div class="bg-surface p-6 rounded-xl border border-line/30">
+            <div class="w-12 h-12 bg-coral/20 rounded-lg flex items-center justify-center mb-4 text-coral text-xl font-bold">
+              {s.n}
+            </div>
+            <h3 class="font-semibold text-ink mb-2">{s.title}</h3>
+            <p class="text-ink/60 text-sm">{s.text}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Final CTA -->
+  <section class="py-20 px-4 bg-gradient-to-t from-surface to-line/10">
+    <div class="container mx-auto max-w-4xl text-center">
+      <h2 class="text-3xl font-bold mb-4">Envie de faire tourner Barrel DB en production ?</h2>
+      <p class="text-ink/60 mb-8 max-w-2xl mx-auto">
+        Dites-nous ce que vous construisez : RAG prive, memoire d'agent, edge sync, recherche embarquee ou Barrel DB manage.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="mailto:hello@barrel-db.eu?subject=Commercial%20Barrel%20DB" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
+          Contacter Enki Bridge
+        </a>
+      </div>
+    </div>
+  </section>
+</Layout>
