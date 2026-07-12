@@ -9,6 +9,11 @@ interface Props {
 }
 
 const { title, description = "La base de donnees edge-AI open source pour les agents. Documents, vecteurs et blobs sous un seul id, avec recherche locale, synchronisation, chiffrement et une couche agent via REST et MCP. Concue en Europe, en Erlang." } = Astro.props;
+
+// Language switcher: link to the same page in English by dropping the /fr prefix.
+const path = Astro.url.pathname;
+const cleanPath = path !== '/' && path.endsWith('/') ? path.slice(0, -1) : path;
+const enHref = cleanPath === '/fr' ? '/' : cleanPath.replace(/^\/fr/, '');
 ---
 
 <!doctype html>
@@ -77,7 +82,7 @@ const { title, description = "La base de donnees edge-AI open source pour les ag
           <ThemeToggle label="Basculer entre theme clair et sombre" />
           <!-- Language Switcher -->
           <div class="hidden md:flex items-center border border-line/50 rounded-lg overflow-hidden">
-            <a href="/" class="text-ink/60 hover:text-ink hover:bg-line/20 px-3 py-1.5 text-sm transition">EN</a>
+            <a href={enHref} class="text-ink/60 hover:text-ink hover:bg-line/20 px-3 py-1.5 text-sm transition">EN</a>
             <span class="bg-line/30 text-ink px-3 py-1.5 text-sm font-medium">FR</span>
           </div>
           <a href="/fr/docs" class="bg-coral hover:bg-coral-dark text-white px-4 py-2 rounded-lg transition font-medium">

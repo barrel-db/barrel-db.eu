@@ -9,6 +9,12 @@ interface Props {
 }
 
 const { title, description = "The open source edge-AI database for agents. Documents, vectors, and blobs under one id, with local search, sync, encryption, and an agent layer over REST and MCP. Built in Europe, in Erlang." } = Astro.props;
+
+// Language switcher: link to the same page under /fr. Every EN route has an FR
+// counterpart, so we just prefix the current path.
+const path = Astro.url.pathname;
+const cleanPath = path !== '/' && path.endsWith('/') ? path.slice(0, -1) : path;
+const frHref = cleanPath === '/' ? '/fr' : `/fr${cleanPath}`;
 ---
 
 <!doctype html>
@@ -78,7 +84,7 @@ const { title, description = "The open source edge-AI database for agents. Docum
           <!-- Language Switcher -->
           <div class="hidden md:flex items-center border border-line/50 rounded-lg overflow-hidden">
             <span class="bg-line/30 text-ink px-3 py-1.5 text-sm font-medium">EN</span>
-            <a href="/fr" class="text-ink/60 hover:text-ink hover:bg-line/20 px-3 py-1.5 text-sm transition">FR</a>
+            <a href={frHref} class="text-ink/60 hover:text-ink hover:bg-line/20 px-3 py-1.5 text-sm transition">FR</a>
           </div>
           <a href="/docs" class="bg-coral hover:bg-coral-dark text-white px-4 py-2 rounded-lg transition font-medium">
             Get Started
