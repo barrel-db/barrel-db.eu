@@ -150,7 +150,7 @@ travaille, un document par ensemble dans la base locale `_barrel_worksets`.
 ## Opérations
 
 L’API Erlang de `barrel_ctx` est le contrat ; REST et MCP s’y rattachent un
-pour un. Le [guide](/fr/docs/guides/contexts) donne la table complète avec
+pour un. Le [guide](/fr/docs/guides/contexts#les-mêmes-opérations-via-rest-et-erlang) donne la table complète avec
 les routes REST et les outils MCP.
 
 | Verbe | Erlang | Ce qu’il fait |
