@@ -1,0 +1,201 @@
+---
+title: Authentication
+description: Lock barrel_server with bearer tokens, capability tokens, Ed25519 signed requests or mTLS, and give replication clients their credentials through the app env.
+---
+import CodeBlock from '../../../components/CodeBlock.astro';
+import Callout from '../../../components/Callout.astro';
+
+`barrel_server` is open until you configure `auth`. You can then accept
+global bearer tokens, per-space capability tokens, Ed25519 signed
+requests and client certificates (mTLS). Replication clients find their
+credentials in the `barrel_docdb` app env. Read this before you expose a
+server, give a browser or an agent access, or replicate between nodes.
+
+## Which method
+
+| Method | Who uses it | Proves |
+|--------|-------------|--------|
+| Global bearer | Operators, trusted services | Holder of a shared secret; full access |
+| Capability token (`bsp_...`) | Agents, browsers | Holder of a token for one space, with rights |
+| Signed request (Ed25519, v3) | Replicating nodes | The key holder sent this exact request |
+| mTLS | Nodes on a private network | A certificate from your CA; not which client |
+
+Without TLS, a bearer token can be captured and replayed. Run the server
+over HTTPS when you use tokens on an untrusted network.
+
+## Bearer tokens
+
+```erlang
+{barrel_server, [{auth, #{tokens => [<<"s3cret">>]}}]}
+```
+
+Every route except `/health` then needs `Authorization: Bearer <token>`.
+A list lets you rotate: add the new token, move clients, remove the old
+one. `/` is not public once auth is on.
+
+```shell
+curl localhost:8080/db/demo/doc/a
+curl -H 'authorization: Bearer s3cret' \
+  localhost:8080/db/demo/doc/a
+```
+
+<CodeBlock output label="Output from a run on barrel_server 1.13.0" code={`HTTP/1.1 401 Unauthorized
+www-authenticate: Bearer
+{"error":"unauthorized"}
+
+HTTP/1.1 200 OK
+{"_rev":"000001a1b876972d00000000@w78160d59891ba7d7","id":"a",
+ "kind":"note","n":1,"title":"hello world"}`} />
+
+## Capability tokens
+
+A capability token is issued for one space with `read`, `write` or
+`admin` rights (see [Spaces and capabilities](/docs/concepts/spaces)):
+
+```shell
+curl -X POST localhost:8080/spaces/sp_wh2tq2ocmemj52ln/grants \
+  -H 'authorization: Bearer s3cret' \
+  -H 'content-type: application/json' \
+  -d '{"rights":["read"],"subject":"agent-1"}'
+```
+
+It is accepted on `/spaces`, `/handoffs`, `/mcp`, and on `/db/:db/...`
+when `:db` is the granted space. A read token on its own space, then a
+write, another database, and a database lifecycle call:
+
+<CodeBlock output label="Responses from a run on barrel_server 1.13.0, one line per request" code={`GET /db/sp_wh2tq2ocmemj52ln         200 OK
+PUT /db/sp_wh2tq2ocmemj52ln/doc/x   403 {"error":"forbidden"}
+GET /db/demo/doc/a                  403 {"error":"forbidden"}
+PUT /db/sp_wh2tq2ocmemj52ln         403 {"error":"forbidden"}`} />
+
+A dead or unknown token answers 401; a valid token on the wrong space or
+without the right answers 403. Database lifecycle, `_timeline` and any
+route not mapped to a right always answer 403 to a capability token.
+
+## Signed requests
+
+Each request is signed with an Ed25519 key. The server knows each
+peer's public key:
+
+```erlang
+{barrel_server, [{auth, #{
+    accept  => [bearer, signed],
+    signers => #{<<"node1">> => PubKey32},
+    skew_ms => 300000}}]}
+```
+
+The client signs with the private key, set in the app env so that task
+configs stay free of secrets:
+
+```erlang
+{barrel_docdb, [{sync_signing, #{
+    <<"https://edge-1.example.com:8443">> =>
+        #{key_id => <<"node1">>, priv_key => Priv32}}}]}
+```
+
+Generate a pair with `crypto:generate_key(eddsa, ed25519)`.
+
+What a v3 signature covers:
+
+- the timestamp, key id, a fresh nonce, the method, the path with its
+  raw query string, and the SHA-256 of the body;
+- the headers that change what a write does: `content-type`,
+  `if-match`, `if-none-match`, `x-barrel-actor`, `x-barrel-session`,
+  `x-barrel-source`, `x-barrel-hlc`, `x-barrel-att-origin`,
+  `x-barrel-digest` and `x-barrel-att-touch`, each signed as present
+  with its value or as absent.
+
+How the server checks it:
+
+- On every route, for every signed request with a body, the body is
+  checked against the signed `x-barrel-content-sha256` before the handler
+  runs. A missing or wrong hash answers 401 `content_hash_mismatch`.
+- A replayed nonce or a timestamp outside `skew_ms` is refused.
+- A request that presents a signature is judged by it alone. A failing
+  signature answers 401 even if a bearer token or a client certificate
+  would have let the request in.
+- v1 and v2 signatures still replicate documents, but are refused with
+  401 `signature_v3_required` when they write an attachment or carry one
+  of the headers above. barrel_docdb 2.1.0 clients send v3 only, so
+  upgrade servers first. Close the old window with `accept => [signed]`
+  and `require_nonce => true`.
+
+A proxy in front of the server must forward the path, the query string
+and the signed headers unchanged.
+
+<Callout label="Note">
+Signing authenticates the client and protects each request. It does not
+hide the request or the response, and it does not authenticate the
+server. Use verified HTTPS for that.
+</Callout>
+
+## mTLS
+
+```erlang
+{barrel_server, [
+  {listeners, #{http => #{port => 8443, tls => true}}},
+  {tls, #{certfile => "server.pem", keyfile => "server.key",
+          cacertfile => "ca.pem", verify => verify_peer}},
+  {auth, #{accept => [mtls]}}]}
+```
+
+The client presents its certificate through `sync_ssl`:
+
+```erlang
+{barrel_docdb, [{sync_ssl, #{
+    <<"https://edge-1.example.com:8443">> =>
+        [{certfile, "client.pem"}, {keyfile, "client.key"},
+         {cacertfile, "ca.pem"}]}}]}
+```
+
+- A certificate counts only for a request with no `Authorization`
+  header. If the request carries a token or a signature, that credential
+  decides, and a failing one answers 401 even with a good certificate.
+- mTLS proves the certificate chains to your CA, not which client sent
+  it: `accept => [mtls]` alone gives every such client access to every
+  database. Combine it, for example `accept => [mtls, signed]`.
+- `mtls` is dropped from `accept` when the TLS config lacks
+  `verify => verify_peer`.
+- HTTP/3 serves TLS but is not a client-certificate gate yet. Do not
+  rely on it for mTLS.
+
+An `accept` list fails closed: an empty list locks the server.
+
+## Credentials for replication
+
+The replication client reads three app env keys of `barrel_docdb`. Each
+maps a database URL, or an origin (`scheme://host:port`), to a
+credential; the full URL is looked up first.
+
+| Key | Value |
+|-----|-------|
+| `sync_auth` | a bearer token |
+| `sync_signing` | `#{key_id, priv_key}` |
+| `sync_ssl` | a list of `ssl` options |
+
+```erlang
+{barrel_docdb, [{sync_auth, #{
+    <<"http://edge-1.example.com:8080">> => <<"s3cret">>,
+    <<"http://edge-2.example.com:8080/db/orders">> =>
+        <<"other">>}}]}
+```
+
+A one-shot `barrel_rep:replicate/3` can also take `auth`, `signing` or
+`ssl_options` on the endpoint map. Replication tasks refuse them: a task
+config with `auth`, `signing`, `ssl_options`, `headers`, or a user and
+password in the URL returns `{error, {inline_credentials, Keys}}`. Tasks
+read their credentials from the app env on every start, pause and
+resume. When both are set, signing takes precedence over a bearer token.
+
+## MCP
+
+`/mcp` accepts bearer tokens only: a global token (full access) or a
+capability token (scoped per tool to its space and rights). It does not
+accept signed requests or mTLS. A denied tool call comes back as a tool
+result with `isError: true`. See [MCP endpoint](/docs/guides/mcp).
+
+## Browsers
+
+`barrel-lite` sends a bearer token. Give it a capability token for its
+space, never the global token, and enable CORS. See [Quickstart:
+browser](/docs/start/quickstart-browser).

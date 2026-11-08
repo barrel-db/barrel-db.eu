@@ -1,0 +1,145 @@
+---
+title: Choose an embedding provider
+description: Pick the provider that turns your text into vectors, local or cloud, configure it, chain a fallback, run offline, or write your own.
+---
+import CodeBlock from '../../../components/CodeBlock.astro';
+import Callout from '../../../components/Callout.astro';
+
+An embedding provider turns text into the vectors Barrel searches. Pick
+one by where your data may go and what you can run: a model on the same
+machine, a local server such as Ollama, or a cloud API. Providers come
+from `barrel_embed` 2.6.1; you name one in a record-mode policy or a
+vector store config, and Barrel calls it on every write and every text
+query.
+
+## Quick choice
+
+- Data must not leave the machine, and you can run Python: `local`.
+- You already run Ollama: `ollama`, the simplest setup.
+- You use a cloud model already: the matching cloud provider, with its
+  API key.
+- None fits: write your own provider module.
+
+## Every provider
+
+Local providers run on your machine (Ollama as a local server):
+
+| Id | Needs | Default model | Dims | Tested |
+|----|-------|---------------|------|--------|
+| `local` | Python 3, sentence-transformers | `BAAI/bge-base-en-v1.5` | 768 | yes |
+| `ollama` | Ollama with the model pulled | `nomic-embed-text` | 768 | yes |
+| `fastembed` | Python 3, fastembed | `BAAI/bge-small-en-v1.5` | 384 | no |
+| `splade` | Python 3, transformers, torch | `prithivida/Splade_PP_en_v1` | sparse | no |
+| `colbert` | Python 3, transformers, torch | `colbert-ir/colbertv2.0` | 128 per token | no |
+| `clip` | Python 3, transformers, torch, pillow | `openai/clip-vit-base-patch32` | 512 | no |
+| your module | the `barrel_embed_provider` behaviour | yours | yours | yes |
+
+Cloud providers send your text to the vendor's API:
+
+| Id | Needs | Default model | Dims | Tested |
+|----|-------|---------------|------|--------|
+| `openai` | `OPENAI_API_KEY` | `text-embedding-3-small` | 1536 | no |
+| `cohere` | `COHERE_API_KEY` | `embed-english-v3.0` | 1024 | no |
+| `voyage` | `VOYAGE_API_KEY` | `voyage-3` | 1024 | no |
+| `jina` | `JINA_API_KEY` | `jina-embeddings-v3` | 1024 | no |
+| `mistral` | `MISTRAL_API_KEY` | `mistral-embed` | 1024 | no |
+| `azure` | `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, a deployment | your deployment | 1536 | no |
+| `bedrock` | `BEDROCK_API_KEY` or AWS keys | `amazon.titan-embed-text-v2:0` | 1024 | no |
+| `vertex` | `GOOGLE_CLOUD_PROJECT` and a token or key | `text-embedding-004` | 768 | no |
+
+"Tested" means we ran it for these docs. The others are described
+from their source.
+
+<Callout label="Set dimensions">
+Barrel uses the dimensions you configure, 768 by default, not the
+model's own size. Set it to match the model, for example 384 for
+bge-small.
+</Callout>
+
+## Configure one
+
+Pass `embedder => {Id, Options}` in a record-mode policy:
+
+```erlang
+{ok, Db} = barrel:open(<<"kb">>, #{
+    embedding => #{
+        fields     => [<<"title">>, <<"body">>],
+        embedder   => {ollama,
+                       #{model => <<"nomic-embed-text">>}},
+        dimensions => 768},
+    vectordb => #{db_path => "data/vectors/kb"}}).
+```
+
+Options per provider: `model`, `timeout` (30000 ms for HTTP providers,
+120000 ms for Python ones), `url` for `ollama` (default
+`http://localhost:11434`), `api_key` for `openai`, `deployment` and
+`api_version` for `azure`, `region` for `bedrock` and `vertex`.
+
+`barrel:embedder_info(Db)` returns the provider, model, dimensions and a
+fingerprint. Two databases with the same fingerprint embed alike.
+
+<CodeBlock output label="Output from a run on barrel 1.12.0 with Ollama" code={`#{provider => ollama,dimensions => 768,
+  model => <<"nomic-embed-text:latest">>,
+  fingerprint => <<"sha256:865b329a1672b35dba7c9c87afcc38db...">>}`} />
+
+The fingerprint is trimmed above.
+
+## Fall back when one is down
+
+Pass a list: Barrel tries each provider in order and uses the first that
+answers. Keep the same model and dimensions in every entry, or the
+vectors will not be comparable.
+
+```erlang
+embedder => [{ollama, #{model => <<"nomic-embed-text">>}},
+             {my_provider, #{}}]
+```
+
+## Running offline
+
+Python providers install their packages into a managed virtualenv
+(`priv/.venv` of `barrel_embed`) and download the model the first time.
+Run once with network access, then set `HF_HUB_OFFLINE=1` and
+`TRANSFORMERS_OFFLINE=1`. To use your own Python instead, set
+`{barrel_embed, managed_venv, false}`, or move the virtualenv with
+`{barrel_embed, venv_dir, Dir}`.
+
+The Python packages are not pinned to versions.
+
+## Write your own
+
+Any module that implements `barrel_embed_provider` works as an embedder:
+`embed/2`, `embed_batch/2`, `dimension/1` and `name/0`, with optional
+`init/1`, `available/1` and `model_info/1`. Pass it as
+`{my_provider, Opts}`.
+
+```erlang
+-module(my_provider).
+-behaviour(barrel_embed_provider).
+-export([embed/2, embed_batch/2, dimension/1, name/0]).
+
+embed(Text, _Opts) ->
+    <<A:8, B:8, C:8, D:8, _/binary>> =
+        crypto:hash(sha256, Text),
+    {ok, [A / 255, B / 255, C / 255, D / 255]}.
+
+embed_batch(Texts, Opts) ->
+    {ok, [V || T <- Texts, {ok, V} <- [embed(T, Opts)]]}.
+
+dimension(_Opts) -> 4.
+name() -> my_provider.
+```
+
+This one hashes text, so it is only good for tests: it matches identical
+strings, not meaning. A real provider calls a model.
+
+<Callout kind="limit" label="Cost">
+Cloud providers check that they are reachable before each call, which
+adds one request per embed.
+</Callout>
+
+## Without a provider
+
+You can also bring your own vectors: pass `vector => [...]` to
+`put_doc/3` in record mode, or use `vector_add/5` in a plain database.
+The dimension must match the store.

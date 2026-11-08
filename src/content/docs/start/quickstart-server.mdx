@@ -1,0 +1,203 @@
+---
+title: "Quickstart: server"
+description: Build and start barrel_server, create a database, write and read documents, run a BQL query, and call a tool over MCP.
+---
+import CodeBlock from '../../../components/CodeBlock.astro';
+import Callout from '../../../components/Callout.astro';
+
+`barrel_server` serves Barrel over HTTP: a REST/JSON API and an MCP
+endpoint for agents. In this quickstart you build it from the umbrella,
+start it, create a database, write and read documents, run a BQL query,
+and call the same database as an MCP tool. Use this when your clients are
+not Erlang, run on other machines, or are agents.
+
+## Before you start
+
+- Erlang/OTP 26 or later, rebar3, CMake and a C/C++ compiler.
+- `curl`.
+
+## 1. Build
+
+```shell
+git clone https://github.com/barrel-db/barrel.git
+cd barrel
+rebar3 as server compile
+```
+
+## 2. Configure and start
+
+Write a `sys.config` with a port and a data directory:
+
+<CodeBlock label="sys.config" code={`[{barrel_server, [{http_port, 8080},
+                  {data_dir, "/var/tmp/barrel/data"}]},
+ {kernel, [{logger_level, notice}]}].`} />
+
+Start the server:
+
+```shell
+erl -noshell -config sys \
+    -pa _build/server/lib/*/ebin \
+    -eval 'application:ensure_all_started(barrel_server).'
+```
+
+For an interactive shell instead, run `rebar3 as server shell`, then
+`application:ensure_all_started(barrel_server).`
+
+Check that it answers:
+
+```shell
+curl localhost:8080/health
+```
+
+<CodeBlock output label="Output from a run on barrel_server 1.13.0" code={`{"status":"ok"}`} />
+
+<Callout kind="limit" label="Limit">
+This server has no authentication: anyone who can reach the port can
+read and write. Lock it before you expose it. See
+[Authentication](/docs/security/authentication).
+</Callout>
+
+## 3. Create a database
+
+```shell
+curl -X PUT localhost:8080/db/demo
+```
+
+<CodeBlock output label="Output from a run on barrel_server 1.13.0" code={`HTTP/1.1 201 Created
+{"ok":true,"db":"demo"}`} />
+
+Use lowercase names. Any `/db/:db/...` route creates the database if it
+does not exist, so a typo creates an empty one.
+
+## 4. Write and read a document
+
+```shell
+curl -X PUT localhost:8080/db/demo/doc/a \
+  -H 'content-type: application/json' \
+  -d '{"title":"hello world","kind":"note","n":1}'
+curl localhost:8080/db/demo/doc/a
+```
+
+<CodeBlock output label="Output from a run on barrel_server 1.13.0" code={`{"id":"a","ok":true,
+ "rev":"000001a1b876972d00000000@w78160d59891ba7d7"}
+{"_rev":"000001a1b876972d00000000@w78160d59891ba7d7",
+ "id":"a","kind":"note","n":1,"title":"hello world"}`} />
+
+To update it, send the current `_rev` in the body. A stale `_rev`
+answers 409:
+
+```shell
+curl -X PUT localhost:8080/db/demo/doc/a \
+  -H 'content-type: application/json' \
+  -d '{"title":"stale","_rev":"bogus"}'
+```
+
+<CodeBlock output label="Output from a run on barrel_server 1.13.0" code={`HTTP/1.1 409 Conflict
+{"error":"conflict"}`} />
+
+Write several at once with `_bulk_docs`:
+
+```shell
+curl -X POST localhost:8080/db/demo/_bulk_docs \
+  -H 'content-type: application/json' \
+  -d '{"docs":[{"id":"c","kind":"note","title":"third"},
+              {"id":"d","kind":"note","title":"fourth"}]}'
+```
+
+## 5. Query with BQL
+
+`POST /db/:db/query` answers newline-delimited JSON: one line per row,
+then a `meta` line.
+
+```shell
+curl -X POST localhost:8080/db/demo/query \
+  -H 'content-type: text/plain' \
+  --data-binary "SELECT id, title FROM c
+    WHERE kind = 'note' ORDER BY id LIMIT 2"
+```
+
+<CodeBlock output label="Output from a run on barrel_server 1.13.0" code={`{"row":{"id":"a","title":"hello world"}}
+{"row":{"id":"c","title":"third"}}
+{"meta":{"count":2,"bound":"limit_reached",
+ "last_seq":"AAABobpEb-MAAAAB",
+ "instance_id":"4552d48d297c5b2b","has_more":false}}`} />
+
+Send JSON instead (`{"query": ..., "params": ...}`) when you pass
+parameters or `max_rows`.
+
+The collection name after `FROM` is ignored: the database comes from the
+URL. See [Query with BQL](/docs/guides/query-bql).
+
+## 6. Call it over MCP
+
+The same server answers MCP at `/mcp` (Streamable HTTP). Initialize a
+session and keep the `mcp-session-id` header it returns:
+
+```shell
+curl -i -X POST localhost:8080/mcp \
+  -H 'content-type: application/json' \
+  -H 'accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize",
+       "params":{"protocolVersion":"2025-06-18",
+                 "capabilities":{},
+                 "clientInfo":{"name":"curl","version":"0"}}}'
+```
+
+<CodeBlock output label="Output from a run on barrel_server 1.13.0" code={`HTTP/1.1 200 OK
+content-type: application/json
+mcp-session-id: mcp_eb612d0280eda9fef1a406b42ce2c3ea
+{"id":1,"jsonrpc":"2.0","result":{"capabilities":{...},
+ "protocolVersion":"2025-06-18",
+ "serverInfo":{"name":"barrel","version":"4.4.1"}}}`} />
+
+Send `notifications/initialized`, then call a tool. Every request after
+`initialize` carries the session id and the protocol version:
+
+```shell
+SID=mcp_eb612d0280eda9fef1a406b42ce2c3ea
+mcp() {
+  curl -s -X POST localhost:8080/mcp \
+    -H 'content-type: application/json' \
+    -H 'accept: application/json, text/event-stream' \
+    -H "mcp-session-id: $SID" \
+    -H 'mcp-protocol-version: 2025-06-18' -d "$1"
+}
+mcp '{"jsonrpc":"2.0","method":"notifications/initialized"}'
+mcp '{"jsonrpc":"2.0","id":2,"method":"tools/call",
+      "params":{"name":"db_create",
+                "arguments":{"db":"mcpdemo"}}}'
+mcp '{"jsonrpc":"2.0","id":3,"method":"tools/call",
+      "params":{"name":"doc_put","arguments":{"db":"mcpdemo",
+        "doc":{"id":"note-1","title":"stored over MCP"}}}}'
+mcp '{"jsonrpc":"2.0","id":4,"method":"tools/call",
+      "params":{"name":"query","arguments":{"db":"mcpdemo",
+        "query":"SELECT id, title FROM c LIMIT 5"}}}'
+```
+
+Tool calls answer as server-sent events. The tool result is JSON in the
+`text` field:
+
+<CodeBlock output label="Output from a run on barrel_server 1.13.0" code={`data: {"id":2,"jsonrpc":"2.0","result":{"content":[{"text":
+  "{\\"ok\\":true,\\"db\\":\\"mcpdemo\\"}","type":"text"}]}}
+
+data: {"id":3,"jsonrpc":"2.0","result":{"content":[{"text":
+  "{\\"id\\":\\"note-1\\",\\"ok\\":true,\\"rev\\":
+  \\"000001a1ba44713d00000000@w1b9de1b98c6d4949\\"}",
+  "type":"text"}]}}
+
+data: {"id":4,"jsonrpc":"2.0","result":{"content":[{"text":
+  "{\\"count\\":1,\\"rows\\":[{\\"id\\":\\"note-1\\",
+  \\"title\\":\\"stored over MCP\\"}],\\"has_more\\":false}",
+  "type":"text"}]}}`} />
+
+`tools/list` returns 39 tools. See [MCP endpoint](/docs/guides/mcp) to
+point an agent at it.
+
+## Notes
+
+- Vector stores go to `./priv/` under the directory you start the server
+  from, not under `data_dir`. Start it from a directory you keep.
+- Default databases have a 768-dimension vector store, no embedder and
+  BM25 off, so `/search/bm25` and `/search/hybrid` answer 500 until you
+  configure them. See [Run the server](/docs/guides/rest-server).
+- `/health` returns ok without checking anything.

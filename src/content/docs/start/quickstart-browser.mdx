@@ -1,0 +1,171 @@
+---
+title: "Quickstart: browser"
+description: Build barrel-lite, open a local database in a web app, write and read documents, sync them with barrel_server, and resolve a conflict.
+---
+import CodeBlock from '../../../components/CodeBlock.astro';
+import Callout from '../../../components/Callout.astro';
+
+`barrel-lite` is a TypeScript client that keeps a copy of a Barrel
+database in the browser. Reads and writes are local and keep working
+offline; sync sends them to a `barrel_server` and brings back the
+changes of other copies. In this quickstart you build it, give the
+browser a token, write and read documents, sync, and resolve a conflict
+between two copies. Use this when a web app needs its data offline.
+
+## Before you start
+
+- A `barrel_server` you can reach. See [Quickstart:
+  server](/docs/start/quickstart-server).
+- Node.js 20 or later and npm.
+
+## 1. Get barrel-lite
+
+`barrel-lite` 0.1.0 is not on npm. Build it from the umbrella and install
+it into your app from that directory:
+
+```shell
+cd barrel/clients/barrel-lite
+npm ci
+npm run build
+cd /path/to/your-app
+npm install /path/to/barrel/clients/barrel-lite
+```
+
+## 2. Let the browser in
+
+The browser needs CORS and a token it is allowed to ship. Add both to the
+server's `sys.config` and restart it:
+
+<CodeBlock label="sys.config" code={`[{barrel_server, [
+    {http_port, 8080},
+    {cors, #{origins => '*',
+             expose => [<<"x-barrel-hlc">>]}},
+    {auth, #{tokens => [<<"global-token">>]}}]}].`} />
+
+Never put the global token in a web page. Create a space and issue a
+capability token for it; the space id is the database name the browser
+uses:
+
+```shell
+curl -X POST localhost:8080/spaces \
+  -H 'authorization: Bearer global-token' \
+  -H 'content-type: application/json' -d '{"label":"app"}'
+curl -X POST localhost:8080/spaces/sp_7uitvqeved3z7seu/grants \
+  -H 'authorization: Bearer global-token' \
+  -H 'content-type: application/json' \
+  -d '{"rights":["read","write"]}'
+```
+
+<CodeBlock output label="Output from a run on barrel_server 1.13.0" code={`{"ok":true,"space":"sp_7uitvqeved3z7seu"}
+{"token":
+  "bsp_alrw6fxiqga5r47x_odwpp27li6m754pfsuhbwd2n2vxek3ox44hj3zxv",
+ "grant":{"rights":["read","write"],
+          "space":"sp_7uitvqeved3z7seu", ...}}`} />
+
+The token is shown once. `read` covers pulls, `write` covers pushes.
+
+## 3. Open, write, read
+
+```ts
+import { Database } from "barrel-lite";
+
+const remote = {
+  url: "http://localhost:8080",
+  db: "sp_7uitvqeved3z7seu",
+  token: "bsp_alrw6fxiqga5r47x_...",
+};
+const laptop = await Database.open("notes", { remote });
+
+await laptop.put({ id: "n1", title: "hello" });
+await laptop.get("n1");
+```
+
+<CodeBlock output label="Output from a run of barrel-lite 0.1.0 in Node 22" code={`{"id":"n1",
+ "version":"000001a1ba4159ea00000000@wd31d29e133c6788f"}
+{"title":"hello","id":"n1"}`} />
+
+Writes go to the local store at once. In a browser the store is OPFS;
+where OPFS is missing (Node, for example) it is in memory.
+
+## 4. Sync
+
+```ts
+await laptop.sync();             // push, then pull
+const live = laptop.liveSync();  // keep syncing
+live.stop();
+```
+
+Open a second copy the same way, on another device or in another
+browser. Its first sync brings the document in, and local BQL reads it:
+
+```ts
+const phone = await Database.open("notes", { remote });
+await phone.sync();
+await phone.get("n1");
+await phone.query(
+  "SELECT id, title FROM db WHERE title = 'hello'");
+```
+
+<CodeBlock output label="Output from a run of barrel-lite 0.1.0 in Node 22 against barrel_server 1.13.0" code={`{"push":{"pushed":1,"skipped":0,"conflicts":0},
+ "pull":{"scanned":1,"applied":0}}
+{"push":{"pushed":0,"skipped":0,"conflicts":0},
+ "pull":{"scanned":1,"applied":1}}
+{"id":"n1","title":"hello"}
+[{"id":"n1","title":"hello"}]`} />
+
+The first line is the laptop's `sync()`, the second the phone's.
+
+## 5. Resolve a conflict
+
+Edit the same document on both copies before they sync. After a sync both
+versions are kept, every copy shows the same winner, and the other
+version is a conflict:
+
+```ts
+await laptop.put({ id: "n1", title: "hello from the laptop" });
+await phone.put({ id: "n1", title: "hello from the phone" });
+await laptop.sync(); await phone.sync(); await laptop.sync();
+
+await laptop.get("n1");
+await phone.get("n1");
+await laptop.conflicts("n1");
+```
+
+<CodeBlock output label="Output from a run of barrel-lite 0.1.0 in Node 22 against barrel_server 1.13.0" code={`{"id":"n1","title":"hello from the phone"}
+{"id":"n1","title":"hello from the phone"}
+[{"version":"000001a1ba415a1600000001@wd31d29e133c6788f",
+  "deleted":false,
+  "body":{"id":"n1","title":"hello from the laptop"}}]`} />
+
+`resolve` replaces the winner and every conflict with one body. Push it,
+and the other copy gets the resolution on its next pull:
+
+```ts
+await laptop.resolve("n1", { title: "hello from both" });
+await laptop.push();
+await phone.pull();
+await phone.get("n1");
+await phone.conflicts("n1");
+```
+
+<CodeBlock output label="Output from a run of barrel-lite 0.1.0 in Node 22 against barrel_server 1.13.0" code={`{"id":"n1","title":"hello from both"}
+[]`} />
+
+`put` on a document in conflict replaces only the winner; the conflicts
+stay. Pass `null` to `resolve` to resolve to a delete.
+
+## Notes
+
+<Callout kind="limit" label="Limit">
+The local store is a cache. Writes not yet flushed are lost on a crash,
+and the browser may evict the whole store. The server copy is the source
+of truth, so sync often.
+</Callout>
+
+- Vector, keyword and hybrid search (`vector_top_k`, `bm25_top_k`,
+  `hybrid_top_k`) and `SUBSCRIBE` run on the server only; use
+  `db.queryRemote`. Locally they throw `BqlServerOnlyError`.
+- barrel-lite authenticates with bearer tokens only, global or
+  capability. It does not sign requests.
+- With `multiTab: true` one tab syncs and the others go through it.
+- The full client is described in [barrel-lite](/docs/guides/barrel-lite).

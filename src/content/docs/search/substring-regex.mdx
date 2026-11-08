@@ -1,0 +1,115 @@
+---
+title: Substring and regex
+description: Find exact strings and regular expressions in documents with barrel_ngram, a trigram index kept live from the changes feed, from Erlang or over MCP.
+---
+import CodeBlock from '../../../components/CodeBlock.astro';
+import CodeTabs from '../../../components/CodeTabs.astro';
+import Callout from '../../../components/Callout.astro';
+
+`barrel_ngram` finds exact substrings and PCRE regular expressions in the
+documents of a `barrel_docdb` database. It is a trigram index kept up to
+date from the database's changes feed, and every candidate is checked
+against the real text, so a hit is always a real match. Use it for
+identifiers, error codes, config keys and file paths: the strings that
+semantic and keyword search miss or split apart.
+
+## Add it
+
+```erlang
+{deps, [{barrel_ngram, "~> 0.11"}]}.
+```
+
+It builds a native library with CMake. The `barrel` API and BQL do not
+expose it: you call `barrel_ngram` directly, or the `ngram_search` MCP
+tool on `barrel_server`.
+
+## Open an index
+
+An index is a corpus over one database. Name the fields to index, or
+leave `fields => all`.
+
+```erlang
+{ok, _} = application:ensure_all_started(barrel_ngram),
+{ok, _} = barrel_docdb:create_db(<<"runbooks">>),
+barrel_docdb:put_docs(<<"runbooks">>, [
+  #{<<"id">> => <<"rb:db">>,
+    <<"title">> => <<"Postgres failover">>,
+    <<"body">> => <<"If you see ERR_CONN_TIMEOUT=30s on "
+                    "pg-primary-01, promote pg-replica-02.">>},
+  #{<<"id">> => <<"rb:cache">>,
+    <<"title">> => <<"Redis eviction">>,
+    <<"body">> => <<"Set maxmemory-policy allkeys-lru; watch "
+                    "evicted_keys in INFO stats.">>},
+  #{<<"id">> => <<"rb:api">>, <<"title">> => <<"API 502s">>,
+    <<"body">> => <<"Check upstream connect_timeout and "
+                    "read_timeout in nginx.conf">>}]),
+ok = barrel_ngram:open(<<"rb_idx">>,
+                       #{db => <<"runbooks">>,
+                         fields => [<<"title">>, <<"body">>]}),
+barrel_ngram:index(<<"rb_idx">>).
+```
+
+`index/1` (also `refresh/1`) catches the index up with the feed and
+returns. After that, new writes reach the index in the background; call
+it again when you need the latest writes to be searchable.
+
+## Search
+
+<CodeTabs tabs={[
+  { label: 'Erlang', lang: 'erlang', code: `barrel_ngram:search(<<"rb_idx">>, <<"ERR_CONN_TIMEOUT">>),
+barrel_ngram:regex(<<"rb_idx">>,
+                   <<"pg-(primary|replica)-\\\\d+">>),
+barrel_ngram:regex(<<"rb_idx">>, <<"\\\\w+_timeout">>).` },
+  { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":11,"method":"tools/call",
+ "params":{"name":"ngram_search","arguments":{
+   "db":"runbooks","mode":"regex",
+   "query":"pg-(primary|replica)-\\\\d+"}}}` },
+]} />
+
+<CodeBlock output label="Output from a run on barrel_ngram 0.11.4 (Erlang)" code={`{ok,[#{id => <<"rb:db">>,spans => [{11,16}]}]}
+{ok,[#{id => <<"rb:db">>,spans => [{35,13},{58,13}]}]}
+{ok,[#{id => <<"rb:api">>,spans => [{15,15},{35,12}]}]}`} />
+
+A hit is the document id and the matches as `{Offset, Length}` in bytes.
+Offsets count in the indexed text, which joins the indexed fields in
+sorted field order (`body` before `title`).
+
+Case-insensitive search:
+
+```erlang
+barrel_ngram:search(<<"rb_idx">>, <<"redis">>,
+                    #{case_sensitive => false}).
+```
+
+<CodeBlock output label="Output from a run on barrel_ngram 0.11.4" code={`{ok,[#{id => <<"rb:cache">>,spans => [{68,5}]}]}`} />
+
+A bad pattern returns `{error, {bad_regex, _}}`.
+
+## Over MCP
+
+`ngram_search` takes `db`, `query`, `mode` (`literal` by default, or
+`regex`) and `limit` (50 by default, 1000 at most). The server opens one
+index per database on first use, over every field, under its data
+directory, and refreshes it before each search.
+
+<CodeBlock output label="Output from a run on barrel_server 1.13.0: literal query 'over MCP' on a database holding one note" code={`data: {"id":11,"jsonrpc":"2.0","result":{"content":[{"text":
+  "{\\"count\\":1,\\"hits\\":[{\\"id\\":\\"note-1\\",
+  \\"spans\\":[[7,8]]}]}","type":"text"}]}}`} />
+
+## Maintain it
+
+- `compact/1` merges segments; it returns `{error, busy}` if a merge is
+  running.
+- `close/1` closes the index; `open/2` with the same options reopens it.
+- `delete_corpus/1` removes it.
+- `db`, `fields`, `shards`, `postings` and `phase2_selector_opts` are
+  fixed for the life of a corpus. Opening with another value returns
+  `{error, {config_mismatch, Field, Persisted, Requested}}`; delete the
+  corpus and rebuild.
+- An index written by 0.10 or older needs `on_legacy => reindex`.
+
+<Callout kind="limit" label="Limit">
+The index takes about 34 times the size of the indexed text. Index only
+the fields you search. Data goes to `data/barrel_ngram` under the current
+directory unless you set the `data_dir` app env or option.
+</Callout>
