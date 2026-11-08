@@ -1,0 +1,108 @@
+---
+// translation_of: src/pages/use-cases/database-per-customer.astro source_hash: d1417e33b5247797
+import UseCasePage from '../../../components/usecase/UseCasePage.astro';
+import type { ArchColumn, Step } from '../../../components/usecase/types';
+
+const arch: ArchColumn[] = [
+  { who: 'Votre backend SaaS', boxes: [
+    { name: 'Arrivée d’un client', note: 'un espace par client' },
+    { name: 'Départ d’un client', note: 'supprimer l’espace' } ] },
+  { who: 'Barrel, dans votre nœud Erlang', boxes: [
+    { name: 'sp_acme', note: 'la base d’Acme, sa propre clé', rec: true },
+    { name: 'sp_globex', note: 'la base de Globex, sa propre clé', rec: true } ] },
+  { who: 'Votre stockage de clés', boxes: [
+    { name: 'tenant_keys', note: 'key_for_db/1, votre module' },
+    { name: 'KMS ou coffre', note: 'détient les clés, jamais sur disque' } ] },
+];
+
+const steps: Step[] = [
+  { title: 'Écrire un fournisseur de clés',
+    body: 'Barrel demande une clé au fournisseur à chaque ouverture de base, par son keyspace (l’identifiant de l’espace). Renvoyez exactement 32 octets. Une erreur fait échouer l’ouverture.',
+    label: 'Erlang', lang: 'erlang',
+    code: `-module(tenant_keys).
+-behaviour(barrel_keyprovider).
+-export([key_for_db/1]).
+
+key_for_db(Keyspace) ->
+    %% my_kms is your code: fetch or derive the key
+    {ok, my_kms:data_key(Keyspace)}.` },
+  { title: 'Créer un espace par client',
+    body: 'Les documents, les pièces jointes du stockage par défaut, les vecteurs et les fichiers d’index sur disque sont chiffrés sous cette clé. Gardez l’identifiant renvoyé avec la fiche du client.',
+    label: 'Erlang', lang: 'erlang',
+    code: `{ok, _} = application:ensure_all_started(barrel_spaces),
+Enc = #{provider => tenant_keys},
+{ok, #{id := Acme, db := Db}} =
+    barrel_spaces:create_space(#{label => <<"acme">>,
+                                 encryption => Enc}),
+{ok, _} = barrel:put_doc(Db, #{<<"id">> => <<"inv-1">>,
+                               <<"total">> => 1200}).` },
+  { title: 'Émettre des jetons pour les agents du client',
+    body: 'Un droit est limité à un espace. barrel_server le vérifie à chaque requête ; votre code peut aussi le vérifier directement.',
+    label: 'Erlang', lang: 'erlang',
+    code: `{ok, Token, _Grant} = barrel_caps:grant(Acme,
+    #{rights => [read, write],
+      subject => <<"acme-support-bot">>}),
+{ok, _} = barrel_caps:verify(Token, Acme, write).` },
+  { title: 'Passer la spécification de clé à chaque ouverture',
+    body: 'Le chiffrement est une configuration d’exécution. Sans la spécification, un espace chiffré ne s’ouvre pas ; avec une mauvaise clé, l’ouverture échoue sans rien exposer.',
+    label: 'Erlang', lang: 'erlang',
+    code: `{error, db_is_encrypted} =
+    barrel_spaces:open_space(Acme),
+{ok, Space} =
+    barrel_spaces:open_space(Acme, #{encryption => Enc}).`,
+    outLabel: 'D’après une exécution enregistrée',
+    out: `open encrypted space without spec: {error,db_is_encrypted}
+open encrypted space with spec: ok` },
+  { title: 'Gérer le départ du client',
+    body: 'Supprimer l’espace efface sa base, la marque comme supprimée dans le registre et révoque chaque droit émis pour elle. Un espace chiffré a besoin de sa spécification pour être ouvert et supprimé.',
+    label: 'Erlang', lang: 'erlang',
+    code: `ok = barrel_spaces:drop_space(Acme,
+                              #{encryption => Enc}),
+{error, space_dropped} = barrel_spaces:open_space(Acme).`,
+    outLabel: 'D’après une exécution enregistrée (droits listés après la suppression)',
+    out: `open dropped: {error,space_dropped}
+grants after drop: [true,true]   %% revoked_at > 0` },
+];
+---
+
+<UseCasePage
+  title="Une base par client"
+  lead="Donnez à chaque client sa propre base, chiffrée sous sa propre clé. Les requêtes n’ont jamais besoin d’un filtre par client, et le départ d’un client supprime la base et révoque chaque jeton émis pour elle."
+  sub="Construit avec barrel_spaces et barrel_crypto, via l’API Erlang. Votre stockage de clés reste le vôtre ; Barrel ne lui demande une clé qu’à l’ouverture."
+  problem="Des données clients mêlées dans des tables partagées imposent un filtre par client sur chaque requête, un seul filtre oublié laisse fuiter des données, et supprimer un client oblige à traquer ses lignes dans les tables et les sauvegardes."
+  arch={arch}
+  edges={['créer, accorder, supprimer', 'une clé par espace']}
+  archNote="Chaque client est un espace : une base avec ses propres fichiers et sa propre clé. Le fournisseur de clés retrouve la clé à partir de l’identifiant de l’espace, donc aucune clé n’est écrite à côté des données ; un fichier de contrôle de clé en clair fait échouer une mauvaise clé à l’ouverture au lieu de lire des données illisibles."
+  stepsIntro="Cinq étapes dans votre application Erlang. Les mêmes espaces sont accessibles en REST et MCP, mais ceux-ci ouvrent les espaces avec les options par défaut : les espaces chiffrés restent donc sur l’API Erlang pour l’instant."
+  steps={steps}
+  barrel={[
+    'Garde chaque client dans une base séparée avec ses propres fichiers',
+    'Chiffre documents, pièces jointes du stockage de blobs, vecteurs et index sur disque sous la clé de cette base',
+    'Refuse d’ouvrir avec une clé absente ou fausse',
+    'Limite les jetons à un espace et les révoque tous à la suppression',
+  ]}
+  app={[
+    'Associe les clients aux identifiants d’espace',
+    'Détient les clés dans un KMS ou un coffre et les sert au fournisseur',
+    'Passe la spécification de chiffrement à chaque ouverture',
+    'Décide quand un client part, et du sort des sauvegardes',
+  ]}
+  limits={[
+    'Les pièces jointes stockées dans S3 avec barrel_att_s3 ne sont pas chiffrées par le chiffrement de la base : elles sont en clair dans le bucket. Utilisez le chiffrement côté bucket, ou gardez les fichiers sensibles dans le stockage par défaut.',
+    'Pour l’instant, les espaces chiffrés ne sont accessibles que par l’API Erlang, pas en REST ni en MCP.',
+    'Pas de rotation de clé ni de chiffrement sur place : répliquez vers une nouvelle base sous une nouvelle clé. Une base en clair ne peut pas être ouverte chiffrée (`cannot_encrypt_existing_db`).',
+    'Une clé perdue, ce sont des données perdues.',
+    'Le modèle de menace porte sur les données au repos. Le chiffrement n’est pas authentifié : un attaquant capable d’écrire les fichiers sort du périmètre, et les clés en mémoire ne sont pas effacées.',
+    'Le code de votre nœud peut ouvrir n’importe quel espace sans jeton ; c’est la clé qui empêche un client de lire les données d’un autre.',
+  ]}
+  links={[
+    { label: 'Chiffrement au repos', href: '/docs/guides/encryption' },
+    { label: 'Espaces, sessions, passations', href: '/docs/guides/spaces' },
+    { label: 'Espaces et capacités', href: '/docs/concepts/spaces' },
+    { label: 'Authentification', href: '/docs/security/authentication' },
+    { label: 'barrel_crypto', href: '/product/crypto' },
+    { label: 'barrel_spaces', href: '/product/spaces' },
+    { label: 'barrel_att_s3', href: '/product/att-s3' },
+    { label: 'Sécurité', href: '/product/security' },
+  ]}
+/>

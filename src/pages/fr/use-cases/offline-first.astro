@@ -1,0 +1,121 @@
+---
+// translation_of: src/pages/use-cases/offline-first.astro source_hash: 6dcbfaa4e572b0ad
+import UseCasePage from '../../../components/usecase/UseCasePage.astro';
+import type { ArchColumn, Step } from '../../../components/usecase/types';
+
+const arch: ArchColumn[] = [
+  { who: 'Dans le navigateur', boxes: [
+    { name: 'Votre application web', note: 'TypeScript, lit et écrit en local' },
+    { name: 'barrel-lite', note: 'la copie locale, stockée dans OPFS', rec: true } ] },
+  { who: 'barrel_server', boxes: [
+    { name: '/db/:db/_sync', note: 'le protocole de réplication, avec CORS' },
+    { name: 'Space sp_…', note: 'la copie du serveur', rec: true } ] },
+  { who: 'Autres copies', boxes: [
+    { name: 'Autres appareils', note: 'leur propre copie barrel-lite' },
+    { name: 'Nœuds Erlang', note: 'Barrel intégré, même protocole' } ] },
+];
+
+const steps: Step[] = [
+  { title: 'Compiler barrel-lite',
+    body: 'barrel-lite 0.1.0 n’est pas encore sur npm. Compilez-le depuis le dépôt barrel et installez-le dans votre application depuis le chemin local.',
+    label: 'Shell', lang: 'bash',
+    code: `cd barrel/clients/barrel-lite
+npm install && npm run build
+cd ../../../my-app
+npm install ../barrel/clients/barrel-lite` },
+  { title: 'Ouvrir le serveur au navigateur',
+    body: 'Autorisez votre origine avec CORS et exposez `x-barrel-hlc`, qui transporte l’horloge. Gardez le jeton global côté serveur.',
+    label: 'sys.config', lang: 'erlang',
+    code: `[{barrel_server, [
+   {cors, #{origins => [<<"https://app.example">>],
+            expose => [<<"x-barrel-hlc">>]}},
+   {auth, #{tokens => [<<"global-token">>]}}
+ ]}].` },
+  { title: 'Donner à chaque appareil un jeton pour un espace',
+    body: 'Votre backend crée un espace et accorde un jeton : `read` couvre le pull, `write` couvre le push. Le navigateur ne détient jamais que ce jeton.',
+    label: 'REST, depuis votre backend', lang: 'bash',
+    code: `curl -X POST host:8080/spaces \\
+  -H 'authorization: Bearer global-token' \\
+  -H 'content-type: application/json' \\
+  -d '{"label":"field-visits"}'
+curl -X POST host:8080/spaces/sp_…/grants \\
+  -H 'authorization: Bearer global-token' \\
+  -H 'content-type: application/json' \\
+  -d '{"rights":["read","write"],"subject":"tablet-7"}'` },
+  { title: 'Ouvrir la copie locale et écrire, en ligne ou non',
+    body: 'Les écritures arrivent tout de suite dans le stockage local et sont poussées à la synchronisation suivante. Le stockage est OPFS quand le navigateur le propose, la mémoire sinon.',
+    label: 'TypeScript', lang: 'ts',
+    code: `import { Database } from "barrel-lite";
+
+const db = await Database.open("visits", {
+  remote: { url: "https://hub.example:8080",
+            db: "sp_…", token: "bsp_…" },
+  multiTab: true,
+});
+await db.put({ id: "v-311", site: "Lyon 2" });
+const visit = await db.get("v-311");` },
+  { title: 'Synchroniser tant que le réseau est là',
+    body: 'La synchronisation continue interroge le serveur 500 ms après une activité et espace ses appels jusqu’à 30 s au repos ; une écriture locale la réveille, et les erreurs espacent les tentatives de 1 s à 60 s. `continuous: true` ajoute un flux d’événements envoyés par le serveur.',
+    label: 'TypeScript', lang: 'ts',
+    code: `const live = db.liveSync({ continuous: true });
+db.onStatus((s) => setBadge(s.state)); // idle, syncing…
+db.onChange((c) => render(c.id, c.source));
+// later
+live.stop();` },
+  { title: 'Résoudre les conflits sur l’appareil',
+    body: 'Si l’appareil et une autre copie ont modifié le même document chacun de leur côté, les deux versions sont conservées, sur l’appareil et sur le serveur, et toutes les copies affichent le même gagnant. `resolve` remplace le gagnant et tous les conflits.',
+    label: 'TypeScript', lang: 'ts',
+    code: `const db = await Database.open("visits", {
+  remote,
+  onConflict: (e) => console.warn("conflict on", e.id),
+});
+await db.sync();
+const current = await db.get("v-311");
+const others = await db.conflicts("v-311");
+if (others.length > 0) {
+  await db.resolve("v-311", merge(current, others));
+  await db.push();
+}` },
+];
+---
+
+<UseCasePage
+  title="Applications hors ligne d’abord"
+  lead="Gardez une copie des données dans le navigateur, pour qu’une application de terrain lise et écrive sans connexion et se synchronise dans les deux sens quand le réseau revient."
+  sub="Construit avec barrel-lite, un client TypeScript qui parle le même protocole `_sync` que les nœuds Barrel, et barrel_server. barrel-lite n’est pas encore sur npm."
+  problem="Une application de terrain doit continuer à fonctionner dans un sous-sol ou un train et se remettre à jour ensuite sans perdre de modifications. Les applications qui font une requête par action cessent de fonctionner hors ligne, et les files de synchronisation écrites à la main perdent un côté de chaque modification concurrente."
+  arch={arch}
+  edges={['push et pull en HTTPS', 'réplication']}
+  archNote="La copie du navigateur est une réplique complète : elle marque ses écritures avec son propre identifiant de source et tient ses propres points de reprise, si bien que le serveur n’a besoin d’aucun état par client. Un seul onglet par origine se synchronise ; les autres passent par lui."
+  stepsIntro="Six étapes : compiler le client, ouvrir le serveur au navigateur, puis le code de votre application."
+  steps={steps}
+  barrel={[
+    'Garde la copie locale dans OPFS et y répond aux lectures et aux requêtes BQL locales',
+    'Fait push et pull via `/db/:db/_sync`, en reprenant depuis ses points de reprise',
+    'Garde les versions concurrentes comme conflits et choisit le même gagnant que le serveur',
+    'Élit un onglet meneur avec Web Locks et relaie les autres via BroadcastChannel',
+    'Synchronise les pièces jointes, dédupliquées par empreinte',
+  ]}
+  app={[
+    'Émet depuis votre backend un jeton de capacité par appareil ou par utilisateur',
+    'Affiche l’état de synchronisation et l’état hors ligne dans l’interface',
+    'Fusionne les versions en conflit d’une façon adaptée à vos données',
+    'Récupère un sous-ensemble avec un filtre ou un canal quand un appareil ne doit pas tout détenir',
+  ]}
+  limits={[
+    'Pas encore sur npm : compilez-le depuis `clients/barrel-lite` dans le dépôt.',
+    'Le stockage local est un cache. Les écritures pas encore vidées sur disque sont perdues en cas de plantage, et le navigateur peut évincer le stockage (Safari le fait) ; la copie du serveur fait foi.',
+    'L’état `offline` n’est jamais émis : détectez l’absence de connexion dans votre application, par exemple avec `navigator.onLine`.',
+    'Les recherches vectorielle, par mots-clés et hybride et `SUBSCRIBE` ne tournent que sur le serveur. Il n’y a pas de recherche plein texte locale ; la recherche vectorielle locale classe les embeddings synchronisés par force brute.',
+    'Jetons bearer uniquement : pas de requêtes signées depuis le navigateur.',
+  ]}
+  links={[
+    { label: 'Exemple : une application local-first', href: '/examples/local-first' },
+    { label: 'Guide barrel-lite', href: '/docs/guides/barrel-lite' },
+    { label: 'Démarrage rapide : navigateur', href: '/docs/start/quickstart-browser' },
+    { label: 'Conflits', href: '/docs/replicate/conflicts' },
+    { label: 'barrel-lite', href: '/product/lite' },
+    { label: 'Réplication', href: '/product/replication' },
+    { label: 'Cas d’usage : écrire sur chaque nœud', href: '/use-cases/write-on-every-node' },
+  ]}
+/>

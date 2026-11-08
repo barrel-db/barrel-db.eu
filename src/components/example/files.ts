@@ -3,7 +3,7 @@
 import type { MarkdownInstance } from 'astro';
 
 const readmes = import.meta.glob<MarkdownInstance<Record<string, never>>>(
-  '/examples/*/README.md', { eager: true });
+  ['/examples/*/README.md', '/examples/*/README.fr.md'], { eager: true });
 
 const sources = import.meta.glob<string>(
   [
@@ -18,9 +18,11 @@ const sources = import.meta.glob<string>(
 const outputs = import.meta.glob<string>(
   '/examples/*/expected.txt', { query: '?raw', import: 'default', eager: true });
 
-export function readme(slug: string) {
-  const r = readmes[`/examples/${slug}/README.md`];
-  if (!r) throw new Error(`examples/${slug}/README.md is missing`);
+/** The README of an example; README.fr.md for French. */
+export function readme(slug: string, lang: 'en' | 'fr' = 'en') {
+  const file = lang === 'fr' ? 'README.fr.md' : 'README.md';
+  const r = readmes[`/examples/${slug}/${file}`];
+  if (!r) throw new Error(`examples/${slug}/${file} is missing`);
   return r;
 }
 

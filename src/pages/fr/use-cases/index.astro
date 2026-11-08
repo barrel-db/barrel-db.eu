@@ -1,0 +1,89 @@
+---
+// translation_of: src/pages/use-cases/index.astro source_hash: 8c21de899aa941b5
+import Base from '../../../layouts/Base.astro';
+import { useCaseDetails } from '../../../data/use-cases';
+import { siteFor } from '../../../data/i18n';
+
+// French text of the cards; slugs, record marks and library names come from the English data.
+const text: Record<string, { problem: string; solution: string; flow: { label: string; edge: string }[] }> = {
+  'database-per-agent': { problem: "Des agents qui partagent une base voient et écrasent le travail des autres, et vous ne pouvez pas couper l’accès à l’un sans toucher aux autres.",
+    solution: "Chaque agent reçoit un espace : sa propre base et un jeton qui dit ce qu’il peut lire ou écrire. Révoquez le jeton et l’agent n’a plus accès.",
+    flow: [{ label: "Planificateur", edge: "accorde un jeton" }, { label: "Espace sp_research", edge: "jeton via MCP" }, { label: "Agent de recherche", edge: "" }] },
+  'write-on-every-node': { problem: "Sites, appareils et régions ont chacun besoin de leurs données en local, plus une copie centrale, sur des liens qui vont et viennent.",
+    solution: "Intégrez Barrel sur chaque nœud et lancez une tâche de réplication continue vers le hub. Filtres et canaux décident de ce qui va où.",
+    flow: [{ label: "Nœud en périphérie", edge: "push continu" }, { label: "Hub barrel_server", edge: "pull vers les autres" }, { label: "Autres nœuds", edge: "" }] },
+  'database-per-customer': { problem: "Des données clients mêlées dans des tables partagées imposent un filtre sur chaque requête, et supprimer un client oblige à traquer des lignes.",
+    solution: "Un espace par client, chiffré sous sa propre clé. Au départ d’un client, l’espace est supprimé et chaque jeton émis pour lui est révoqué.",
+    flow: [{ label: "Votre backend SaaS", edge: "un par client" }, { label: "Espace sp_acme", edge: "sa propre clé" }, { label: "Fournisseur de clés", edge: "" }] },
+  'agent-memory': { problem: "Un agent oublie d’un tour à l’autre, sauf si vous gardez la conversation, ses notes et ce qui compte, et pouvez les retrouver plus tard.",
+    solution: "Les sessions gardent les messages et les données de travail avec une expiration glissante, les notes épinglées restent en tête, et le mode enregistrement rend les documents stockés trouvables par le sens.",
+    flow: [{ label: "Agent de support", edge: "à chaque tour" }, { label: "Session dans un espace", edge: "expire après ttl" }, { label: "Documents trouvables", edge: "" }] },
+  'private-rag': { problem: "La recherche documentaire implique d’ordinaire un stockage de documents, une base vectorielle et un service d’embeddings à garder synchronisés, et vos données quittent votre réseau.",
+    solution: "Écrivez des documents. Barrel les vectorise avec un modèle local, cherche par le sens et par mots-clés à la fois, et peut reclasser les meilleurs résultats. Vous passez les résultats à votre modèle.",
+    flow: [{ label: "Documents", edge: "vectorisés à l’écriture" }, { label: "barrel, mode enregistrement", edge: "recherche hybride" }, { label: "Reclasseur", edge: "meilleurs résultats" }, { label: "Votre appel au LLM", edge: "" }] },
+  'code-search': { problem: "Un agent de développement a autant besoin de correspondances exactes (un code d’erreur, un symbole, un motif) que de réponses par le sens.",
+    solution: "Un index de trigrammes répond aux requêtes par sous-chaîne et par expression régulière sur les champs que vous choisissez ; la recherche hybride répond par le sens. Les deux sont des outils MCP.",
+    flow: [{ label: "Agent de développement", edge: "ngram_search, search" }, { label: "barrel_server", edge: "MCP" }, { label: "Morceaux de code", edge: "index de trigrammes" }] },
+  'branch-per-run': { problem: "Laisser un agent modifier des données en production est risqué, et copier une base pour faire des essais est lent.",
+    solution: "Créez une branche en temps constant, laissez l’agent travailler sur la copie, examinez ce qui a changé, puis fusionnez-la ou jetez-la. Créez une branche d’un instant passé pour restaurer.",
+    flow: [{ label: "main", edge: "" }, { label: "Exécution d’agent sur une branche", edge: "relecture" }, { label: "fusionner ou supprimer", edge: "" }] },
+  'offline-first': { problem: "Une application de terrain doit continuer à fonctionner sans connexion et se remettre à jour ensuite sans perdre de modifications.",
+    solution: "barrel-lite garde une copie dans le navigateur, lit et écrit en local, et synchronise dans les deux sens quand la connexion revient.",
+    flow: [{ label: "Application web", edge: "lectures et écritures locales" }, { label: "barrel-lite (OPFS)", edge: "/db/:db/_sync" }, { label: "barrel_server", edge: "" }] },
+};
+const names = new Map(siteFor('fr').useCases.map((u) => [u.slug, u]));
+const cards = useCaseDetails.map((u) => {
+  const t = text[u.slug];
+  const n = names.get(u.slug);
+  if (!t || !n || t.flow.length !== u.flow.length) throw new Error(`French text missing for use case ${u.slug}`);
+  return { ...u, name: n.name, short: n.short, problem: t.problem, solution: t.solution,
+    flow: u.flow.map((f, i) => ({ ...f, ...t.flow[i] })) };
+});
+---
+
+<Base title="Cas d’usage" description="Huit architectures pour lesquelles Barrel est conçu, chacune avec le problème, l’assemblage des pièces, le code étape par étape, ce que fait Barrel et ce que fait votre application, et les limites.">
+  <div class="wrap uci">
+    <h1 class="uci-h1">Cas d’usage</h1>
+    <p class="lead uci-lead">Huit architectures pour lesquelles Barrel est conçu. Chaque page présente le problème, la façon dont les pièces s’assemblent, le code pour le construire étape par étape, ce que fait Barrel et ce que fait votre application, et les limites.</p>
+
+    <ul class="uci-grid">
+      {cards.map((u) => (
+        <li class="uci-card">
+          <h2 class="uci-t"><a href={`/fr/use-cases/${u.slug}`}>{u.name}</a></h2>
+          <p class="small muted uci-s">{u.short}</p>
+          <p class="uci-p"><span class="uci-l">Le problème.</span> <span class="muted">{u.problem}</span></p>
+          <p class="uci-p"><span class="uci-l">Avec Barrel.</span> {u.solution}</p>
+          <ol class="uci-flow" aria-label="Comment les pièces se relient">
+            {u.flow.map((f) => (
+              <li>
+                <span class:list={['uci-node', { 'is-rec': f.record }]}>{f.label}</span>
+                {f.edge && <span class="uci-edge">{f.edge}</span>}
+              </li>
+            ))}
+          </ol>
+          <p class="small muted uci-uses">Utilise {u.uses}</p>
+        </li>
+      ))}
+    </ul>
+  </div>
+</Base>
+<style>
+  .uci { padding-top: 40px; padding-bottom: 96px; }
+  .uci-h1 { margin: 0 0 20px; font-size: clamp(2.5rem, 6vw, 3.75rem); font-weight: 620; font-stretch: 112%; letter-spacing: -0.03em; line-height: 1; }
+  .uci-lead { margin: 0 0 48px; }
+  .uci-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+  .uci-card { border: 1px solid var(--rule); border-radius: var(--radius); background: var(--card); padding: 24px; display: flex; flex-direction: column; min-width: 0; }
+  .uci-t { margin: 0; font-size: var(--step-1); }
+  .uci-t a { color: var(--ink); text-decoration: none; }
+  .uci-t a:hover { text-decoration: underline; }
+  .uci-s { margin: 2px 0 16px; }
+  .uci-p { margin: 0 0 10px; font-size: 15px; }
+  .uci-l { font-weight: 650; }
+  .uci-flow { list-style: none; margin: 12px 0 16px; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .uci-flow li { display: contents; }
+  .uci-node { padding: 6px 10px; border-radius: 6px; font-size: 13px; font-weight: 600; border: 1.5px solid var(--ink); background: var(--card); }
+  .uci-node.is-rec { background: var(--coral); border-color: var(--coral); color: var(--on-coral); }
+  .uci-edge { font-size: 12px; color: var(--teal); }
+  .uci-uses { margin: auto 0 0; }
+  @media (max-width: 820px) { .uci-grid { grid-template-columns: minmax(0, 1fr); } .uci { padding-top: 24px; } }
+</style>
