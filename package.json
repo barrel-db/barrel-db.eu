@@ -10,11 +10,18 @@
     "build:docs": "bash scripts/build-docs.sh"
   },
   "dependencies": {
+    "@astrojs/mdx": "^4.3.13",
+    "@astrojs/sitemap": "^3.7.4",
+    "@fontsource-variable/archivo": "^5.3.0",
+    "@fontsource/fragment-mono": "^5.3.0",
     "@tailwindcss/vite": "^4.1.18",
     "astro": "^5.17.1",
     "tailwindcss": "^4.1.18"
   },
   "devDependencies": {
-    "pagefind": "^1.5.2"
+    "@astrojs/check": "^0.9.12",
+    "linkinator": "^8.1.0",
+    "pagefind": "^1.5.2",
+    "typescript": "^5.9.3"
   }
 }

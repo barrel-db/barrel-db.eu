@@ -1,0 +1,35 @@
+---
+import { Code } from 'astro:components';
+
+interface Props {
+  code: string;
+  lang?: string;
+  /** Shown above the block: a file name, "Output", "Erlang shell"... */
+  label?: string;
+  /** Output blocks get a plain, bordered look and no highlighting. */
+  output?: boolean;
+}
+
+const { code, lang = 'erlang', label, output = false } = Astro.props;
+const themes = { light: 'github-light', dark: 'github-dark' } as const;
+---
+
+<div class:list={['cb', { 'cb--out': output }]}>
+  {(label || !output) && (
+    <div class="cb-bar">
+      <span>{label}</span>
+      <button type="button" class="cb-copy" data-copy>Copy</button>
+    </div>
+  )}
+  {output
+    ? <pre><code>{code}</code></pre>
+    : <Code code={code} lang={lang as any} themes={themes} defaultColor={false} />}
+</div>
+
+<style>
+  .cb { margin: 0 0 20px; }
+  .cb-bar { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; color: var(--ink-2); margin-bottom: 6px; min-height: 22px; }
+  .cb-copy { border: 0; background: transparent; color: var(--ink-2); font: inherit; font-size: 14px; cursor: pointer; padding: 2px 4px; }
+  .cb-copy:hover { color: var(--ink); }
+  .cb--out pre { background: var(--card); border: 1px solid var(--rule); }
+</style>

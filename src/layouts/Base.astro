@@ -1,0 +1,77 @@
+---
+import '../styles/site.css';
+import ThemeScript from '../components/ThemeScript.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import CommandMenu from '../components/CommandMenu.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  /** Path of a Markdown copy of this page, advertised for agents. */
+  markdown?: string;
+  /** Leave the page out of the search index (redirect stubs, demos). */
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description = 'Barrel is a database for agents: documents, files and vectors under one id, with search, versions, branches, active-active replication and capability-scoped access. Embedded in Erlang, served over REST and MCP, or in the browser.',
+  markdown,
+  noindex = false,
+} = Astro.props;
+
+const site = Astro.site ?? new URL('https://barrel-db.eu');
+const canonical = new URL(Astro.url.pathname, site).toString();
+const fullTitle = title === 'Barrel' ? 'Barrel: a database for agents' : `${title} | Barrel`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <ThemeScript />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href="/logo-symbol-coral.svg" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL('/logo-github-avatar.png', site).toString()} />
+    <meta name="twitter:card" content="summary" />
+    <link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt" />
+    {markdown && <link rel="alternate" type="text/markdown" href={markdown} />}
+    {noindex && <meta name="robots" content="noindex" />}
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <Header />
+    <main id="main" data-pagefind-body={noindex ? undefined : ''}>
+      <slot />
+    </main>
+    <Footer />
+    <CommandMenu />
+    <script>
+      // One handler for every Copy button: code blocks and code tabs.
+      document.addEventListener('click', async (e) => {
+        const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-copy]');
+        if (!b) return;
+        const host = b.closest('.cb, .ct');
+        const pre = host?.querySelector('[role=tabpanel]:not([hidden]) pre') ?? host?.querySelector('pre');
+        if (!pre) return;
+        try { await navigator.clipboard.writeText(pre.textContent || ''); b.textContent = 'Copied'; }
+        catch { b.textContent = 'Select and copy'; }
+        setTimeout(() => { b.textContent = 'Copy'; }, 1600);
+      });
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  body { min-height: 100vh; display: flex; flex-direction: column; }
+  main { flex: 1; }
+</style>

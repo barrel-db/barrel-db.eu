@@ -1,0 +1,68 @@
+---
+// The record drawn as one isometric block: document on top, attachments left, vector right.
+// Same geometry as the logo. `id` labels the record; `animate` assembles it once on load.
+interface Props { id?: string; animate?: boolean; caption?: string; }
+const { id = 'kb-142', animate = false, caption } = Astro.props;
+---
+
+<figure class:list={['rec', { 'rec--anim': animate }]}>
+  <svg viewBox="0 0 460 420" role="img" aria-label={`One record, ${id}, drawn as a block of three faces: the document on top, its attachments on the left, its vector on the right.`}>
+    <g class="f-doc">
+      <polygon points="230,66 340,130 230,194 120,130" class="fill-coral stroke-ink" />
+      <line x1="213.5" y1="94.8" x2="290.5" y2="139.6" class="stroke-on" />
+      <line x1="197" y1="104.4" x2="274" y2="149.2" class="stroke-on" />
+      <line x1="180.5" y1="114" x2="236" y2="146.3" class="stroke-on" />
+    </g>
+    <g class="f-att">
+      <polygon points="108,154 218,218 218,346 108,282" class="fill-soft stroke-ink" />
+      <line x1="108" y1="186" x2="218" y2="250" class="dash" />
+      <line x1="108" y1="218" x2="218" y2="282" class="dash" />
+      <line x1="108" y1="250" x2="218" y2="314" class="dash" />
+    </g>
+    <g class="f-vec">
+      <polygon points="242,218 352,154 352,282 242,346" class="fill-paper2 stroke-ink" />
+      {[[269.5, 234], [269.5, 266], [269.5, 298], [297, 218], [297, 250], [297, 282], [324.5, 202], [324.5, 234], [324.5, 266]].map(([x, y]) => <circle cx={x} cy={y} r="4" class="fill-teal" />)}
+    </g>
+    <g class="labels">
+      <line x1="230" y1="66" x2="230" y2="28" />
+      <text x="230" y="20" text-anchor="middle" class="mono">id: {id}</text>
+      <line x1="120" y1="130" x2="70" y2="112" />
+      <text x="36" y="84" class="t">document</text>
+      <text x="36" y="102" class="s">JSON, every version kept</text>
+      <line x1="108" y1="282" x2="44" y2="330" />
+      <text x="20" y="348" class="t">attachments</text>
+      <text x="20" y="366" class="s">files, stored in chunks</text>
+      <line x1="352" y1="282" x2="404" y2="326" />
+      <text x="440" y="344" text-anchor="end" class="t">vector</text>
+      <text x="440" y="362" text-anchor="end" class="s">embedded from its fields</text>
+    </g>
+  </svg>
+  {caption && <figcaption class="small muted">{caption}</figcaption>}
+</figure>
+
+<style>
+  .rec { margin: 0; }
+  svg { width: 100%; height: auto; display: block; }
+  .fill-coral { fill: var(--coral); } .fill-soft { fill: var(--teal-soft); } .fill-paper2 { fill: var(--paper-2); } .fill-teal { fill: var(--teal); }
+  .stroke-ink { stroke: var(--ink); stroke-width: 1.5; }
+  .stroke-on { stroke: var(--on-coral); stroke-width: 3; stroke-linecap: round; }
+  .dash { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 4 4; }
+  .labels line { stroke: var(--ink-2); stroke-width: 1; }
+  .labels text { fill: var(--ink); font-family: var(--font); }
+  .labels .mono { font-family: var(--mono); font-size: 14px; }
+  .labels .t { font-size: 14px; font-weight: 600; }
+  .labels .s { font-size: 12px; fill: var(--ink-2); }
+  figcaption { margin-top: 8px; max-width: 30em; }
+
+  /* One orchestrated moment: the faces come together once. */
+  @media (prefers-reduced-motion: no-preference) {
+    .rec--anim .f-doc { animation: in-doc 700ms 100ms cubic-bezier(.2,.7,.2,1) both; }
+    .rec--anim .f-att { animation: in-att 700ms 250ms cubic-bezier(.2,.7,.2,1) both; }
+    .rec--anim .f-vec { animation: in-vec 700ms 400ms cubic-bezier(.2,.7,.2,1) both; }
+    .rec--anim .labels { animation: fade 500ms 900ms both; }
+  }
+  @keyframes in-doc { from { transform: translateY(-28px); opacity: 0; } }
+  @keyframes in-att { from { transform: translate(-24px, 14px); opacity: 0; } }
+  @keyframes in-vec { from { transform: translate(24px, 14px); opacity: 0; } }
+  @keyframes fade { from { opacity: 0; } }
+</style>

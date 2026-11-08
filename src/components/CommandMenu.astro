@@ -1,0 +1,148 @@
+---
+// Site-wide search in a dialog: ⌘K / Ctrl+K or "/" opens it. Results come from the
+// Pagefind index built after `astro build`; it is loaded only when the dialog opens.
+---
+
+<dialog class="cmd" aria-label="Search the site" data-cmd>
+  <div class="cmd-box">
+    <label class="cmd-input">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+      <span class="visually-hidden">Search</span>
+      <input type="search" placeholder="Search docs, API, MCP tools, examples" autocomplete="off" spellcheck="false" data-cmd-q role="combobox" aria-expanded="true" aria-controls="cmd-results" aria-autocomplete="list" />
+      <kbd>esc</kbd>
+    </label>
+    <div id="cmd-results" class="cmd-results" role="listbox" data-cmd-results></div>
+    <p class="cmd-foot"><span>Up and down to move</span><span>Enter to open</span></p>
+  </div>
+</dialog>
+
+<style>
+  .cmd { border: 0; padding: 0; background: transparent; width: min(680px, calc(100vw - 32px)); margin: 96px auto auto; max-height: calc(100vh - 128px); }
+  .cmd::backdrop { background: var(--scrim); }
+  .cmd-box { background: var(--card); color: var(--ink); border: 1px solid var(--rule); border-radius: 12px; box-shadow: 0 24px 64px rgba(24, 32, 32, 0.25); overflow: hidden; display: flex; flex-direction: column; max-height: calc(100vh - 128px); }
+  .cmd-input { display: flex; align-items: center; gap: 12px; padding: 0 20px; height: 60px; border-bottom: 1px solid var(--rule); color: var(--ink-2); }
+  .cmd-input input { flex: 1; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 19px; outline: none; min-width: 0; }
+  .cmd-input kbd { font-size: 12px; border: 1px solid var(--rule); border-radius: 4px; padding: 1px 6px; }
+  .cmd-results { overflow-y: auto; padding: 8px 0; }
+  .cmd-results :global(.cmd-group) { padding: 10px 20px 4px; font-size: 14px; font-weight: 650; color: var(--ink-2); margin: 0; }
+  .cmd-results :global(a) { display: block; padding: 10px 20px; text-decoration: none; color: var(--ink); border-left: 3px solid transparent; }
+  .cmd-results :global(a[aria-selected='true']) { background: var(--paper-2); border-left-color: var(--coral); }
+  .cmd-results :global(.cmd-t) { display: block; font-weight: 600; }
+  .cmd-results :global(.cmd-x) { display: block; font-size: 14px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cmd-results :global(.cmd-x mark) { background: none; color: var(--ink); font-weight: 650; }
+  .cmd-results :global(.cmd-empty) { padding: 24px 20px; color: var(--ink-2); margin: 0; }
+  .cmd-foot { display: flex; gap: 20px; margin: 0; padding: 10px 20px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--ink-2); background: var(--paper); }
+</style>
+
+<script>
+  type Hit = { url: string; title: string; excerpt: string };
+  let pf: any = null;
+  const dlg = document.querySelector<HTMLDialogElement>('[data-cmd]')!;
+  const q = document.querySelector<HTMLInputElement>('[data-cmd-q]')!;
+  const box = document.querySelector<HTMLDivElement>('[data-cmd-results]')!;
+  let sel = 0;
+  let seq = 0;
+
+  const groupOf = (url: string) =>
+    url.startsWith('/docs/reference') ? 'Reference'
+    : url.startsWith('/docs/lib') ? 'Library API'
+    : url.startsWith('/docs') ? 'Guides'
+    : url.startsWith('/product') ? 'Product'
+    : url.startsWith('/use-cases') ? 'Use cases'
+    : url.startsWith('/examples') ? 'Examples' : 'Site';
+
+  async function load() {
+    if (pf) return pf;
+    try {
+      const path = '/pagefind/pagefind.js';
+      pf = await import(/* @vite-ignore */ path);
+      await pf.init();
+    } catch {
+      pf = false;
+    }
+    return pf;
+  }
+
+  function render(hits: Hit[], term: string) {
+    box.replaceChildren();
+    if (pf === false) {
+      const p = document.createElement('p');
+      p.className = 'cmd-empty';
+      p.textContent = 'The search index is created by npm run build. Run a build, then npm run preview.';
+      box.append(p);
+      return;
+    }
+    if (term && hits.length === 0) {
+      const p = document.createElement('p');
+      p.className = 'cmd-empty';
+      p.textContent = `Nothing matches "${term}". Try a function name like branch, or a tool name like handoff_create.`;
+      box.append(p);
+      return;
+    }
+    const groups = new Map<string, Hit[]>();
+    hits.forEach((h) => { const g = groupOf(h.url); groups.set(g, [...(groups.get(g) || []), h]); });
+    let i = 0;
+    groups.forEach((items, g) => {
+      const t = document.createElement('p');
+      t.className = 'cmd-group';
+      t.textContent = g;
+      box.append(t);
+      items.forEach((h) => {
+        const a = document.createElement('a');
+        a.href = h.url;
+        a.setAttribute('role', 'option');
+        a.id = `cmd-opt-${i}`;
+        a.setAttribute('aria-selected', String(i === sel));
+        const tt = document.createElement('span'); tt.className = 'cmd-t'; tt.textContent = h.title;
+        const x = document.createElement('span'); x.className = 'cmd-x'; x.innerHTML = h.excerpt; // Pagefind escapes excerpts and adds <mark>
+        a.append(tt, x);
+        box.append(a);
+        i++;
+      });
+    });
+  }
+
+  async function search() {
+    const term = q.value.trim();
+    const mine = ++seq;
+    const lib = await load();
+    if (!lib || !term) { sel = 0; render([], term); return; }
+    const res = await lib.debouncedSearch(term, {}, 120);
+    if (!res || mine !== seq) return;
+    const data = await Promise.all(res.results.slice(0, 12).map((r: any) => r.data()));
+    sel = 0;
+    render(data.map((d: any) => ({ url: d.url.replace(/\.html$/, ''), title: d.meta?.title || d.url, excerpt: d.excerpt })), term);
+  }
+
+  function move(d: number) {
+    const opts = box.querySelectorAll<HTMLAnchorElement>('a[role=option]');
+    if (!opts.length) return;
+    sel = (sel + d + opts.length) % opts.length;
+    opts.forEach((o, i) => o.setAttribute('aria-selected', String(i === sel)));
+    opts[sel].scrollIntoView({ block: 'nearest' });
+    q.setAttribute('aria-activedescendant', opts[sel].id);
+  }
+
+  function open() {
+    if (dlg.open) return;
+    dlg.showModal();
+    q.select();
+    load().then(() => { if (!q.value) render([], ''); });
+  }
+
+  document.querySelectorAll('[data-open-search]').forEach((b) => b.addEventListener('click', open));
+  document.addEventListener('keydown', (e) => {
+    const typing = (e.target as HTMLElement)?.closest?.('input, textarea, [contenteditable]');
+    if ((e.key === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !typing)) { e.preventDefault(); open(); }
+  });
+  q.addEventListener('input', search);
+  q.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); move(1); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
+    if (e.key === 'Enter') {
+      const a = box.querySelectorAll<HTMLAnchorElement>('a[role=option]')[sel];
+      if (a) window.location.href = a.href;
+    }
+  });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+</script>

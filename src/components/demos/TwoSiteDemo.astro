@@ -1,0 +1,160 @@
+---
+// Two sites edit the same document while apart, then sync. Runs in the browser and
+// follows barrel's rules: a write replaces only the versions it read, concurrent
+// versions are kept as conflicts, every copy picks the same winner (highest clock,
+// then writer id), and a resolution replaces the versions it observed.
+---
+
+<div class="demo" data-two-site>
+  <div class="demo-head">
+    <div>
+      <h3 class="demo-t">Two sites edit the same task</h3>
+      <p class="muted small demo-intro">Cut the link, edit on both sides, sync. Neither edit is lost: both copies pick the same winner and keep the other edit as a conflict until someone resolves it.</p>
+    </div>
+    <button type="button" class="button button--small" data-act="reset">Start over</button>
+  </div>
+  <div class="demo-nodes">
+    <div class="node" data-site="paris"></div>
+    <div class="link">
+      <span class="link-line" data-link-line></span>
+      <span class="link-label small" data-link-label>Link up</span>
+      <button type="button" class="button button--small" data-act="toggle" aria-pressed="false">Cut the link</button>
+      <button type="button" class="button button--small button--primary" data-act="sync">Sync both ways</button>
+    </div>
+    <div class="node" data-site="lyon"></div>
+  </div>
+  <div class="demo-call">
+    <p class="small muted demo-call-h"><span>The call behind your last step</span><span>Demonstration in your browser, following barrel's rules</span></p>
+    <pre data-call aria-live="polite"></pre>
+  </div>
+</div>
+
+<style>
+  .demo { border: 1px solid var(--rule); border-radius: 12px; padding: 28px; background: var(--paper); }
+  .demo-head { display: flex; justify-content: space-between; gap: 16px 32px; flex-wrap: wrap; margin-bottom: 20px; }
+  .demo-t { margin: 0 0 4px; font-size: 22px; font-stretch: 108%; }
+  .demo-intro { margin: 0; max-width: 40em; }
+  .demo-nodes { display: grid; grid-template-columns: minmax(0, 1fr) 160px minmax(0, 1fr); gap: 16px; }
+  .link { display: flex; flex-direction: column; justify-content: center; gap: 10px; text-align: center; }
+  .link-line { display: block; border-top: 2px solid var(--teal); }
+  .link-line.is-down { border-top-style: dashed; border-top-color: var(--coral); }
+  .link-label { color: var(--teal); font-weight: 600; }
+  .link-label.is-down { color: var(--coral); }
+  .demo-call { margin-top: 20px; }
+  .demo-call-h { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin: 0 0 6px; }
+  .demo-call pre { min-height: 96px; }
+  .demo :global(.node) { border: 1.5px solid var(--ink); border-radius: var(--radius); padding: 16px; background: var(--card); min-width: 0; }
+  .demo :global(.node-h) { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .demo :global(.node-n) { font-weight: 650; font-size: 19px; }
+  .demo :global(.ver) { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; padding: 8px 10px; margin-bottom: 6px; border-radius: 6px; border: 1.5px solid var(--ink); background: var(--paper-2); }
+  .demo :global(.ver.is-conflict) { border-color: var(--coral); background: transparent; }
+  .demo :global(.ver-k) { font-size: 13px; font-weight: 650; }
+  .demo :global(.ver-by) { font-size: 12px; color: var(--ink-2); justify-self: end; }
+  .demo :global(.ver-b) { grid-column: 1 / -1; font-family: var(--mono); font-size: 14px; font-variant-ligatures: none; overflow-wrap: anywhere; }
+  .demo :global(.node .button) { width: 100%; margin-top: 8px; }
+  .demo :global(.resolve) { border-color: var(--teal); color: var(--teal); }
+  @media (max-width: 820px) { .demo { padding: 18px; } .demo-nodes { grid-template-columns: minmax(0, 1fr); } }
+</style>
+
+<script>
+  type V = { id: string; body: string; by: string; clock: number; replaces: string[] };
+  type N = { live: V[]; seen: string[] };
+  type S = { clock: number; n: number; link: boolean; nodes: Record<string, N>; call: string };
+  const SITES = ['paris', 'lyon'] as const;
+  const NAME: Record<string, string> = { paris: 'Paris', lyon: 'Lyon' };
+  const EDITS: Record<string, [string, string][]> = {
+    paris: [['"state": "blocked"', '<<"state">> => <<"blocked">>'], ['"state": "blocked", "by": "ops"', '<<"by">> => <<"ops">>']],
+    lyon: [['"state": "done"', '<<"state">> => <<"done">>'], ['"state": "done", "qa": true', '<<"qa">> => true']],
+  };
+
+  const winner = (live: V[]) => live.slice().sort((a, b) => (b.clock - a.clock) || (b.by < a.by ? -1 : 1))[0];
+
+  function initial(): S {
+    const v0: V = { id: 'v0', body: '"state": "open"', by: 'paris', clock: 1, replaces: [] };
+    return { clock: 1, n: 0, link: true, nodes: { paris: { live: [v0], seen: ['v0'] }, lyon: { live: [v0], seen: ['v0'] } },
+      call: '%% both sites start from the same copy\n{ok, _} = barrel_rep:replicate(<<"paris">>, <<"lyon">>).' };
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-two-site]').forEach((root) => {
+    let s = initial();
+    const el = (tag: string, cls?: string, text?: string) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+
+    function edit(site: string) {
+      const node = s.nodes[site];
+      const own = node.seen.filter((id) => id.endsWith(site)).length;
+      const [body, erl] = EDITS[site][Math.min(own, 1)];
+      s.clock++; s.n++;
+      const v: V = { id: `v${s.n}${site}`, body, by: site, clock: s.clock, replaces: node.live.map((x) => x.id) };
+      s.nodes[site] = { live: [v], seen: [...node.seen, v.id] };
+      s.call = `%% on ${site}: the write replaces the version it read\n{ok, _} = barrel_docdb:put_doc(<<"${site}">>,\n    Doc#{${erl}}).`;
+      draw();
+    }
+    function resolve(site: string) {
+      const node = s.nodes[site];
+      s.clock++; s.n++;
+      const v: V = { id: `v${s.n}r${site}`, body: '"state": "blocked", "note": "merged"', by: site, clock: s.clock, replaces: node.live.map((x) => x.id) };
+      s.nodes[site] = { live: [v], seen: [...node.seen, v.id] };
+      s.call = `{ok, #{<<"_observed">> := Seen}} =\n    barrel_docdb:get_doc(<<"${site}">>, <<"task:1">>, #{conflicts => true}),\n{ok, #{conflicts_resolved := 1}} = barrel_docdb:resolve_conflict(\n    <<"${site}">>, <<"task:1">>, Seen, {merge, Merged}).`;
+      draw();
+    }
+    function sync() {
+      if (!s.link) return;
+      const all = new Map<string, V>();
+      SITES.forEach((k) => s.nodes[k].live.forEach((v) => all.set(v.id, v)));
+      const replaced = new Set<string>(); all.forEach((v) => v.replaces.forEach((r) => replaced.add(r)));
+      const live = [...all.values()].filter((v) => !replaced.has(v.id));
+      const seen = [...new Set([...s.nodes.paris.seen, ...s.nodes.lyon.seen])];
+      SITES.forEach((k) => { s.nodes[k] = { live: live.slice(), seen }; });
+      s.call = live.length > 1
+        ? '{ok, _} = barrel_rep:replicate(<<"paris">>, <<"lyon">>),\n{ok, _} = barrel_rep:replicate(<<"lyon">>, <<"paris">>),\n%% both edits kept; the same winner on both sites\n{ok, [_Loser]} = barrel_docdb:get_conflicts(<<"paris">>, <<"task:1">>).'
+        : '{ok, _} = barrel_rep:replicate(<<"paris">>, <<"lyon">>),\n{ok, _} = barrel_rep:replicate(<<"lyon">>, <<"paris">>).\n%% one version: both sites hold the same document';
+      draw();
+    }
+
+    function drawNode(site: string) {
+      const host = root.querySelector<HTMLElement>(`[data-site="${site}"]`)!;
+      const live = s.nodes[site].live;
+      const w = winner(live);
+      host.replaceChildren();
+      const h = el('div', 'node-h');
+      h.append(el('span', 'node-n', NAME[site]), el('span', 'small muted', 'barrel_server'));
+      host.append(h, el('div', 'small muted', 'task:1'));
+      [w, ...live.filter((v) => v.id !== w.id)].forEach((v) => {
+        const row = el('div', v.id === w.id ? 'ver' : 'ver is-conflict');
+        row.append(el('span', 'ver-k', v.id === w.id ? 'winner' : 'conflict'), el('span', 'ver-by', `by ${v.by}`), el('span', 'ver-b', `{${v.body}}`));
+        host.append(row);
+      });
+      const e = el('button', 'button button--small', `Edit on ${NAME[site]}`) as HTMLButtonElement;
+      e.type = 'button'; e.addEventListener('click', () => edit(site));
+      host.append(e);
+      if (live.length > 1) {
+        const r = el('button', 'button button--small resolve', 'Resolve here') as HTMLButtonElement;
+        r.type = 'button'; r.addEventListener('click', () => resolve(site));
+        host.append(r);
+      }
+    }
+
+    function draw() {
+      SITES.forEach(drawNode);
+      const toggle = root.querySelector<HTMLButtonElement>('[data-act=toggle]')!;
+      const syncBtn = root.querySelector<HTMLButtonElement>('[data-act=sync]')!;
+      root.querySelector('[data-link-line]')!.classList.toggle('is-down', !s.link);
+      const label = root.querySelector('[data-link-label]')!;
+      label.classList.toggle('is-down', !s.link);
+      label.textContent = s.link ? 'Link up' : 'Link down: both sites keep taking writes';
+      toggle.textContent = s.link ? 'Cut the link' : 'Restore the link';
+      toggle.setAttribute('aria-pressed', String(!s.link));
+      syncBtn.disabled = !s.link;
+      root.querySelector('[data-call]')!.textContent = s.call;
+    }
+
+    root.querySelector('[data-act=toggle]')!.addEventListener('click', () => {
+      s.link = !s.link;
+      s.call = s.link ? '%% the network is back; nothing has synced yet' : '%% the network drops; each site keeps\n%% accepting reads and writes locally';
+      draw();
+    });
+    root.querySelector('[data-act=sync]')!.addEventListener('click', sync);
+    root.querySelector('[data-act=reset]')!.addEventListener('click', () => { s = initial(); draw(); });
+    draw();
+  });
+</script>

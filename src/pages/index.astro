@@ -1,385 +1,180 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import Base from '../layouts/Base.astro';
+import RecordFigure from '../components/RecordFigure.astro';
+import TwoSiteDemo from '../components/demos/TwoSiteDemo.astro';
+import UseCaseTabs from '../components/UseCaseTabs.astro';
 import CodeTabs from '../components/CodeTabs.astro';
-const usageCode = `%% Open a database. Text is embedded into a vector on write.
-{ok, _} = barrel:open(<<"notes">>, #{embedding => #{provider => openai}}).
 
-%% One write stores the document, its vector, and its blobs under one id.
-{ok, _} = barrel:put_doc(<<"notes">>, #{
-    <<"id">>    => <<"n1">>,
-    <<"title">> => <<"Design review">>,
-    <<"text">>  => <<"Ship the edge sync protocol">>
-}).
+const places = [
+  { title: 'Embedded', when: 'Inside your Erlang/OTP release. No network hop, no separate service to run.', href: '/docs/start/quickstart-embedded', layers: [
+    { name: 'Your application', note: 'agents, workers, OTP processes', edge: 'calls the barrel API' },
+    { name: 'barrel', note: 'records, search, branches', edge: 'stores in', rec: true },
+    { name: 'RocksDB on local disk', note: 'documents, attachments, vectors' } ] },
+  { title: 'Server', when: 'One node many clients share: agents over MCP, services over REST, other nodes over the sync wire.', href: '/docs/start/quickstart-server', layers: [
+    { name: 'Agents and services', note: 'MCP clients, curl, your backend', edge: 'MCP at /mcp, REST at /db' },
+    { name: 'barrel_server', note: 'auth, capability tokens, spaces', edge: 'calls' },
+    { name: 'barrel', note: 'the same embedded database', rec: true } ] },
+  { title: 'Browser', when: 'A local copy in a web app. Reads and writes keep working offline.', href: '/docs/start/quickstart-browser', layers: [
+    { name: 'Your web app', note: 'TypeScript', edge: 'reads and writes locally' },
+    { name: 'barrel-lite', note: 'stores in the browser (OPFS)', edge: 'syncs over /db/:db/_sync', rec: true },
+    { name: 'barrel_server', note: 'the copy it syncs with' } ] },
+];
 
-%% Query the document layer with BQL.
-{ok, Rows, _} = barrel:query(<<"notes">>,
-    <<"SELECT id, title FROM db WHERE title LIKE 'Design%'">>).
+const status = [
+  { title: 'Works today', kind: 'today', items: ['Documents, attachments, every version kept', 'Vector, keyword (BM25) and hybrid search', 'Substring and regex search', 'BQL queries and live subscriptions', 'Active-active replication: nodes and browsers', 'Branches and point-in-time recovery', 'Encryption at rest', 'Spaces, sessions, capability tokens, handoffs', 'REST and MCP server'] },
+  { title: 'Optional, needs setup', kind: 'optional', items: ['Local embeddings (Python virtualenv)', 'Cloud embedding providers (API key)', 'Reranking (Python virtualenv)', 'FAISS index backend (system FAISS)', 'S3-compatible attachment storage'] },
+  { title: 'Planned', kind: 'planned', items: ['Live federated queries across contexts', 'Rank fusion and reranking across contexts', 'Context catalog enrollment'] },
+];
 
-%% Search the vector layer over the very same records.
-{ok, Hits, _} = barrel:query(<<"notes">>,
-    <<"SELECT id, _score FROM vector_top_k('edge sync', k => 5) AS v">>).`;
+const repPoints = [
+  ['Same answer everywhere.', 'Every copy picks the same winner for every document.'],
+  ['No lost edits.', 'Concurrent edits stay as conflicts until you resolve them.'],
+  ['Resumes after failure.', 'Checkpoints per batch; tested under kills and power cuts.'],
+  ['Documents and files.', 'Attachments travel with their documents.'],
+];
 
-const serverCode = `# Run barrel_server for a REST/JSON and MCP surface over the same database.
-$ curl -X PUT localhost:8080/db/notes
-{"ok":true,"db":"notes"}
+const quick = [
+  { label: 'Erlang', lang: 'erlang', code: `{ok, _} = application:ensure_all_started(barrel),
+{ok, Db} = barrel:open(<<"kb">>, #{vectordb => none}),
+{ok, _} = barrel:put_doc(Db, #{<<"id">> => <<"kb-142">>,
+    <<"title">> => <<"Reset a locked account">>}),
+{ok, Rows, _} = barrel:query(Db,
+    <<"SELECT id, title FROM kb WHERE id = 'kb-142'">>).` },
+  { label: 'REST', lang: 'bash', code: `curl -X PUT localhost:8080/db/kb
+curl -X PUT localhost:8080/db/kb/doc/kb-142 \\
+  -H 'content-type: application/json' \\
+  -d '{"title":"Reset a locked account"}'
+curl -X POST localhost:8080/db/kb/query \\
+  -H 'content-type: text/plain' \\
+  --data-binary "SELECT id, title FROM kb WHERE id = 'kb-142'"` },
+  { label: 'TypeScript', lang: 'ts', code: `import { Database } from "barrel-lite";
 
-$ curl -X PUT localhost:8080/db/notes/doc/n1 \\
-    -H 'content-type: application/json' \\
-    -d '{"title":"Design review","text":"Ship the edge sync protocol"}'
-{"id":"n1","ok":true,"rev":"0000019f46b4c08900000000@8c0010c983917d4b"}
-
-# Vector search over the same records.
-$ curl -X POST localhost:8080/db/notes/search/vector \\
-    -H 'content-type: application/json' -d '{"vector":[...],"k":5}'
-
-# Agents speak MCP against the same endpoint.
-$ curl -X POST localhost:8080/mcp -H 'content-type: application/json' -d '{...}'`;
+const db = await Database.open("kb", {
+  remote: { url: "http://localhost:8080", db: "kb", token },
+});
+await db.put({ id: "kb-142", title: "Reset a locked account" });
+await db.sync();   // push local writes, then pull` },
+];
 ---
 
-<Layout title="The edge-AI database for agents">
-  <!-- Hero Section -->
-  <section class="py-24 px-4 bg-gradient-to-b from-surface to-line/10">
-    <div class="container mx-auto text-center max-w-5xl">
-      <div class="flex items-center justify-center gap-4 mb-6">
-        <div class="flex items-center gap-2 bg-line/20 px-3 py-1.5 rounded-full border border-line/30">
-          <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
-          </svg>
-          <span class="text-accent text-sm font-medium">Open Source</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="text-2xl">🇪🇺</span>
-          <span class="text-ink/60 text-sm font-medium uppercase tracking-wider">European</span>
-        </div>
-      </div>
-      <h1 class="text-5xl md:text-6xl font-bold mb-6">
-        <span class="bg-gradient-to-r from-coral to-accent bg-clip-text text-transparent">The edge-AI database for agents</span>
-        <br />
-        <span class="text-ink">Built in Europe</span>
-      </h1>
-      <p class="text-xl text-ink/70 mb-8 max-w-3xl mx-auto">
-        One embeddable database for documents, blobs, and vectors under a single id, with local search,
-        offline-first sync, encryption, and an agent layer over REST and MCP. Erlang. Apache 2.0.
+<Base title="Barrel">
+  <section class="wrap hero">
+    <div class="hero-text">
+      <h1 class="display">A database for agents.</h1>
+      <p class="lead">Give every agent, customer and task its own database. Barrel keeps the document, the files attached to it and its vector under one id. You search it by meaning and by keyword, keep every version, branch it to try things, sync it to other nodes and browsers, and share it through capability tokens.</p>
+      <p class="muted hero-sub">Every copy takes writes, on a server, at the edge or in a browser, and replication brings them back into agreement without losing an edit. Embedded in Erlang, served over REST and MCP. Open source, Apache 2.0.</p>
+      <p class="hero-cta">
+        <a class="button button--primary" href="/docs/start/quickstart-embedded">Get started</a>
+        <a class="button" href="/docs/concepts/record">Read how it works</a>
       </p>
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="/docs" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
-          Documentation
-        </a>
-        <a href="https://github.com/barrel-db/barrel" class="border border-line/50 hover:border-accent text-ink px-8 py-3 rounded-lg text-lg transition flex items-center justify-center gap-2">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-          View Source
-        </a>
+      <div class="hero-install">
+        <p class="small muted">Add it to your rebar.config</p>
+        <code>{'{deps, [{barrel, "~> 1.12"}]}.'}</code>
       </div>
+    </div>
+    <RecordFigure animate caption="One id ties them together. The vector follows every edit and delete of the document, and replication carries the document and its files to other copies." />
+  </section>
+
+  <section class="section">
+    <div class="wrap rep">
+      <div>
+        <h2 class="h2">Every copy takes writes</h2>
+        <p>Active-active replication: no leader, no primary. Sites, edge nodes and browsers each keep working while apart, then converge.</p>
+        <ul class="rep-points">
+          {repPoints.map(([t, b]) => <li><strong>{t}</strong> <span class="muted">{b}</span></li>)}
+        </ul>
+        <a href="/product/replication"><strong>How replication works, and how it is tested</strong></a>
+      </div>
+      <TwoSiteDemo />
     </div>
   </section>
 
-  <!-- One Unified Database Section -->
-  <section class="py-16 px-4">
-    <div class="container mx-auto max-w-5xl">
-      <h2 class="text-3xl font-bold mb-4 text-center">One record. Documents, blobs, and vectors.</h2>
-      <p class="text-ink/60 text-center mb-12 max-w-2xl mx-auto">
-        Barrel keeps a document, its attachments, and its embedding under one id, so an agent's memory
-        is one write and one read. Embed it as a library, run it as a server, or sync it to the browser.
-      </p>
-
-      <div class="grid md:grid-cols-3 gap-6">
-        <div class="bg-surface p-6 rounded-xl border border-line/30">
-          <div class="w-12 h-12 bg-coral/20 rounded-lg flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-coral" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
-          </div>
-          <h3 class="font-semibold text-ink mb-2">Unified record</h3>
-          <p class="text-ink/60 text-sm">A document, its blobs, and its vector share one id. No glue code between a doc store and a vector index.</p>
-        </div>
-        <div class="bg-surface p-6 rounded-xl border border-line/30">
-          <div class="w-12 h-12 bg-accent/20 rounded-lg flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-          </div>
-          <h3 class="font-semibold text-ink mb-2">Local search</h3>
-          <p class="text-ink/60 text-sm">Vector, BM25, and hybrid search in-process, plus BQL queries. Brute-force vector search even in the browser.</p>
-        </div>
-        <div class="bg-surface p-6 rounded-xl border border-line/30">
-          <div class="w-12 h-12 bg-accent/20 rounded-lg flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-          </div>
-          <h3 class="font-semibold text-ink mb-2">Offline-first sync</h3>
-          <p class="text-ink/60 text-sm">HLC version vectors track causality, so sync converges without a coordinator and never silently drops a write.</p>
-        </div>
-        <div class="bg-surface p-6 rounded-xl border border-line/30">
-          <div class="w-12 h-12 bg-accent/20 rounded-lg flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-          </div>
-          <h3 class="font-semibold text-ink mb-2">Encryption at rest</h3>
-          <p class="text-ink/60 text-sm">AES-256-GCM with per-database keys and a pluggable key provider. Your keys, your data.</p>
-        </div>
-        <div class="bg-surface p-6 rounded-xl border border-line/30">
-          <div class="w-12 h-12 bg-accent/20 rounded-lg flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
-          </div>
-          <h3 class="font-semibold text-ink mb-2">Timeline</h3>
-          <p class="text-ink/60 text-sm">Branch a database, restore it to a point in time, and merge branches back. Version control for state.</p>
-        </div>
-        <div class="bg-surface p-6 rounded-xl border border-coral/30">
-          <div class="w-12 h-12 bg-coral/20 rounded-lg flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-coral" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-          </div>
-          <h3 class="font-semibold text-ink mb-2">Agents &amp; MCP</h3>
-          <p class="text-ink/60 text-sm">Spaces, capability tokens, sessions, and handoffs, exposed over REST and the Model Context Protocol.</p>
-        </div>
-      </div>
-
-      <div class="text-center mt-8">
-        <a href="/products/barrel" class="text-coral hover:text-coral-dark font-semibold">Explore Barrel &rarr;</a>
-      </div>
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">What you build with it</h2>
+      <p class="section-intro">Eight architectures Barrel is made for. Each has its own page and a runnable example.</p>
+      <UseCaseTabs />
     </div>
   </section>
 
-  <!-- General usage: documents and vectors through one API -->
-  <section class="py-16 px-4">
-    <div class="container mx-auto max-w-4xl">
-      <h2 class="text-3xl font-bold mb-4 text-center">One API. Documents and vectors.</h2>
-      <p class="text-ink/60 text-center mb-8 max-w-2xl mx-auto">No glue between a document store and a separate vector index. You write a record once, then query it as documents or search it as vectors. Embed Barrel in your Erlang application, or run <code>barrel_server</code> in front of it and reach the same records over REST and the Model Context Protocol.</p>
-      <CodeTabs tabs={[{ label: "Embedded (Erlang)", lang: "erlang", code: usageCode }, { label: "Over HTTP and MCP (barrel_server)", lang: "bash", code: serverCode }]} />
-      <div class="text-center mt-8">
-        <a href="/docs/get-started/quickstart" class="text-coral hover:text-coral-dark font-semibold">Read the quickstart &rarr;</a>
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Three places to run it</h2>
+      <p class="section-intro">Same record, same replication protocol. Pick where the database lives; the agents that use it don't change.</p>
+      <div class="three">
+        {places.map((p) => (
+          <div>
+            <h3 class="pl-t"><a href={p.href}>{p.title}</a></h3>
+            <p class="muted small pl-w">{p.when}</p>
+            <ol class="stack" aria-label={`${p.title} layers, top to bottom`}>
+              {p.layers.map((l) => (
+                <li>
+                  <div class:list={['layer', { 'is-rec': l.rec }]}><strong>{l.name}</strong><span>{l.note}</span></div>
+                  {l.edge && <p class="edge">{l.edge}</p>}
+                </li>
+              ))}
+            </ol>
+          </div>
+        ))}
       </div>
+      <p class="small"><a href="/docs/start/choose-deployment">Choose a deployment</a></p>
     </div>
   </section>
 
-  <!-- Whole or a piece Section -->
-  <section class="py-16 px-4 bg-surface/50">
-    <div class="container mx-auto max-w-5xl">
-      <h2 class="text-3xl font-bold mb-4 text-center">Use the whole database, or just the piece you need</h2>
-      <p class="text-ink/60 text-center mb-8 max-w-2xl mx-auto">
-        Barrel composes independent Apache 2.0 libraries. Adopt the full database, or depend on a single
-        layer and grow into the rest later. No rewrite, no new vendor.
-      </p>
-
-      <!-- Barrel: the full product -->
-      <a href="/products/barrel" class="block bg-gradient-to-br from-coral/20 via-surface to-line/20 p-8 rounded-2xl border border-coral/40 hover:border-coral/70 transition mb-8">
-        <div class="flex flex-col md:flex-row items-center gap-6">
-          <div class="flex-1">
-            <div class="flex items-center gap-3 mb-2">
-              <h3 class="text-2xl font-bold text-coral">Barrel</h3>
-              <span class="bg-coral/20 text-coral text-xs px-2 py-0.5 rounded font-medium">The full database</span>
-            </div>
-            <p class="text-ink/70">
-              Documents, blobs, and vectors under one id, with BQL, sync, encryption, timeline, and the
-              agent layer. Embed it, run it as a server, or sync it to the browser.
-            </p>
-          </div>
-          <span class="text-coral font-semibold whitespace-nowrap text-lg">Explore Barrel &rarr;</span>
-        </div>
-      </a>
-
-      <p class="text-ink/50 text-center text-sm mb-6">Or start with a single library:</p>
-      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <a href="/products/vectordb" class="bg-surface p-6 rounded-xl border border-coral/30 hover:border-coral/50 transition block">
-          <h3 class="text-xl font-bold text-coral mb-1">Barrel Vector</h3>
-          <p class="text-ink/50 text-xs mb-3">Vector layer</p>
-          <p class="text-ink/70 text-sm">HNSW, DiskANN, FAISS, and BM25 backends with hybrid search and metadata filtering.</p>
-        </a>
-        <a href="/products/docdb" class="bg-surface p-6 rounded-xl border border-accent/30 hover:border-accent/50 transition block">
-          <h3 class="text-xl font-bold text-accent mb-1">Barrel Docs</h3>
-          <p class="text-ink/50 text-xs mb-3">Document layer</p>
-          <p class="text-ink/70 text-sm">Version-vector MVCC, BQL queries, attachments, changes feed, and replication.</p>
-        </a>
-        <a href="/products/agents" class="bg-surface p-6 rounded-xl border border-accent/30 hover:border-accent/50 transition block">
-          <h3 class="text-xl font-bold text-accent mb-1">Agents &amp; MCP</h3>
-          <p class="text-ink/50 text-xs mb-3">Agent layer</p>
-          <p class="text-ink/70 text-sm">Spaces, capability tokens, sessions, and handoffs over REST and MCP.</p>
-        </a>
-        <a href="/products/sync" class="bg-surface p-6 rounded-xl border border-accent/30 hover:border-accent/50 transition block">
-          <h3 class="text-xl font-bold text-accent mb-1">Sync &amp; Local-first</h3>
-          <p class="text-ink/50 text-xs mb-3">Browser client</p>
-          <p class="text-ink/70 text-sm">barrel-lite: offline-first storage, multi-tab, and local vector search in the browser.</p>
-        </a>
-      </div>
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Try it in two minutes</h2>
+      <p class="section-intro">The same record written and read three ways.</p>
+      <div class="quick"><CodeTabs tabs={quick} /></div>
     </div>
   </section>
 
-  <!-- Key Differentiators Section -->
-  <section class="py-16 px-4">
-    <div class="container mx-auto max-w-5xl">
-      <h2 class="text-3xl font-bold mb-4 text-center">Why Barrel?</h2>
-      <p class="text-ink/60 text-center mb-12 max-w-2xl mx-auto">
-        Built different. Built in Europe. Built to last.
-      </p>
-
-      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div class="bg-surface p-6 rounded-xl border border-line/30 text-center">
-          <div class="w-12 h-12 bg-accent/20 rounded-lg mx-auto flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
-            </svg>
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">What works today, and what doesn't yet</h2>
+      <p class="section-intro">Every page carries the same three marks. Anything not marked works today and is covered by the test suites.</p>
+      <div class="status">
+        {status.map((g) => (
+          <div>
+            <h3 class={`mark mark--${g.kind} st-h`}>{g.title}</h3>
+            <ul>{g.items.map((i) => <li>{i}</li>)}</ul>
           </div>
-          <h3 class="font-semibold text-ink mb-2">Open Source</h3>
-          <p class="text-ink/60 text-sm">Apache 2.0 licensed. Fork it, modify it, deploy it anywhere.</p>
-        </div>
-
-        <div class="bg-surface p-6 rounded-xl border border-line/30 text-center">
-          <div class="w-12 h-12 bg-accent/20 rounded-lg mx-auto flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
-          </div>
-          <h3 class="font-semibold text-ink mb-2">Built in Erlang</h3>
-          <p class="text-ink/60 text-sm">Battle-tested VM. Fault-tolerant by design. No garbage collection pauses.</p>
-        </div>
-
-        <div class="bg-surface p-6 rounded-xl border border-line/30 text-center">
-          <div class="w-12 h-12 bg-accent/20 rounded-lg mx-auto flex items-center justify-center mb-4">
-            <span class="text-xl">🇪🇺</span>
-          </div>
-          <h3 class="font-semibold text-ink mb-2">Made in Europe</h3>
-          <p class="text-ink/60 text-sm">European company. No US Cloud Act. GDPR compliant by design.</p>
-        </div>
-
-        <div class="bg-surface p-6 rounded-xl border border-line/30 text-center">
-          <div class="w-12 h-12 bg-accent/20 rounded-lg mx-auto flex items-center justify-center mb-4">
-            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-            </svg>
-          </div>
-          <h3 class="font-semibold text-ink mb-2">Runs anywhere</h3>
-          <p class="text-ink/60 text-sm">Embed it in Erlang or Elixir, run it as a server, or sync it to the browser.</p>
-        </div>
+        ))}
       </div>
+      <p class="small"><a href="/product/status">Status of every feature</a></p>
     </div>
   </section>
+</Base>
 
-  <!-- Powers Barrel Platform Section -->
-  <section class="py-16 px-4">
-    <div class="container mx-auto max-w-5xl">
-      <div class="bg-gradient-to-br from-line/30 via-surface to-coral/10 p-8 md:p-12 rounded-2xl border border-line/50 relative overflow-hidden">
-        <div class="absolute top-4 right-4 flex items-center gap-2 bg-surface/80 px-3 py-1.5 rounded-full">
-          <span class="text-xl">🇪🇺</span>
-          <span class="text-ink/80 text-sm font-medium">Made in Europe</span>
-        </div>
-
-        <div class="flex flex-col md:flex-row gap-8 items-center">
-          <div class="flex-1">
-            <h2 class="text-3xl md:text-4xl font-bold mb-4">
-              Powers <span class="text-accent">Barrel Platform</span>
-            </h2>
-            <p class="text-ink/70 text-lg mb-6">
-              The same open source database powers Barrel Platform, our managed, privacy-first
-              infrastructure for AI agents. Self-host it, or let us run it. Same code either way.
-            </p>
-            <div class="grid grid-cols-2 gap-4">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-line/30 rounded-lg flex items-center justify-center">
-                  <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                  </svg>
-                </div>
-                <div>
-                  <p class="font-semibold text-ink">No lock-in</p>
-                  <p class="text-ink/60 text-sm">Open source core</p>
-                </div>
-              </div>
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-line/30 rounded-lg flex items-center justify-center">
-                  <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                  </svg>
-                </div>
-                <div>
-                  <p class="font-semibold text-ink">Privacy First</p>
-                  <p class="text-ink/60 text-sm">GDPR by design</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="flex-shrink-0">
-            <div class="bg-surface/50 p-6 rounded-xl border border-line/30 text-center">
-              <p class="text-sm text-ink/60 mb-4">Need help?</p>
-              <a href="/contact" class="inline-block bg-coral hover:bg-coral-dark text-white px-6 py-3 rounded-lg font-semibold transition">
-                Contact Us
-              </a>
-              <p class="text-xs text-ink/50 mt-4">Support &amp; managed hosting<br/>available on request</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Open Source Section -->
-  <section class="py-16 px-4 bg-surface/50">
-    <div class="container mx-auto max-w-4xl text-center">
-      <h2 class="text-3xl font-bold mb-4">100% Open Source</h2>
-      <p class="text-ink/60 mb-8 max-w-2xl mx-auto">
-        Every component is Apache 2.0 licensed. Fork it, modify it, deploy it anywhere.
-        No vendor lock-in, no usage fees.
-      </p>
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="https://github.com/barrel-db/barrel" class="border border-line/50 hover:border-accent text-ink px-6 py-3 rounded-lg transition flex items-center justify-center gap-2">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-          Barrel on GitHub
-        </a>
-        <a href="/opensource" class="border border-line/50 hover:border-accent text-ink px-6 py-3 rounded-lg transition">
-          All Projects
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <!-- Commercial Section -->
-  <section class="py-16 px-4">
-    <div class="container mx-auto max-w-5xl">
-      <h2 class="text-3xl font-bold mb-4 text-center">Commercial support for production teams</h2>
-      <p class="text-ink/60 text-center mb-12 max-w-2xl mx-auto">
-        Self-host Barrel DB for free, or work with Enki Bridge for private RAG pilots, agent memory,
-        edge sync, managed hosting, and production support.
-      </p>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <a href="/commercial#rag" class="bg-surface p-6 rounded-xl border border-coral/30 hover:border-coral/50 transition block">
-          <h3 class="text-lg font-bold text-coral mb-2">Private RAG Pilot</h3>
-          <p class="text-ink/70 text-sm">Private semantic search and RAG over your own data.</p>
-        </a>
-        <a href="/commercial#agent-memory" class="bg-surface p-6 rounded-xl border border-accent/30 hover:border-accent/50 transition block">
-          <h3 class="text-lg font-bold text-accent mb-2">Agent Memory</h3>
-          <p class="text-ink/70 text-sm">A persistent memory layer for agents and MCP tools.</p>
-        </a>
-        <a href="/commercial#edge-sync" class="bg-surface p-6 rounded-xl border border-accent/30 hover:border-accent/50 transition block">
-          <h3 class="text-lg font-bold text-accent mb-2">Edge Sync</h3>
-          <p class="text-ink/70 text-sm">Offline-first and edge deployments with local search.</p>
-        </a>
-        <a href="/commercial#managed" class="bg-surface p-6 rounded-xl border border-coral/30 hover:border-coral/50 transition block">
-          <h3 class="text-lg font-bold text-coral mb-2">Managed Barrel DB</h3>
-          <p class="text-ink/70 text-sm">Operational help for selected production deployments.</p>
-        </a>
-      </div>
-
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="/commercial" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg font-semibold transition">
-          Commercial options
-        </a>
-        <a href="/contact" class="border border-line/50 hover:border-accent text-ink px-8 py-3 rounded-lg transition">
-          Contact us
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <!-- CTA Section -->
-  <section class="py-20 px-4 bg-gradient-to-t from-surface to-line/10">
-    <div class="container mx-auto max-w-4xl text-center">
-      <h2 class="text-3xl font-bold mb-4">Ready to Get Started?</h2>
-      <p class="text-ink/60 mb-8">
-        Self-host the open-source database, or work with Enki Bridge on a fixed-scope pilot,
-        production deployment, or managed Barrel DB.
-      </p>
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="/docs" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
-          Read the Docs
-        </a>
-        <a href="/contact" class="border border-line/50 hover:border-accent text-ink px-8 py-3 rounded-lg text-lg transition">
-          Contact Us
-        </a>
-      </div>
-    </div>
-  </section>
-</Layout>
+<style>
+  .hero { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 48px; align-items: center; padding-top: 88px; padding-bottom: 72px; }
+  .hero .display { margin-bottom: 28px; }
+  .hero .lead { margin: 0 0 20px; }
+  .hero-sub { max-width: 36em; margin: 0 0 32px; }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 32px; }
+  .hero-install { border-top: 1px solid var(--rule); padding-top: 16px; max-width: 34em; }
+  .hero-install p { margin: 0 0 6px; }
+  .hero-install code { background: none; padding: 0; font-size: 15px; }
+  .rep { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 48px; align-items: start; }
+  .rep-points { list-style: none; padding: 0; margin: 0 0 24px; }
+  .rep-points li { padding: 10px 0; border-top: 1px solid var(--rule); }
+  .three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; margin-bottom: 20px; }
+  .pl-t { font-size: var(--step-1); margin: 0 0 4px; }
+  .pl-t a { color: var(--ink); text-decoration: none; }
+  .pl-w { min-height: 4.8em; margin: 0 0 16px; }
+  .stack { list-style: none; margin: 0; padding: 0; }
+  .layer { padding: 12px 14px; border: 1.5px solid var(--ink); border-radius: 6px; background: var(--card); display: flex; flex-direction: column; }
+  .layer span { font-size: 13px; color: var(--ink-2); }
+  .layer.is-rec { background: var(--coral); border-color: var(--coral); color: var(--on-coral); }
+  .layer.is-rec span { color: var(--on-coral); opacity: 0.9; }
+  .edge { margin: 0 0 0 16px; padding: 6px 0 6px 12px; border-left: 1.5px solid var(--teal); font-size: 13px; color: var(--teal); }
+  .quick { max-width: 820px; }
+  .status { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px; margin-bottom: 16px; }
+  .st-h { font-size: 19px; margin: 0 0 12px; }
+  .status ul { list-style: none; margin: 0; padding: 0; }
+  .status li { padding: 8px 0; border-top: 1px solid var(--rule); font-size: 15px; }
+  @media (max-width: 900px) {
+    .hero, .rep, .three, .status { grid-template-columns: minmax(0, 1fr); }
+    .hero { padding-top: 48px; }
+  }
+</style>

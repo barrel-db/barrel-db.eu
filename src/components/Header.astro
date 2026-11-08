@@ -1,0 +1,151 @@
+---
+import { capabilities, components, componentGroups, mainNav, GITHUB } from '../data/site';
+import ThemeToggle from './ThemeToggle.astro';
+
+const path = Astro.url.pathname;
+const active = (href: string) => path === href || path.startsWith(href + '/');
+const groups = componentGroups.map((g) => ({ title: g, items: components.filter((c) => c.group === g) }));
+---
+
+<header class="hdr">
+  <div class="wrap hdr-row">
+    <a href="/" class="brand" aria-label="Barrel home">
+      <img src="/logo-symbol-coral.svg" alt="" width="28" height="30" />
+      <span>Barrel</span>
+    </a>
+
+    <nav class="hdr-nav" aria-label="Main">
+      <button type="button" class="hdr-link hdr-product" aria-expanded="false" aria-controls="product-menu" data-product-toggle>
+        Product
+      </button>
+      {mainNav.map((n) => (
+        <a href={n.href} class:list={['hdr-link', { 'is-active': active(n.href) }]} aria-current={active(n.href) ? 'page' : undefined}>{n.label}</a>
+      ))}
+    </nav>
+
+    <div class="hdr-tools">
+      <button type="button" class="search-btn" data-open-search aria-label="Search the site">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <span class="search-label">Search</span>
+        <kbd>⌘K</kbd>
+      </button>
+      <ThemeToggle />
+      <a href={GITHUB} class="gh">GitHub</a>
+      <button type="button" class="menu-btn" aria-expanded="false" aria-controls="mobile-menu" data-mobile-toggle>Menu</button>
+    </div>
+  </div>
+
+  <div id="product-menu" class="mega" hidden>
+    <div class="wrap mega-grid">
+      <div class="mega-caps">
+        <p class="mega-title">What it does</p>
+        {capabilities.map((c) => (
+          <a href={`/product/${c.slug}`} class="mega-cap">
+            <span class="mega-cap-name">{c.name}</span>
+            <span class="mega-cap-body">{c.body}</span>
+          </a>
+        ))}
+      </div>
+      <div class="mega-libs">
+        <div class="mega-libs-head">
+          <p class="mega-title">The libraries behind it</p>
+          <p class="mega-legend"><span class="mark mark--today">works today</span><span class="mark mark--optional">optional, needs setup</span></p>
+        </div>
+        <div class="mega-groups">
+          {groups.map((g) => (
+            <div>
+              <p class="mega-group">{g.title}</p>
+              {g.items.map((c) => (
+                <a href={`/product/${c.slug}`} class="mega-lib">
+                  <span class={`mark mark--${c.status}`}><code>{c.name}</code></span>
+                  <span class="mega-lib-v">{c.version}</span>
+                  <span class="mega-lib-body">{c.body}</span>
+                </a>
+              ))}
+            </div>
+          ))}
+        </div>
+        <p class="mega-foot"><a href="/use-cases">See all use cases</a><a href="/docs/architecture/overview">How the pieces fit</a><a href="/product/status">Status of every feature</a></p>
+      </div>
+    </div>
+  </div>
+
+  <div id="mobile-menu" class="mobile" hidden>
+    <div class="wrap">
+      <p class="mega-title">Product</p>
+      {capabilities.map((c) => <a href={`/product/${c.slug}`}>{c.name}</a>)}
+      <a href="/product">All libraries</a>
+      <p class="mega-title">Site</p>
+      {mainNav.map((n) => <a href={n.href}>{n.label}</a>)}
+      <a href={GITHUB}>GitHub</a>
+    </div>
+  </div>
+</header>
+
+<style>
+  .hdr { border-bottom: 1px solid var(--rule); background: var(--paper); position: relative; z-index: 40; }
+  .hdr-row { display: flex; align-items: center; justify-content: space-between; height: 68px; gap: 24px; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font-weight: 650; font-stretch: 112%; font-size: 19px; }
+  .hdr-nav { display: flex; gap: 28px; align-items: center; }
+  .hdr-link { color: var(--ink-2); text-decoration: none; font: inherit; background: none; border: 0; padding: 4px 0; cursor: pointer; border-bottom: 2px solid transparent; }
+  .hdr-link:hover, .hdr-link.is-active, .hdr-product[aria-expanded='true'] { color: var(--ink); }
+  .hdr-link.is-active, .hdr-product[aria-expanded='true'] { border-bottom-color: var(--coral); }
+  .hdr-tools { display: flex; align-items: center; gap: 10px; }
+  .search-btn { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--card); color: var(--ink-2); font: inherit; font-size: 15px; cursor: pointer; }
+  .search-btn kbd { font-size: 12px; border: 1px solid var(--rule); border-radius: 4px; padding: 0 5px; }
+  .gh { height: 40px; display: flex; align-items: center; padding: 0 14px; border: 1px solid var(--rule); border-radius: var(--radius); text-decoration: none; color: var(--ink); font-size: 15px; }
+  .menu-btn { display: none; height: 40px; padding: 0 14px; border: 1px solid var(--rule); border-radius: var(--radius); background: transparent; color: var(--ink); font: inherit; font-size: 15px; }
+
+  .mega { position: absolute; left: 0; right: 0; top: 68px; background: var(--card); border-bottom: 1px solid var(--rule); box-shadow: 0 24px 48px rgba(24, 32, 32, 0.18); }
+  .mega-grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 40px; padding-top: 28px; padding-bottom: 28px; }
+  .mega-title { font-size: 14px; font-weight: 650; color: var(--ink-2); margin: 0 0 10px; }
+  .mega-cap { display: block; padding: 10px 0; border-top: 1px solid var(--rule); text-decoration: none; color: var(--ink); }
+  .mega-cap-name { display: block; font-weight: 620; }
+  .mega-cap-body, .mega-lib-body { display: block; font-size: 14px; color: var(--ink-2); }
+  .mega-libs-head { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .mega-legend { display: flex; gap: 16px; margin: 0 0 10px; color: var(--ink-2); }
+  .mega-legend .mark { font-weight: 400; font-size: 13px; }
+  .mega-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 32px; }
+  .mega-group { font-size: 14px; font-weight: 650; padding-bottom: 6px; border-bottom: 1px solid var(--rule); margin: 0 0 4px; }
+  .mega-lib { display: block; padding: 6px 0; text-decoration: none; color: var(--ink); }
+  .mega-lib code { background: none; padding: 0; font-size: 15px; }
+  .mega-lib-v { font-size: 12px; color: var(--ink-2); margin-left: 6px; }
+  .mega-lib-body { padding-left: 18px; }
+  .mega-foot { display: flex; flex-wrap: wrap; gap: 24px; border-top: 1px solid var(--rule); padding-top: 14px; margin: 8px 0 0; font-size: 15px; }
+
+  .mobile { border-top: 1px solid var(--rule); background: var(--card); padding: 16px 0 24px; }
+  .mobile a { display: block; padding: 10px 0; color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--rule); }
+  .mobile .mega-title { margin-top: 16px; }
+
+  @media (max-width: 980px) {
+    .hdr-nav, .gh, .search-label, .search-btn kbd { display: none; }
+    .menu-btn { display: block; }
+    .mega-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
+
+<script>
+  function bindDisclosure(toggleSel: string, onOpen?: () => void) {
+    const btn = document.querySelector<HTMLButtonElement>(toggleSel);
+    if (!btn) return;
+    const panel = document.getElementById(btn.getAttribute('aria-controls') || '');
+    if (!panel) return;
+    const set = (open: boolean) => {
+      btn.setAttribute('aria-expanded', String(open));
+      panel.hidden = !open;
+      if (open && onOpen) onOpen();
+    };
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      set(btn.getAttribute('aria-expanded') !== 'true');
+    });
+    document.addEventListener('click', (e) => {
+      if (!panel.hidden && !panel.contains(e.target as Node)) set(false);
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !panel.hidden) { set(false); btn.focus(); }
+    });
+  }
+  bindDisclosure('[data-product-toggle]');
+  bindDisclosure('[data-mobile-toggle]');
+</script>

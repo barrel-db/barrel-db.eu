@@ -1,29 +1,91 @@
 ---
-import DocsLayout from '../../layouts/DocsLayout.astro';
+import Base from '../../layouts/Base.astro';
+import { docsNav } from '../../data/docs-nav';
 
-const cards = [
-  { title: "Get started", body: "Install Barrel and store your first documents in a few minutes.", href: "/docs/get-started/introduction", cta: "Introduction" },
-  { title: "Concepts", body: "The one-record data model, version vectors, and the agent layer.", href: "/docs/concepts/data-model", cta: "Data model" },
-  { title: "Guides", body: "Task-oriented walkthroughs: querying, sync, timeline, encryption, and more.", href: "/docs/guides/embedding", cta: "Guides" },
-  { title: "Server", body: "Run barrel_server for a REST/JSON and MCP surface over the same database.", href: "/docs/server/rest-server", cta: "Running the server" },
-  { title: "Reference", body: "The Barrel API, BQL reference, configuration, and the per-library docs.", href: "/docs/reference/barrel-api", cta: "Barrel API" },
+const starts = [
+  { title: 'Embedded in Erlang', body: 'Add barrel to your release and call it directly. No server.', cmd: '{deps, [{barrel, "~> 1.12"}]}.', href: '/docs/start/quickstart-embedded' },
+  { title: 'As a server', body: 'Run barrel_server and reach it over REST or MCP.', cmd: 'curl -X PUT localhost:8080/db/notes', href: '/docs/start/quickstart-server' },
+  { title: 'In the browser', body: 'Keep a copy in a web app with barrel-lite and sync it.', cmd: 'await Database.open("notes", { remote })', href: '/docs/start/quickstart-browser' },
 ];
 ---
 
-<DocsLayout title="Documentation" description="Everything you need to build with Barrel, the edge-AI database for agents." slug="" contentClass="">
-  <p class="text-ink/70">
-    New here? Start with the <a href="/docs/get-started/introduction" class="text-coral hover:underline">Introduction</a>,
-    then run the <a href="/docs/get-started/quickstart" class="text-coral hover:underline">Quickstart</a> to store and search
-    your first documents.
-  </p>
+<Base title="Documentation" description="Barrel documentation, organized by task: get started, store and query, search, replicate, build for agents, operate, and reference generated from the source.">
+  <section class="wrap dh-top">
+    <h1 class="display dh-h1">Barrel documentation</h1>
+    <p class="lead">Every page is written for a task. Pick where Barrel will run and start there; each page links to the reference it uses.</p>
+    <button type="button" class="dh-search" data-open-search>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+      <span>Search guides, functions, routes and MCP tools</span>
+      <kbd>⌘K</kbd>
+    </button>
+  </section>
 
-  <div class="grid sm:grid-cols-2 gap-4 mt-8">
-    {cards.map((c) => (
-      <a href={c.href} class="block bg-surface border border-line/30 hover:border-accent/50 rounded-xl p-5 transition no-underline">
-        <h3 class="text-lg font-bold text-accent mb-1">{c.title}</h3>
-        <p class="text-ink/60 text-sm mb-3">{c.body}</p>
-        <span class="text-coral text-sm font-semibold">{c.cta} &rarr;</span>
-      </a>
-    ))}
-  </div>
-</DocsLayout>
+  <section class="wrap dh-block">
+    <h2 class="h3">Start here</h2>
+    <div class="dh-start">
+      {starts.map((s) => (
+        <a href={s.href} class="dh-card">
+          <span class="dh-card-t">{s.title}</span>
+          <span class="muted small">{s.body}</span>
+          <code>{s.cmd}</code>
+        </a>
+      ))}
+    </div>
+    <p class="small muted">Not sure which? <a href="/docs/start/choose-deployment">Choose a deployment</a> compares them in one table.</p>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h3">By what you want to do</h2>
+      <div class="dh-goals">
+        {docsNav.filter((s) => s.title !== 'Get started').map((s) => (
+          <div>
+            <h3 class="dh-g">{s.title}</h3>
+            {s.items.map((i) => <a href={`/docs/${i.slug}`}>{i.label}</a>)}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap dh-two">
+      <div>
+        <h2 class="h3">Reference, generated from the code</h2>
+        <p class="muted">These pages are built from the source, so they match the version you run.</p>
+        <ul>
+          <li><a href="/docs/reference/libraries">Barrel API, per library</a>, from the module docs</li>
+          <li><a href="/docs/reference/mcp-tools">MCP tools</a>, from the server's own tool list</li>
+          <li><a href="/docs/reference/rest-api">REST API</a> and <a href="/docs/reference/bql">BQL</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="h3">For coding agents</h2>
+        <p class="muted">Point your assistant at these instead of letting it guess function names.</p>
+        <pre>https://barrel-db.eu/llms.txt
+https://barrel-db.eu/llms-full.txt
+https://barrel-db.eu/docs/guides/timeline.md
+https://barrel-db.eu/docs/reference/mcp-tools.json</pre>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .dh-top { padding-top: 64px; padding-bottom: 40px; }
+  .dh-h1 { font-size: clamp(2.5rem, 5vw, 3.5rem); margin-bottom: 16px; }
+  .dh-search { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 640px; height: 56px; padding: 0 18px; margin-top: 28px; border: 1.5px solid var(--ink); border-radius: 10px; background: var(--card); color: var(--ink-2); font: inherit; cursor: pointer; text-align: left; }
+  .dh-search span { flex: 1; }
+  .dh-search kbd { font-size: 13px; border: 1px solid var(--rule); border-radius: 4px; padding: 0 6px; }
+  .dh-block { padding-bottom: 56px; }
+  .dh-start { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-bottom: 16px; }
+  .dh-card { display: flex; flex-direction: column; gap: 6px; border-top: 3px solid var(--ink); padding-top: 14px; text-decoration: none; color: var(--ink); min-width: 0; }
+  .dh-card-t { font-weight: 620; font-size: 21px; }
+  .dh-card code { display: block; margin-top: 6px; padding: 10px 12px; overflow-x: auto; white-space: pre; }
+  .dh-goals { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 36px 32px; }
+  .dh-goals a { display: block; padding: 3px 0; font-size: 15px; text-decoration: none; }
+  .dh-g { font-size: 17px; margin: 0 0 6px; }
+  .dh-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; }
+  @media (max-width: 980px) { .dh-goals { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 820px) { .dh-start, .dh-goals, .dh-two { grid-template-columns: minmax(0, 1fr); } }
+</style>
