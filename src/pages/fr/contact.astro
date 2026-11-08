@@ -1,0 +1,46 @@
+---
+// translation_of: src/pages/contact.astro source_hash: fe8e8c590de06e94
+import Base from '../../layouts/Base.astro';
+import { GITHUB } from '../../data/fr/site';
+import { localize } from '../../i18n';
+---
+
+<Base title="Contact" description="Parlez à l’équipe Barrel : discussion communautaire sur Matrix, tickets GitHub, ou un e-mail à Enki Bridge pour l’offre commerciale.">
+  <section class="wrap ct-top">
+    <h1 class="display ct-h1">Parlez-nous</h1>
+    <p class="lead">Une question sur Barrel, un bug, ou de l’aide pour un déploiement : choisissez le canal qui convient.</p>
+  </section>
+  <section class="section">
+    <div class="wrap ct-grid">
+      <div>
+        <h2 class="h3">Communauté</h2>
+        <dl class="ct-dl">
+          <dt>Discussion sur Matrix</dt>
+          <dd>Posez vos questions et suivez le développement. <a href="https://matrix.to/#/#barrel-db:matrix.org">#barrel-db:matrix.org</a></dd>
+          <dt>Tickets GitHub</dt>
+          <dd>Signalez un bug ou proposez une fonctionnalité. <a href={`${GITHUB}/issues`}>Tickets de barrel-db/barrel</a></dd>
+          <dt>E-mail</dt>
+          <dd>Pour tout ce qui est plus long. <a href="mailto:hello@barrel-db.eu">hello@barrel-db.eu</a></dd>
+        </dl>
+      </div>
+      <div>
+        <h2 class="h3">Commercial</h2>
+        <p>Parlez à Enki Bridge d’un pilote RAG privé, de mémoire pour agents et d’intégrations MCP, de synchronisation en périphérie, de Barrel géré, de sauvegardes et de supervision, de SLA sur mesure ou de support privé.</p>
+        <p class="ct-cta"><a class="button button--primary" href="mailto:hello@barrel-db.eu?subject=Barrel%20commercial">Écrire à Enki Bridge</a><a class="button" href={localize('/commercial', 'fr')}>Voir les offres</a></p>
+        <h3 class="ct-h">L’entreprise</h3>
+        <p class="small">Conçu par Enki Bridge, Union européenne. Infrastructure sur <a href="https://bgp.tools/as/209823">AS209823</a>, centres de données à Paris, Amsterdam, Genève et Lille.</p>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .ct-top { padding-top: 72px; padding-bottom: 48px; }
+  .ct-h1 { font-size: clamp(2.5rem, 5vw, 3.75rem); margin-bottom: 16px; }
+  .ct-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; }
+  .ct-dl dt { font-weight: 650; margin-top: 16px; }
+  .ct-dl dd { margin: 4px 0 0; }
+  .ct-cta { display: flex; flex-wrap: wrap; gap: 12px; }
+  .ct-h { font-size: 17px; margin: 32px 0 6px; }
+  @media (max-width: 820px) { .ct-grid { grid-template-columns: minmax(0, 1fr); } }
+</style>

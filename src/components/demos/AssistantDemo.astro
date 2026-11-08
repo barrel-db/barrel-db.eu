@@ -2,39 +2,120 @@
 // A support assistant, step by step: Barrel finds what is relevant, a separate AI model
 // writes the answer, and Barrel stores a new memory that the next question can find.
 // Deterministic demonstration: the matches are written in advance, nothing is scored.
+import { langOf } from '../../i18n';
+const lang = langOf(Astro.url);
+const S = {
+  en: {
+    who: 'Northwind support assistant',
+    whoNote: 'talking with Marie, a customer',
+    reset: 'Start over',
+    ask: 'Marie asks',
+    pick: 'Pick a question',
+    find: 'Barrel finds',
+    findNote: 'Searches the help articles and what it remembers about Marie, by meaning and by words.',
+    answer: 'The AI model answers',
+    answerNote: 'A separate language model writes the reply from what Barrel found. Barrel does not write text.',
+    remember: 'Barrel remembers',
+    rememberNote: 'After each conversation the application stores a short note. The next question can find it.',
+    foot: 'A demonstration in your browser with a small set of articles. Real applications choose their own AI model; Barrel stores, searches and keeps the history.',
+    // Scenario, used by the script.
+    empty: 'Pick a question to see what Barrel finds.',
+    emptyReply: 'The answer appears here.',
+    articles: {
+      reset: 'Help article: After five failed sign-ins an account locks for 30 minutes. A reset link unlocks it at once.',
+      sso: 'Help article: Accounts that sign in with the company login (SSO) are unlocked by the company administrator.',
+      invoice: 'Help article: Billing admins export invoices as CSV from the Reports tab.',
+    },
+    startMem: 'Marie works at Acme, on the Team plan. Her company signs in with SSO.',
+    needle: 'locked out',
+    kMemMarie: 'Memory about Marie',
+    kMemEarlier: 'Memory from the earlier conversation',
+    kLocked: 'Matches the meaning of "locked out"',
+    kMeaning: 'Matches the meaning',
+    kInvoices: 'Matches the words "invoices"',
+    qLocked: 'I am locked out of my account.',
+    rLocked: 'Your company signs in with SSO, so your administrator at Acme can unlock your account. If you also use a password, a reset link unlocks it right away.',
+    nLocked: 'Nov 8: Marie was locked out. Told her to ask her Acme administrator (SSO).',
+    qAgain: 'It happened again today, what should I do?',
+    rAgain: 'This is the second lockout since your last message. Your Acme administrator can unlock it; if it keeps happening, they can check the SSO settings with us.',
+    rAgainNoMem: 'Without anything remembered about an earlier problem, the assistant can only repeat the general steps: a reset link unlocks the account.',
+    nAgain: 'Nov 9: Marie locked out a second time. Suggested an SSO check with her administrator.',
+    qInvoice: 'Where do I find our invoices?',
+    rInvoice: 'Billing admins at Acme can export invoices as CSV from the Reports tab.',
+    nInvoice: 'Nov 9: Marie asked where invoices are. Pointed to the Reports tab.',
+  },
+  fr: {
+    who: 'Assistant du support Northwind',
+    whoNote: 'en conversation avec Marie, une cliente',
+    reset: 'Recommencer',
+    ask: 'Marie demande',
+    pick: 'Choisissez une question',
+    find: 'Barrel trouve',
+    findNote: 'Cherche dans les articles d’aide et dans ce qu’il a retenu sur Marie, par le sens et par les mots.',
+    answer: 'Le modèle d’IA répond',
+    answerNote: 'Un modèle de langage distinct rédige la réponse à partir de ce que Barrel a trouvé. Barrel n’écrit pas de texte.',
+    remember: 'Barrel retient',
+    rememberNote: 'Après chaque conversation, l’application enregistre une courte note. La question suivante peut la retrouver.',
+    foot: 'Une démonstration dans votre navigateur, avec quelques articles. Les vraies applications choisissent leur propre modèle d’IA ; Barrel stocke, cherche et garde l’historique.',
+    empty: 'Choisissez une question pour voir ce que Barrel trouve.',
+    emptyReply: 'La réponse apparaît ici.',
+    articles: {
+      reset: 'Article d’aide : après cinq échecs de connexion, un compte est bloqué pendant 30 minutes. Un lien de réinitialisation le débloque aussitôt.',
+      sso: 'Article d’aide : les comptes qui se connectent avec l’identifiant de l’entreprise (SSO) sont débloqués par l’administrateur de l’entreprise.',
+      invoice: 'Article d’aide : les administrateurs de facturation exportent les factures en CSV depuis l’onglet Rapports.',
+    },
+    startMem: 'Marie travaille chez Acme, sur l’offre Team. Son entreprise se connecte en SSO.',
+    needle: 'bloquée',
+    kMemMarie: 'Souvenir sur Marie',
+    kMemEarlier: 'Souvenir de la conversation précédente',
+    kLocked: 'Proche du sens de « compte bloqué »',
+    kMeaning: 'Proche du sens',
+    kInvoices: 'Contient le mot « factures »',
+    qLocked: 'Mon compte est bloqué.',
+    rLocked: 'Votre entreprise se connecte en SSO : votre administrateur chez Acme peut débloquer votre compte. Si vous utilisez aussi un mot de passe, un lien de réinitialisation le débloque tout de suite.',
+    nLocked: '8 nov. : Marie était bloquée. Je lui ai conseillé de contacter son administrateur Acme (SSO).',
+    qAgain: 'C’est encore arrivé aujourd’hui, que dois-je faire ?',
+    rAgain: 'C’est le deuxième blocage depuis votre dernier message. Votre administrateur Acme peut débloquer le compte ; si cela se reproduit, il peut vérifier les réglages SSO avec nous.',
+    rAgainNoMem: 'Sans souvenir d’un problème précédent, l’assistant ne peut que répéter la marche à suivre générale : un lien de réinitialisation débloque le compte.',
+    nAgain: '9 nov. : Marie bloquée une deuxième fois. Proposé une vérification SSO avec son administrateur.',
+    qInvoice: 'Où trouver nos factures ?',
+    rInvoice: 'Chez Acme, les administrateurs de facturation peuvent exporter les factures en CSV depuis l’onglet Rapports.',
+    nInvoice: '9 nov. : Marie a demandé où sont les factures. Orientée vers l’onglet Rapports.',
+  },
+}[lang];
 ---
 
-<div class="ad" data-assistant>
+<div class="ad" data-assistant data-strings={JSON.stringify(S)}>
   <div class="ad-head">
-    <p class="ad-who"><strong>Northwind support assistant</strong> <span class="muted small">talking with Marie, a customer</span></p>
-    <button type="button" class="button button--small" data-ad-reset>Start over</button>
+    <p class="ad-who"><strong>{S.who}</strong> <span class="muted small">{S.whoNote}</span></p>
+    <button type="button" class="button button--small" data-ad-reset>{S.reset}</button>
   </div>
 
   <div class="ad-cols">
     <section class="ad-col" aria-labelledby="ad-ask">
-      <h3 id="ad-ask" class="ad-h"><span class="ad-n">1</span> Marie asks</h3>
-      <div class="ad-qs" role="group" aria-label="Pick a question" data-ad-qs></div>
+      <h3 id="ad-ask" class="ad-h"><span class="ad-n">1</span> {S.ask}</h3>
+      <div class="ad-qs" role="group" aria-label={S.pick} data-ad-qs></div>
     </section>
 
     <section class="ad-col ad-barrel" aria-labelledby="ad-find">
-      <h3 id="ad-find" class="ad-h"><span class="ad-n">2</span> Barrel finds</h3>
-      <p class="small muted ad-note">Searches the help articles and what it remembers about Marie, by meaning and by words.</p>
+      <h3 id="ad-find" class="ad-h"><span class="ad-n">2</span> {S.find}</h3>
+      <p class="small muted ad-note">{S.findNote}</p>
       <ul class="ad-found" data-ad-found aria-live="polite"></ul>
     </section>
 
     <section class="ad-col" aria-labelledby="ad-answer">
-      <h3 id="ad-answer" class="ad-h"><span class="ad-n">3</span> The AI model answers</h3>
-      <p class="small muted ad-note">A separate language model writes the reply from what Barrel found. Barrel does not write text.</p>
+      <h3 id="ad-answer" class="ad-h"><span class="ad-n">3</span> {S.answer}</h3>
+      <p class="small muted ad-note">{S.answerNote}</p>
       <p class="ad-reply" data-ad-reply aria-live="polite"></p>
     </section>
   </div>
 
   <section class="ad-memory" aria-labelledby="ad-mem">
-    <h3 id="ad-mem" class="ad-h"><span class="ad-n">4</span> Barrel remembers</h3>
-    <p class="small muted ad-note">After each conversation the application stores a short note. The next question can find it.</p>
+    <h3 id="ad-mem" class="ad-h"><span class="ad-n">4</span> {S.remember}</h3>
+    <p class="small muted ad-note">{S.rememberNote}</p>
     <ul class="ad-mems" data-ad-mems aria-live="polite"></ul>
   </section>
-  <p class="small muted ad-foot">A demonstration in your browser with a small set of articles. Real applications choose their own AI model; Barrel stores, searches and keeps the history.</p>
+  <p class="small muted ad-foot">{S.foot}</p>
 </div>
 
 <style>
@@ -66,14 +147,10 @@
   type Item = { kind: string; text: string; mem?: boolean };
   type Q = { id: string; q: string; finds: () => Item[]; reply: () => string; note: string };
 
-  const ARTICLES = {
-    reset: 'Help article: After five failed sign-ins an account locks for 30 minutes. A reset link unlocks it at once.',
-    sso: 'Help article: Accounts that sign in with the company login (SSO) are unlocked by the company administrator.',
-    invoice: 'Help article: Billing admins export invoices as CSV from the Reports tab.',
-  };
-  const START_MEM = 'Marie works at Acme, on the Team plan. Her company signs in with SSO.';
-
   document.querySelectorAll<HTMLElement>('[data-assistant]').forEach((root) => {
+    const T = JSON.parse(root.dataset.strings!);
+    const ARTICLES: Record<'reset' | 'sso' | 'invoice', string> = T.articles;
+    const START_MEM: string = T.startMem;
     let memories: string[] = [];
     let asked = new Set<string>();
     let current = '';
@@ -82,43 +159,41 @@
 
     const QUESTIONS: Q[] = [
       {
-        id: 'locked', q: 'I am locked out of my account.',
+        id: 'locked', q: T.qLocked,
         finds: () => [
-          { kind: 'Memory about Marie', text: START_MEM, mem: true },
-          { kind: 'Matches the meaning of "locked out"', text: ARTICLES.sso },
-          { kind: 'Matches the meaning of "locked out"', text: ARTICLES.reset },
+          { kind: T.kMemMarie, text: START_MEM, mem: true },
+          { kind: T.kLocked, text: ARTICLES.sso },
+          { kind: T.kLocked, text: ARTICLES.reset },
         ],
-        reply: () => 'Your company signs in with SSO, so your administrator at Acme can unlock your account. If you also use a password, a reset link unlocks it right away.',
-        note: 'Nov 8: Marie was locked out. Told her to ask her Acme administrator (SSO).',
+        reply: () => T.rLocked,
+        note: T.nLocked,
       },
       {
-        id: 'again', q: 'It happened again today, what should I do?',
+        id: 'again', q: T.qAgain,
         finds: () => {
-          const m = remembers('locked out');
+          const m = remembers(T.needle);
           return m
             ? [
-                { kind: 'Memory from the earlier conversation', text: m, mem: true },
-                { kind: 'Memory about Marie', text: START_MEM, mem: true },
-                { kind: 'Matches the meaning', text: ARTICLES.sso },
+                { kind: T.kMemEarlier, text: m, mem: true },
+                { kind: T.kMemMarie, text: START_MEM, mem: true },
+                { kind: T.kMeaning, text: ARTICLES.sso },
               ]
             : [
-                { kind: 'Memory about Marie', text: START_MEM, mem: true },
-                { kind: 'Matches the meaning', text: ARTICLES.reset },
+                { kind: T.kMemMarie, text: START_MEM, mem: true },
+                { kind: T.kMeaning, text: ARTICLES.reset },
               ];
         },
-        reply: () => remembers('locked out')
-          ? 'This is the second lockout since your last message. Your Acme administrator can unlock it; if it keeps happening, they can check the SSO settings with us.'
-          : 'Without anything remembered about an earlier problem, the assistant can only repeat the general steps: a reset link unlocks the account.',
-        note: 'Nov 9: Marie locked out a second time. Suggested an SSO check with her administrator.',
+        reply: () => (remembers(T.needle) ? T.rAgain : T.rAgainNoMem),
+        note: T.nAgain,
       },
       {
-        id: 'invoice', q: 'Where do I find our invoices?',
+        id: 'invoice', q: T.qInvoice,
         finds: () => [
-          { kind: 'Memory about Marie', text: START_MEM, mem: true },
-          { kind: 'Matches the words "invoices"', text: ARTICLES.invoice },
+          { kind: T.kMemMarie, text: START_MEM, mem: true },
+          { kind: T.kInvoices, text: ARTICLES.invoice },
         ],
-        reply: () => 'Billing admins at Acme can export invoices as CSV from the Reports tab.',
-        note: 'Nov 9: Marie asked where invoices are. Pointed to the Reports tab.',
+        reply: () => T.rInvoice,
+        note: T.nInvoice,
       },
     ];
 
@@ -146,9 +221,9 @@
       }));
       const q = QUESTIONS.find((x) => x.id === current);
       if (!q) {
-        found.replaceChildren(li('Pick a question to see what Barrel finds.', 'empty'));
+        found.replaceChildren(li(T.empty, 'empty'));
         reply.textContent = '';
-        const e = document.createElement('span'); e.className = 'empty'; e.textContent = 'The answer appears here.'; reply.append(e);
+        const e = document.createElement('span'); e.className = 'empty'; e.textContent = T.emptyReply; reply.append(e);
       } else {
         found.replaceChildren(...q.finds().map((i) => li(i.text, i.mem ? 'is-mem' : '', i.kind)));
         reply.textContent = q.reply();

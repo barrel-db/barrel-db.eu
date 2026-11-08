@@ -1,11 +1,18 @@
 ---
 import { Code } from 'astro:components';
-import { useCaseDetails } from '../data/use-cases';
+import { langOf, localize } from '../i18n';
+import { useCasesFor } from '../data/i18n';
+const lang = langOf(Astro.url);
+const { useCaseDetails } = useCasesFor(lang);
+const T = {
+  en: { list: 'Use cases', problem: 'The problem', with: 'With Barrel', flow: 'How the pieces connect', read: 'Read the use case', uses: 'Uses' },
+  fr: { list: 'Cas d’usage', problem: 'Le problème', with: 'Avec Barrel', flow: 'Comment les pièces s’enchaînent', read: 'Lire le cas d’usage', uses: 'Utilise' },
+}[lang];
 const themes = { light: 'github-light', dark: 'github-dark' } as const;
 ---
 
 <div class="uc" data-uc>
-  <div class="uc-list" role="tablist" aria-label="Use cases" aria-orientation="vertical">
+  <div class="uc-list" role="tablist" aria-label={T.list} aria-orientation="vertical">
     {useCaseDetails.map((u, i) => (
       <button type="button" role="tab" id={`uc-t-${u.slug}`} aria-controls={`uc-p-${u.slug}`} aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? 0 : -1}>
         <span class="uc-n">{u.name}</span>
@@ -18,10 +25,10 @@ const themes = { light: 'github-light', dark: 'github-dark' } as const;
       <section role="tabpanel" id={`uc-p-${u.slug}`} aria-labelledby={`uc-t-${u.slug}`} hidden={i !== 0} class="uc-p">
         <h3 class="h3">{u.name}</h3>
         <div class="uc-why">
-          <div><p class="uc-l">The problem</p><p class="muted">{u.problem}</p></div>
-          <div><p class="uc-l">With Barrel</p><p>{u.solution}</p></div>
+          <div><p class="uc-l">{T.problem}</p><p class="muted">{u.problem}</p></div>
+          <div><p class="uc-l">{T.with}</p><p>{u.solution}</p></div>
         </div>
-        <p class="uc-flow" aria-label="How the pieces connect">
+        <p class="uc-flow" aria-label={T.flow}>
           {u.flow.map((f) => (
             <>
               <span class:list={['uc-node', { 'is-rec': f.record }]}>{f.label}</span>
@@ -31,8 +38,8 @@ const themes = { light: 'github-light', dark: 'github-dark' } as const;
         </p>
         <Code code={u.code} lang={u.lang as any} themes={themes} defaultColor={false} />
         <p class="uc-links small">
-          <a href={`/use-cases/${u.slug}`}><strong>Read the use case</strong></a>
-          <span class="muted">Uses {u.uses}</span>
+          <a href={localize(`/use-cases/${u.slug}`, lang)}><strong>{T.read}</strong></a>
+          <span class="muted">{T.uses} {u.uses}</span>
         </p>
       </section>
     ))}
