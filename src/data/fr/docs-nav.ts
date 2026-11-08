@@ -12,7 +12,7 @@ const titles: Record<string, string> = {
 const labels: Record<string, string> = {
   'start/what-is-barrel': 'Présentation pour les développeurs',
   'start/install': 'Installer',
-  'start/quickstart-embedded': 'Démarrage rapide : intégrée',
+  'start/quickstart-embedded': 'Démarrage rapide : embarqué',
   'start/quickstart-server': 'Démarrage rapide : serveur',
   'start/quickstart-browser': 'Démarrage rapide : navigateur',
   'start/choose-deployment': 'Choisir un déploiement',
