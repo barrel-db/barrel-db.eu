@@ -8,7 +8,7 @@ export interface NavSection { title: string; items: NavItem[]; }
 
 export const docsNav: NavSection[] = [
   { title: 'Get started', items: [
-    { label: 'What Barrel is', slug: 'start/what-is-barrel' },
+    { label: 'Overview for developers', slug: 'start/what-is-barrel' },
     { label: 'Install', slug: 'start/install' },
     { label: 'Quickstart: embedded', slug: 'start/quickstart-embedded' },
     { label: 'Quickstart: server', slug: 'start/quickstart-server' },

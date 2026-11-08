@@ -1,5 +1,5 @@
 ---
-title: What Barrel is
+title: Overview for developers
 description: Barrel is an open source database for agents and edge apps. It keeps a document, its files and its vector under one id, searches them, and replicates them between copies that all take writes.
 ---
 

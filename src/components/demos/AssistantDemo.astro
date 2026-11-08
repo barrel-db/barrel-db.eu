@@ -1,0 +1,173 @@
+---
+// A support assistant, step by step: Barrel finds what is relevant, a separate AI model
+// writes the answer, and Barrel stores a new memory that the next question can find.
+// Deterministic demonstration: the matches are written in advance, nothing is scored.
+---
+
+<div class="ad" data-assistant>
+  <div class="ad-head">
+    <p class="ad-who"><strong>Northwind support assistant</strong> <span class="muted small">talking with Marie, a customer</span></p>
+    <button type="button" class="button button--small" data-ad-reset>Start over</button>
+  </div>
+
+  <div class="ad-cols">
+    <section class="ad-col" aria-labelledby="ad-ask">
+      <h3 id="ad-ask" class="ad-h"><span class="ad-n">1</span> Marie asks</h3>
+      <div class="ad-qs" role="group" aria-label="Pick a question" data-ad-qs></div>
+    </section>
+
+    <section class="ad-col ad-barrel" aria-labelledby="ad-find">
+      <h3 id="ad-find" class="ad-h"><span class="ad-n">2</span> Barrel finds</h3>
+      <p class="small muted ad-note">Searches the help articles and what it remembers about Marie, by meaning and by words.</p>
+      <ul class="ad-found" data-ad-found aria-live="polite"></ul>
+    </section>
+
+    <section class="ad-col" aria-labelledby="ad-answer">
+      <h3 id="ad-answer" class="ad-h"><span class="ad-n">3</span> The AI model answers</h3>
+      <p class="small muted ad-note">A separate language model writes the reply from what Barrel found. Barrel does not write text.</p>
+      <p class="ad-reply" data-ad-reply aria-live="polite"></p>
+    </section>
+  </div>
+
+  <section class="ad-memory" aria-labelledby="ad-mem">
+    <h3 id="ad-mem" class="ad-h"><span class="ad-n">4</span> Barrel remembers</h3>
+    <p class="small muted ad-note">After each conversation the application stores a short note. The next question can find it.</p>
+    <ul class="ad-mems" data-ad-mems aria-live="polite"></ul>
+  </section>
+  <p class="small muted ad-foot">A demonstration in your browser with a small set of articles. Real applications choose their own AI model; Barrel stores, searches and keeps the history.</p>
+</div>
+
+<style>
+  .ad { border: 1px solid var(--rule); border-radius: 12px; padding: 28px; background: var(--card); }
+  .ad-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+  .ad-who { margin: 0; }
+  .ad-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.2fr); gap: 20px; }
+  .ad-col { min-width: 0; }
+  .ad-h { display: flex; align-items: center; gap: 10px; font-size: 17px; margin: 0 0 6px; }
+  .ad-n { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 13px; background: var(--paper-2); font-size: 14px; }
+  .ad-barrel .ad-n, .ad-memory .ad-n { background: var(--coral); color: var(--on-coral); }
+  .ad-note { margin: 0 0 12px; }
+  .ad-qs { display: flex; flex-direction: column; gap: 8px; }
+  .ad-qs :global(button) { text-align: left; padding: 10px 12px; border-radius: var(--radius); border: 1.5px solid var(--rule); background: var(--paper); color: var(--ink); font: inherit; font-size: 15px; cursor: pointer; }
+  .ad-qs :global(button[aria-pressed='true']) { border-color: var(--ink); background: var(--paper-2); font-weight: 600; }
+  .ad-found, .ad-mems { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .ad-found :global(li), .ad-mems :global(li) { padding: 10px 12px; border-radius: var(--radius); background: var(--paper); border: 1px solid var(--rule); font-size: 15px; }
+  .ad-found :global(.k) { display: block; font-size: 12px; color: var(--ink-2); margin-bottom: 2px; }
+  .ad-found :global(li.is-mem) { border-color: var(--coral); }
+  .ad-mems :global(li.is-new) { border-color: var(--coral); }
+  .ad-reply { margin: 0; padding: 12px 14px; border-radius: var(--radius); background: var(--paper-2); min-height: 6em; }
+  .ad-memory { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--rule); }
+  .ad-foot { margin: 16px 0 0; }
+  .ad :global(.empty) { color: var(--ink-2); font-style: italic; }
+  @media (max-width: 900px) { .ad { padding: 18px; } .ad-cols { grid-template-columns: minmax(0, 1fr); } }
+</style>
+
+<script>
+  type Item = { kind: string; text: string; mem?: boolean };
+  type Q = { id: string; q: string; finds: () => Item[]; reply: () => string; note: string };
+
+  const ARTICLES = {
+    reset: 'Help article: After five failed sign-ins an account locks for 30 minutes. A reset link unlocks it at once.',
+    sso: 'Help article: Accounts that sign in with the company login (SSO) are unlocked by the company administrator.',
+    invoice: 'Help article: Billing admins export invoices as CSV from the Reports tab.',
+  };
+  const START_MEM = 'Marie works at Acme, on the Team plan. Her company signs in with SSO.';
+
+  document.querySelectorAll<HTMLElement>('[data-assistant]').forEach((root) => {
+    let memories: string[] = [];
+    let asked = new Set<string>();
+    let current = '';
+
+    const remembers = (needle: string) => memories.find((m) => m.includes(needle));
+
+    const QUESTIONS: Q[] = [
+      {
+        id: 'locked', q: 'I am locked out of my account.',
+        finds: () => [
+          { kind: 'Memory about Marie', text: START_MEM, mem: true },
+          { kind: 'Matches the meaning of "locked out"', text: ARTICLES.sso },
+          { kind: 'Matches the meaning of "locked out"', text: ARTICLES.reset },
+        ],
+        reply: () => 'Your company signs in with SSO, so your administrator at Acme can unlock your account. If you also use a password, a reset link unlocks it right away.',
+        note: 'Nov 8: Marie was locked out. Told her to ask her Acme administrator (SSO).',
+      },
+      {
+        id: 'again', q: 'It happened again today, what should I do?',
+        finds: () => {
+          const m = remembers('locked out');
+          return m
+            ? [
+                { kind: 'Memory from the earlier conversation', text: m, mem: true },
+                { kind: 'Memory about Marie', text: START_MEM, mem: true },
+                { kind: 'Matches the meaning', text: ARTICLES.sso },
+              ]
+            : [
+                { kind: 'Memory about Marie', text: START_MEM, mem: true },
+                { kind: 'Matches the meaning', text: ARTICLES.reset },
+              ];
+        },
+        reply: () => remembers('locked out')
+          ? 'This is the second lockout since your last message. Your Acme administrator can unlock it; if it keeps happening, they can check the SSO settings with us.'
+          : 'Without anything remembered about an earlier problem, the assistant can only repeat the general steps: a reset link unlocks the account.',
+        note: 'Nov 9: Marie locked out a second time. Suggested an SSO check with her administrator.',
+      },
+      {
+        id: 'invoice', q: 'Where do I find our invoices?',
+        finds: () => [
+          { kind: 'Memory about Marie', text: START_MEM, mem: true },
+          { kind: 'Matches the words "invoices"', text: ARTICLES.invoice },
+        ],
+        reply: () => 'Billing admins at Acme can export invoices as CSV from the Reports tab.',
+        note: 'Nov 9: Marie asked where invoices are. Pointed to the Reports tab.',
+      },
+    ];
+
+    const qBox = root.querySelector<HTMLElement>('[data-ad-qs]')!;
+    const found = root.querySelector<HTMLElement>('[data-ad-found]')!;
+    const reply = root.querySelector<HTMLElement>('[data-ad-reply]')!;
+    const mems = root.querySelector<HTMLElement>('[data-ad-mems]')!;
+
+    function li(text: string, cls = '', kind = '') {
+      const e = document.createElement('li');
+      if (cls) e.className = cls;
+      if (kind) { const k = document.createElement('span'); k.className = 'k'; k.textContent = kind; e.append(k); }
+      e.append(document.createTextNode(text));
+      return e;
+    }
+
+    function draw(newNote = '') {
+      qBox.replaceChildren(...QUESTIONS.map((q) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = q.q;
+        b.setAttribute('aria-pressed', String(current === q.id));
+        b.addEventListener('click', () => ask(q));
+        return b;
+      }));
+      const q = QUESTIONS.find((x) => x.id === current);
+      if (!q) {
+        found.replaceChildren(li('Pick a question to see what Barrel finds.', 'empty'));
+        reply.textContent = '';
+        const e = document.createElement('span'); e.className = 'empty'; e.textContent = 'The answer appears here.'; reply.append(e);
+      } else {
+        found.replaceChildren(...q.finds().map((i) => li(i.text, i.mem ? 'is-mem' : '', i.kind)));
+        reply.textContent = q.reply();
+      }
+      mems.replaceChildren(...[START_MEM, ...memories].map((m) => li(m, m === newNote ? 'is-new' : '')));
+    }
+
+    function ask(q: Q) {
+      current = q.id;
+      // The answer uses what was remembered before this question; the note is stored after.
+      draw();
+      if (!asked.has(q.id)) {
+        asked.add(q.id);
+        memories = [...memories, q.note];
+        mems.replaceChildren(...[START_MEM, ...memories].map((m) => li(m, m === q.note ? 'is-new' : '')));
+      }
+    }
+
+    root.querySelector('[data-ad-reset]')!.addEventListener('click', () => { memories = []; asked = new Set(); current = ''; draw(); });
+    draw();
+  });
+</script>

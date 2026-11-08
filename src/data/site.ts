@@ -67,6 +67,7 @@ export const useCases: UseCase[] = [
 ];
 
 export const mainNav = [
+  { label: 'What is Barrel?', href: '/what-is-barrel' },
   { label: 'Use cases', href: '/use-cases' },
   { label: 'Replication', href: '/product/replication' },
   { label: 'Docs', href: '/docs' },
