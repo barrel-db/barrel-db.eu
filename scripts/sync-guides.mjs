@@ -57,7 +57,14 @@ function frontmatter(md) {
   const title = h >= 0 ? lines[h].replace(/^#\s+/, '').trim() : 'Untitled';
   const body = h >= 0 ? [...lines.slice(0, h), ...lines.slice(h + 1)].join('\n') : md;
   const para = body.split(/\n\s*\n/).map((p) => p.trim()).find((p) => p && !/^(#|```|\||>|- |\* )/.test(p)) || '';
-  const description = para.replace(/\s+/g, ' ').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/`/g, '').slice(0, 300);
+  const flat = para.replace(/\s+/g, ' ').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/`/g, '');
+  // Keep whole sentences, up to about 300 characters.
+  let description = flat;
+  if (flat.length > 300) {
+    const cut = flat.slice(0, 300);
+    const end = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf(': '));
+    description = end > 80 ? cut.slice(0, end + 1).replace(/:$/, '.') : `${cut.slice(0, cut.lastIndexOf(' '))}.`;
+  }
   return { title, description, body };
 }
 
