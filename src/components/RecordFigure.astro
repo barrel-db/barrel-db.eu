@@ -13,7 +13,7 @@ const labels = {
   },
   fr: {
     plain: { doc: ['le texte', 'chaque version gardée'], att: ['ses fichiers', 'images, PDF, enregistrements'], vec: ['son sens', 'ce qui permet de le retrouver'] },
-    tech: { doc: ['document', 'JSON, chaque version gardée'], att: ['pièces jointes', 'fichiers, stockés par blocs'], vec: ['vecteur', 'calculé à partir des champs'] },
+    tech: { doc: ['document', 'JSON, versions gardées'], att: ['pièces jointes', 'fichiers, stockés par blocs'], vec: ['vecteur', 'calculé à partir des champs'] },
     aria: (id: string, d: string, a: string, v: string) => `Un enregistrement, ${id}, dessiné comme un bloc à trois faces\u00a0: ${d} en haut, ${a} à gauche, ${v} à droite.`,
   },
 }[lang];
