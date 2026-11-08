@@ -1,0 +1,79 @@
+---
+title: Troubleshooting
+description: Symptoms you may see with Barrel, what causes them and how to fix them, grouped by area.
+---
+import Callout from '../../../components/Callout.astro';
+
+This page lists symptoms you may see, what causes them and how to fix them. Find your error with the search box, or scan the area it comes from. For the meaning of each error code on its own, see [Error codes](/docs/reference/errors).
+
+## Clocks
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Writes fail with `{error, clock_skew}` after a restart | The node's clock went back below the newest write the database made. Data is kept and the writer stays up. | Fix the clock (NTP). Writes resume once it passes that point. |
+| Replication from a peer fails with `clock_skew` | The peer's clock is ahead by more than `hlc_max_offset` milliseconds. Over HTTP, any 409 from the peer is reported as `clock_skew`. | Sync the clocks. If they agree, read the peer's actual response. |
+
+`hlc_max_offset` defaults to 0, which turns the offset check off. Set it in the `barrel_docdb` application environment only if you want peers with a drifting clock refused.
+
+## Replication
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `replicate` returns `{error, not_found}` against a server | The remote database does not exist. Replication never creates one. | `PUT /db/:db` on the remote first. |
+| `{error, {checkpoint_failed, target, not_found}}` on one node | The local target database was not created. | Call `barrel_docdb:create_db(Target)` first. |
+| `{error, att_flush_unsupported}` | The target cannot confirm attachments are on disk, and durability is required by default. | Upgrade the target, or pass `att_durability => best_effort` and accept the risk on power loss. |
+| `{error, att_filter_unsupported}` on a filtered run | The source server cannot filter attachments. | Upgrade the source. |
+| `start_task` returns `{error, {inline_credentials, Keys}}` | Tasks refuse credentials in their configuration. | Set `sync_auth`, `sync_signing` or `sync_ssl` in the `barrel_docdb` application environment. |
+| A continuous task shows `running` but nothing arrives | It is retrying; the error is stored in `last_error`. | Read `barrel_rep_tasks:get_task(Id)` and fix `last_error`. |
+| A task is `paused` with `db_closed` | Its local database is not open. | Open the database, or set `task_db_opener` so restored tasks open it. |
+| `{error, too_many_failed_docs}` | More than 1000 documents failed in one run; the checkpoint did not move. | Read the log for the failing documents and fix them, then run again. |
+| After upgrading from docdb 2.0, a replica misses documents or holds empty bodies | Bugs in 2.0.0. Upgrading stops new damage but repairs nothing. | Run `barrel_rep:reconcile(Healthy, Replica, #{})` once per replica. |
+
+```erlang
+{ok, Report} = barrel_rep:reconcile(<<"kb">>,
+    <<"kb_replica">>, #{}),
+maps:with([docs_checked, bodies_repaired,
+           atts_resent], Report).
+```
+
+## Search
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `500 bm25_not_enabled` | Keyword search is off on a plain database. | Open with `vectordb => #{bm25_backend => disk}`, or use record mode, which turns it on. |
+| `500 embedder_not_configured` | Text or hybrid search with no embedder. | Configure an embedder, or send a vector. |
+| `500 {dimension_mismatch,768,N}` | The store expects 768 dimensions by default. | Send vectors of the store's size, or open it with the model's `dimensions`. |
+| Vectors have the wrong length | `dimensions` is not set and defaults to 768. | Set `dimensions` to the model's size (bge-small is 384). |
+| The first local embed is slow or fails offline | Python providers install packages and download the model on first use. | Warm it up once online, then run with `HF_HUB_OFFLINE=1` and `TRANSFORMERS_OFFLINE=1`. |
+| `barrel_vectordb:update/4` made an entry disappear | Known bug: with no embedder, or a provider that is down, the entry is deleted before the new text is embedded. | Do not call `update/4` on a store without a working embedder. |
+
+## Databases and the server
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `open_db` returns `{error, {db_failed, Reason}}` | The writer crashed 3 times in 60 seconds. That database stays down; others are not affected. | Read the log for `Reason`, fix it, then `barrel_docdb:reopen_db(Name)`. |
+| `{error, db_is_encrypted}` | Opened without its encryption settings. | Pass the same `encryption` spec on every open. |
+| A typo in a REST path created an empty database | Every `/db/:db` route except `_sync` creates the database. | Check names in your client; `DELETE /db/:db?purge=true` removes it. |
+| `PUT /db/MyDb` answers `500 invalid_db_name` | Database names are lowercase. | Use lowercase letters, digits, `_` and `-`, starting with a letter or digit. |
+| Vector files appear in `./priv` | Without `db_path` the vector store goes under the working directory, even when the server has a `data_dir`. | Always set `vectordb => #{db_path => ...}`. |
+| A capability token gets 403 | It is for another space, or lacks the right. | Use a token for that space with the right it needs. |
+| Prometheus finds nothing at `/metrics` | There is no such route. | Push with the OTLP exporter, see [Monitoring](/docs/operate/monitoring). |
+| `barrel_db_documents_total` stays at 0 | That gauge is never set. | Use `barrel:info/1`, `barrel:vector_stats/1` or `barrel_docdb:stub_stats/1`. |
+
+## Branches
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `400 pitr_window_exceeded` | The instant is older than the retained history (30 days by default). | Pick a later instant, or raise `retention_period`. |
+| `409 cannot_branch_a_branch` | Lineage is one level deep. | Branch the parent. |
+
+## Python helpers
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| barrel_rerank creates a venv in a folder named `undefined` | The app sets `venv_path` to `undefined` and the code uses it as a path. | Call `application:load(barrel_rerank)`, then `application:set_env(barrel_rerank, venv_path, AbsPath)` before you start it. |
+| `barrel_rerank:start_link/1` returns `{error, {port_open_failed, enoent}}` | `python` is not an absolute path and the venv setup failed. | Pass an absolute `python`, or a working `venv_path`. |
+
+<Callout label="Note">
+If your symptom is not here, look up the error on [Error codes](/docs/reference/errors), then check the node's log for the reason term.
+</Callout>

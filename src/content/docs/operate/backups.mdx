@@ -1,0 +1,120 @@
+---
+title: Backups and recovery
+description: How to keep a copy of your Barrel data and get it back, what each method covers, and what is not supported yet.
+---
+import Callout from '../../../components/Callout.astro';
+
+This page shows how to keep a copy of your data and get it back. Barrel has no backup command yet: you combine replication, branches, export and file copies. Read it before you go to production, so you know what each method covers and what it does not.
+
+## Pick a method
+
+| You need | Use | Covers | Does not cover |
+|---|---|---|---|
+| A copy on another machine, kept current | Replication to a standby | Documents and attachments, continuously | Vectors (rebuilt on the standby), provenance |
+| A safe point before a risky change | A branch | Documents and attachments, instantly, on the same node | Another machine; vectors on a plain branch |
+| Yesterday's data | A branch at a past instant | Documents as they were, within the retention window | Attachments as they were at that instant; anything older than retention |
+| A file copy to ship somewhere | Export | Documents, attachments and vectors, checked by a manifest | A writable restore: imports open read only |
+| To repair a damaged replica | `reconcile` | Wrong or empty bodies and missing attachments | Writes that no copy has |
+
+## Keep a standby
+
+Start a continuous push task from the node that takes writes. The target database must exist on the standby; replication never creates one.
+
+```erlang
+{ok, TaskId} = barrel_rep_tasks:start_task(#{
+    source    => <<"kb">>,
+    target    => <<"http://standby.example:8080/db/kb">>,
+    mode      => continuous,
+    direction => push}).
+```
+
+Put credentials for the standby in the `sync_auth`, `sync_signing` or `sync_ssl` application environment of barrel_docdb, not in the task. In record mode the standby re-embeds what it receives, so give it the same embedding policy. Watch the task as shown in [Monitoring](/docs/operate/monitoring#watch-replication-tasks).
+
+## Take a safe point
+
+```erlang
+{ok, _} = barrel_docdb:branch_db(<<"kb">>,
+    <<"kb_before_migration">>, #{}).
+```
+
+The branch is a RocksDB checkpoint of the documents and attachments, made with hard links into `<data_dir>/kb_before_migration/`, so it costs no copy. If the change goes wrong, read the old documents from the branch and write them back. When it goes right, delete the branch with `barrel_docdb:delete_db/1`.
+
+A branch lives on the same node and keeps its parent's keyspace: it is a fork, not a portable backup. Through the `barrel` module, `barrel:branch/3` gives a plain branch a new, empty vector store; a record-mode branch backfills its vectors from the stored embeddings.
+
+## Recover a past state
+
+Branch at an instant within the retention window. Over REST, `at_time` takes an RFC 3339 time and `at` a changes cursor:
+
+```shell
+curl -X POST localhost:8080/db/kb/_timeline/branch \
+  -H 'content-type: application/json' \
+  -d '{"name":"kb_yesterday",
+       "at_time":"2026-11-07T09:00:00Z"}'
+```
+
+In Erlang, pass the HLC as `at`:
+
+```erlang
+{ok, _} = barrel_docdb:branch_db(<<"kb">>,
+    <<"kb_yesterday">>, #{at => Hlc}).
+```
+
+Then copy the documents you need back, or merge the branch's own edits into the parent with `barrel_docdb:merge_branch/2`. The rewound versions predate the fork and are not merged back.
+
+<Callout label="Limit" kind="limit">
+History older than `retention_period` (30 days by default) is swept and cannot be recovered; asking for it returns `pitr_window_exceeded`. Attachments on a rewound branch are those of the moment you branch, not of the instant you asked for.
+</Callout>
+
+## Export a copy
+
+`barrel_ctx_export:export/3` holds the database closed, copies its document store, blob attachments, `CRYPTO` and `TIMELINE` files and its vector store into a folder, and writes a manifest with a sha256 per file.
+
+```erlang
+{ok, Manifest} = barrel_ctx_export:export(
+    <<"kb">>, "/backups/kb_g1", #{generation => 1}).
+```
+
+- A database opened with `vectordb => none` is refused with `{error, no_vector_store}`.
+- Attachments stored in S3 are not copied.
+- An encrypted database is exported as ciphertext.
+- `barrel_ctx_export:import/2` opens the copy read only, as a snapshot for contexts. No call turns it into a writable database.
+
+## Repair a replica
+
+When a replica holds wrong or empty bodies, or misses attachments, walk the whole feed of a healthy copy once:
+
+```erlang
+Replica = barrel_rep_transport_http:endpoint(
+    <<"http://replica.example:8080/db/kb">>),
+{ok, Report} = barrel_rep:reconcile(<<"kb">>, Replica,
+    #{target_transport => barrel_rep_transport_http}).
+```
+
+For a replica on the same node, pass its name and no options.
+
+The report lists `docs_checked`, `bodies_repaired`, `atts_resent`, `doc_failures` and `att_failures`; the walk continues past failures. A remote target needs a token with write access or a signing key.
+
+## Copy the files
+
+Close the database first. Then copy every location it uses; the data directory alone is not enough.
+
+- The database folder under the barrel_docdb `data_dir` (default `data/barrel_docdb` under the working directory): documents, attachments, and the `CRYPTO` and `TIMELINE` files.
+- The vector store folder: its `db_path`, or `./priv/barrel_vectordb_<name>` under the working directory when none was set. This holds even under barrel_server with a `data_dir`.
+- For spaces, the space's vector store at `<data_dir>/<id>_vec` and the `_barrel_spaces` registry database.
+- If you use them, the `_barrel_catalog` and `_barrel_worksets` databases and the barrel_ngram `data_dir` (default `data/barrel_ngram`).
+
+A copied database gets a new writer id when it opens, so a restored copy does not write under the id of the original.
+
+<Callout label="Encrypted databases">
+Copies stay encrypted; the key is never on disk. Restoring needs the same key provider and database name.
+</Callout>
+
+## Not supported yet
+
+- A backup or restore command, route or MCP tool.
+- An online consistent copy to another path or host, other than a branch or an export.
+- Incremental backups.
+- Backing up attachments stored in S3: they live in your bucket.
+- Promoting an imported export to a writable database.
+- Point-in-time recovery of attachments, of a branch, or beyond the retention window.
+- Key rotation.
