@@ -19,6 +19,8 @@ export function localize(path: string, lang: Lang): string {
 
 /** The same page in the other language. */
 export function counterpart(path: string): string {
+  // The not-found page exists once; its French counterpart is the French home.
+  if (/^\/404(\.html)?\/?$/.test(path)) return '/fr';
   if (langOf(path) === 'fr') return path.replace(/^\/fr(?=\/|$)/, '') || '/';
   return path === '/' ? '/fr' : `/fr${path.replace(/\/$/, '')}`;
 }

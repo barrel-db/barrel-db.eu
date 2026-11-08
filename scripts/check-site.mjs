@@ -76,7 +76,7 @@ for (const p of pages) {
   const rel = p.slice(dist.length);
   const text = skipText(html);
   if (text.includes('—')) problems.push(`em dash in ${rel}`);
-  if (rel.startsWith('/fr/') && !/<html lang="fr"/.test(html)) problems.push(`French page without lang="fr": ${rel}`);
+  if (rel.startsWith('/fr/') && !/http-equiv="refresh"/.test(html) && !/<html lang="fr"/.test(html)) problems.push(`French page without lang="fr": ${rel}`);
   if (/comprehensive/i.test(text)) problems.push(`banned word "comprehensive" in ${rel}`);
   for (const [, href] of html.matchAll(/href="(\/[^"#?]*)/g)) {
     if (href.startsWith('/docs/lib/') || href.startsWith('/_astro') || href.startsWith('/pagefind')) continue;
