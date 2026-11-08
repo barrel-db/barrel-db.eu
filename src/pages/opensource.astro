@@ -1,199 +1,69 @@
 ---
-import Layout from '../legacy/layouts/Layout.astro';
-
-const repoBase = "https://github.com/barrel-db/barrel/tree/main/";
-const docsUrl = "/docs";
-
-const projects = [
-  { name: "barrel", kind: "The full edge-AI database", lang: "Erlang", repo: "apps/barrel",
-    blurb: "The full database: documents, blobs, and vectors under one id, with BQL, timeline, and the agent layer." },
-  { name: "barrel_docdb", kind: "Document layer", lang: "Erlang", repo: "apps/barrel_docdb",
-    blurb: "Version-vector MVCC, BQL queries, attachments, changes feed, and replication." },
-  { name: "barrel_vectordb", kind: "Vector layer", lang: "Erlang", repo: "apps/barrel_vectordb",
-    blurb: "HNSW, DiskANN, FAISS, and BM25 backends with hybrid search and metadata filtering." },
-  { name: "barrel_embed", kind: "Embedding library", lang: "Erlang", repo: "apps/barrel_embed",
-    blurb: "Embeddings across providers: OpenAI, Ollama, local models, and more." },
-  { name: "barrel_rerank", kind: "Reranking", lang: "Erlang", repo: "apps/barrel_rerank",
-    blurb: "Cross-encoder reranking to sharpen search results." },
-  { name: "barrel_crypto", kind: "Encryption at rest", lang: "Erlang", repo: "apps/barrel_crypto",
-    blurb: "AES-256-GCM envelope, HKDF key derivation, and pluggable key providers." },
-  { name: "barrel_spaces", kind: "Agent layer", lang: "Erlang", repo: "apps/barrel_spaces",
-    blurb: "Spaces, capability tokens, sessions with TTL, and handoffs." },
-  { name: "barrel_server", kind: "REST + MCP server", lang: "Erlang", repo: "apps/barrel_server",
-    blurb: "Exposes Barrel over HTTP (REST/JSON) and the Model Context Protocol." },
-  { name: "barrel_faiss", kind: "FAISS bindings (optional)", lang: "Erlang NIF", repo: "apps/barrel_faiss",
-    blurb: "Erlang NIF bindings for FAISS. An optional backend for the vector layer." },
-  { name: "barrel-lite", kind: "Browser client", lang: "TypeScript", repo: "clients/barrel-lite",
-    blurb: "Offline-first Barrel in the browser: sync, multi-tab, and local vector search." },
-];
+import Base from '../layouts/Base.astro';
+import { components, componentGroups, GITHUB } from '../data/site';
 ---
 
-<Layout title="Open Source" description="Every Barrel project is 100% open source under Apache 2.0. View the source, contribute, and deploy anywhere.">
-  <section class="py-20 px-4">
-    <div class="container mx-auto max-w-5xl">
-      <div class="text-center mb-16">
-        <div class="flex items-center justify-center gap-2 mb-4">
-          <div class="w-12 h-12 bg-accent/20 rounded-lg flex items-center justify-center">
-            <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
-            </svg>
-          </div>
-        </div>
-        <h1 class="text-4xl md:text-5xl font-bold mb-4">100% Open Source</h1>
-        <p class="text-xl text-ink/60 max-w-2xl mx-auto">
-          Every Barrel project is Apache 2.0 licensed. Fork it, modify it, deploy it anywhere.
-          We monetize support and managed infrastructure, not code access.
-        </p>
-      </div>
+<Base title="Open source" description="Every Barrel library is open source under the Apache 2.0 license. Use the whole database or only the piece you need.">
+  <section class="wrap os-top">
+    <h1 class="display os-h1">Open source, all of it</h1>
+    <p class="lead">Every Barrel library is released under the Apache License 2.0. Use it commercially, modify it, run it privately. Enki Bridge earns its living from support and managed infrastructure, not from access to the code.</p>
+    <p class="os-cta"><a class="button button--primary" href={GITHUB}>Source on GitHub</a><a class="button" href="/docs/contribute/build-and-test">Build and test it</a></p>
+  </section>
 
-      <!-- Projects Grid -->
-      <div class="mb-16">
-        <h2 class="text-2xl font-bold text-center mb-4">Projects</h2>
-        <p class="text-ink/60 text-center mb-8 max-w-2xl mx-auto">
-          Barrel is one database made of independent libraries. Use the whole thing, or just the piece you need.
-        </p>
-        <div class="grid md:grid-cols-3 gap-6">
-          {projects.map((p) => (
-            <div class="bg-surface p-6 rounded-xl border border-line/30 hover:border-accent/50 transition flex flex-col">
-              <div class="mb-3">
-                <h3 class="font-bold text-accent">{p.name}</h3>
-                <span class="text-ink/50 text-xs">{p.kind}</span>
-              </div>
-              <p class="text-ink/70 text-sm mb-4 flex-1">{p.blurb}</p>
-              <div class="flex items-center gap-2 mb-4">
-                <span class="bg-accent/20 text-accent text-xs px-2 py-0.5 rounded">Apache 2.0</span>
-                <span class="bg-line/30 text-ink/70 text-xs px-2 py-0.5 rounded">{p.lang}</span>
-              </div>
-              <div class="flex gap-2">
-                <a href={repoBase + p.repo} class="flex-1 text-center bg-line/20 hover:bg-line/30 text-ink py-2 rounded-lg transition text-sm">
-                  Source
-                </a>
-                <a href={docsUrl} class="flex-1 text-center bg-accent/20 hover:bg-accent/30 text-accent py-2 rounded-lg transition text-sm">
-                  Docs
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <!-- License Section -->
-      <div class="mb-16">
-        <h2 class="text-2xl font-bold text-center mb-8">Apache 2.0 License</h2>
-        <div class="bg-surface p-8 rounded-xl border border-line/30 max-w-3xl mx-auto">
-          <p class="text-ink/70 mb-6">
-            Every Barrel project is released under the Apache License, Version 2.0. This means you can:
-          </p>
-          <div class="grid md:grid-cols-2 gap-6">
-            <div>
-              <h4 class="font-semibold text-accent mb-3">You can:</h4>
-              <ul class="space-y-2 text-sm text-ink/70">
-                <li class="flex items-start gap-2">
-                  <svg class="w-4 h-4 text-accent mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                  Use commercially
-                </li>
-                <li class="flex items-start gap-2">
-                  <svg class="w-4 h-4 text-accent mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                  Modify and distribute
-                </li>
-                <li class="flex items-start gap-2">
-                  <svg class="w-4 h-4 text-accent mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                  Use privately
-                </li>
-                <li class="flex items-start gap-2">
-                  <svg class="w-4 h-4 text-accent mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                  Patent use granted
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h4 class="font-semibold text-coral mb-3">You must:</h4>
-              <ul class="space-y-2 text-sm text-ink/70">
-                <li class="flex items-start gap-2">
-                  <svg class="w-4 h-4 text-coral mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                  Include license
-                </li>
-                <li class="flex items-start gap-2">
-                  <svg class="w-4 h-4 text-coral mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                  State changes
-                </li>
-                <li class="flex items-start gap-2">
-                  <svg class="w-4 h-4 text-coral mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                  Include copyright
-                </li>
-              </ul>
-            </div>
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">The libraries</h2>
+      <p class="section-intro">One repository, one database made of libraries you can also use on their own.</p>
+      <div class="os-groups">
+        {componentGroups.map((g) => (
+          <div>
+            <h3 class="os-g">{g}</h3>
+            {components.filter((c) => c.group === g).map((c) => (
+              <p class="os-lib">
+                <a href={`/product/${c.slug}`}><code>{c.name}</code></a> <span class="small muted">{c.version}</span><br />
+                <span class="muted small">{c.body}</span>
+              </p>
+            ))}
           </div>
-        </div>
-      </div>
-
-      <!-- Contributing Section -->
-      <div class="mb-16">
-        <h2 class="text-2xl font-bold text-center mb-8">Contributing</h2>
-        <div class="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          <div class="bg-surface p-6 rounded-xl border border-line/30 text-center">
-            <div class="w-12 h-12 bg-accent/20 rounded-lg mx-auto flex items-center justify-center mb-4">
-              <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-              </svg>
-            </div>
-            <h3 class="font-semibold text-ink mb-2">Documentation</h3>
-            <p class="text-ink/60 text-sm">Improve docs, fix typos, add examples</p>
-          </div>
-          <div class="bg-surface p-6 rounded-xl border border-line/30 text-center">
-            <div class="w-12 h-12 bg-accent/20 rounded-lg mx-auto flex items-center justify-center mb-4">
-              <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-              </svg>
-            </div>
-            <h3 class="font-semibold text-ink mb-2">Feature Ideas</h3>
-            <p class="text-ink/60 text-sm">Open issues to discuss new features</p>
-          </div>
-          <div class="bg-surface p-6 rounded-xl border border-line/30 text-center">
-            <div class="w-12 h-12 bg-accent/20 rounded-lg mx-auto flex items-center justify-center mb-4">
-              <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
-              </svg>
-            </div>
-            <h3 class="font-semibold text-ink mb-2">Code</h3>
-            <p class="text-ink/60 text-sm">Submit pull requests with fixes and features</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Support Section -->
-      <div class="bg-gradient-to-br from-line/30 via-surface to-coral/10 p-8 md:p-12 rounded-2xl border border-line/50">
-        <div class="flex flex-col md:flex-row gap-8 items-center">
-          <div class="flex-1">
-            <h2 class="text-2xl font-bold mb-4">Need Support or Managed Hosting?</h2>
-            <p class="text-ink/70 mb-6">
-              While the code is free, we offer professional support and managed hosting for teams that need guaranteed response times, deployment assistance, or don't want to manage infrastructure.
-            </p>
-            <a href="/contact" class="inline-block bg-coral hover:bg-coral-dark text-white px-6 py-3 rounded-lg transition font-semibold text-center">
-              Contact Us for an Offer
-            </a>
-          </div>
-          <div class="flex-shrink-0">
-            <div class="bg-surface/50 p-6 rounded-xl border border-line/30">
-              <p class="text-sm text-ink/60 mb-4 text-center">Available Services</p>
-              <div class="space-y-2 text-sm">
-                <div class="flex items-center gap-2 text-ink/70">
-                  <span class="text-accent">+</span> Community: GitHub Issues
-                </div>
-                <div class="flex items-center gap-2 text-ink/70">
-                  <span class="text-coral">+</span> Professional Support
-                </div>
-                <div class="flex items-center gap-2 text-ink/70">
-                  <span class="text-coral">+</span> Managed Hosting (EU)
-                </div>
-                <div class="flex items-center gap-2 text-ink/70">
-                  <span class="text-coral">+</span> Custom SLAs
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   </section>
-</Layout>
+
+  <section class="section">
+    <div class="wrap os-two">
+      <div>
+        <h2 class="h3">The license</h2>
+        <p>Apache 2.0 lets you use Barrel commercially, modify and redistribute it, use it privately, and grants a patent license. You keep the license and copyright notices and state your changes.</p>
+        <p><a href={`${GITHUB}/blob/main/LICENSE`}>Read the license</a></p>
+      </div>
+      <div>
+        <h2 class="h3">Contribute</h2>
+        <ul>
+          <li>Fix or extend the docs: every page has an "Edit this page" link.</li>
+          <li>Discuss a feature or report a bug in <a href={`${GITHUB}/issues`}>GitHub issues</a>.</li>
+          <li>Send a pull request: <a href="/docs/contribute/build-and-test">build and test</a> explains the suites it must pass.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h3">Support and managed hosting</h2>
+      <p class="section-intro">The code is free. If you need guaranteed response times, help with a deployment, or someone else to run it, Enki Bridge offers <a href="/commercial">commercial support and managed Barrel in the EU</a>.</p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .os-top { padding-top: 72px; padding-bottom: 56px; }
+  .os-h1 { font-size: clamp(2.5rem, 5vw, 3.75rem); margin-bottom: 20px; }
+  .os-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+  .os-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 40px; }
+  .os-g { font-size: 17px; border-bottom: 1px solid var(--rule); padding-bottom: 6px; margin: 0 0 8px; }
+  .os-lib { margin: 0 0 12px; }
+  .os-lib code { background: none; padding: 0; font-size: 15px; }
+  .os-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; }
+  @media (max-width: 820px) { .os-groups, .os-two { grid-template-columns: minmax(0, 1fr); } }
+</style>

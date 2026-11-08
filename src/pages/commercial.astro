@@ -1,5 +1,5 @@
 ---
-import Layout from '../legacy/layouts/Layout.astro';
+import Base from '../layouts/Base.astro';
 
 const offers = [
   {
@@ -88,140 +88,64 @@ const steps = [
 ];
 ---
 
-<Layout
-  title="Commercial Support & Managed Barrel DB"
-  description="Commercial pilots, managed hosting, and enterprise support for private AI, RAG, agent memory, and edge/local-first systems built on Barrel DB, from Enki Bridge."
->
-  <!-- Hero -->
-  <section class="py-24 px-4 bg-gradient-to-b from-surface to-line/10">
-    <div class="container mx-auto text-center max-w-4xl">
-      <div class="flex items-center justify-center gap-4 mb-6">
-        <div class="flex items-center gap-2 bg-line/20 px-3 py-1.5 rounded-full border border-line/30">
-          <span class="text-accent text-sm font-medium">Commercial support</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="text-2xl">🇪🇺</span>
-          <span class="text-ink/60 text-sm font-medium uppercase tracking-wider">Enki Bridge</span>
-        </div>
-      </div>
-      <h1 class="text-4xl md:text-5xl font-bold mb-6">
-        Run Barrel DB in production
-        <br />
-        with <span class="bg-gradient-to-r from-coral to-accent bg-clip-text text-transparent">Enki Bridge</span>
-      </h1>
-      <p class="text-xl text-ink/70 mb-8 max-w-3xl mx-auto">
-        Commercial pilots, managed hosting, and enterprise support for private AI, RAG, agent memory,
-        and edge/local-first systems built on Barrel DB.
-      </p>
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="mailto:hello@barrel-db.eu?subject=Commercial%20Barrel%20DB" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
-          Contact Enki Bridge
-        </a>
-        <a href="/docs" class="border border-line/50 hover:border-accent text-ink px-8 py-3 rounded-lg text-lg transition">
-          Read the docs
-        </a>
-      </div>
-    </div>
+<Base title="Commercial support and managed Barrel" description="Commercial pilots, managed hosting and support for private AI, RAG, agent memory and edge or local-first systems built on Barrel, from Enki Bridge.">
+  <section class="wrap cm-top">
+    <h1 class="display cm-h1">Run Barrel in production with Enki Bridge</h1>
+    <p class="lead">Fixed-scope pilots, managed hosting and support for private AI, RAG, agent memory and edge or local-first systems built on Barrel.</p>
+    <p class="cm-cta"><a class="button button--primary" href="mailto:hello@barrel-db.eu?subject=Commercial%20Barrel">Contact Enki Bridge</a><a class="button" href="/docs">Read the docs</a></p>
   </section>
 
-  <!-- Commercial offers -->
-  <section class="py-16 px-4">
-    <div class="container mx-auto max-w-5xl">
-      <h2 class="text-3xl font-bold mb-4 text-center">Commercial offers</h2>
-      <p class="text-ink/60 text-center mb-12 max-w-2xl mx-auto">
-        Fixed-scope pilots and commercial support built on the open-source database. Start with one, grow into the rest.
-      </p>
-
-      <div class="grid md:grid-cols-2 gap-6">
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Offers</h2>
+      <p class="section-intro">Built on the open source database. Start with one, grow into the rest.</p>
+      <div class="cm-offers">
         {offers.map((o) => (
-          <div id={o.id} class={`scroll-mt-24 flex flex-col bg-surface p-6 rounded-xl border ${o.accent === 'coral' ? 'border-coral/30' : 'border-line/30'}`}>
-            <h3 class={`text-xl font-bold mb-3 ${o.accent === 'coral' ? 'text-coral' : 'text-accent'}`}>{o.title}</h3>
-            <p class="text-ink/70 text-sm mb-4">{o.text}</p>
-            <ul class="space-y-2 mb-6">
-              {o.bullets.map((b) => (
-                <li class="flex items-start gap-2 text-ink/80 text-sm">
-                  <svg class={`w-5 h-5 flex-shrink-0 mt-0.5 ${o.accent === 'coral' ? 'text-coral' : 'text-accent'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                  <span>{b}</span>
-                </li>
-              ))}
-            </ul>
-            <a
-              href={`mailto:hello@barrel-db.eu?subject=${o.subject}`}
-              class="mt-auto text-coral hover:text-coral-dark font-semibold text-sm"
-            >
-              {o.cta} &rarr;
-            </a>
-          </div>
+          <section id={o.id} class="cm-offer">
+            <h3 class="h3">{o.title}</h3>
+            <p>{o.text}</p>
+            <ul>{o.bullets.map((b) => <li>{b}</li>)}</ul>
+            <a href={`mailto:hello@barrel-db.eu?subject=${o.subject}`}>{o.cta}</a>
+          </section>
         ))}
       </div>
     </div>
   </section>
 
-  <!-- Open source stays open -->
-  <section class="py-16 px-4 bg-surface/50">
-    <div class="container mx-auto max-w-4xl">
-      <div class="bg-gradient-to-br from-line/30 via-surface to-coral/10 p-8 md:p-12 rounded-2xl border border-line/50">
-        <h2 class="text-3xl font-bold mb-4">Open source core, commercial help when you need it</h2>
-        <p class="text-ink/70 text-lg">
-          Barrel DB is Apache 2.0 licensed. You can self-host it, embed it, fork it, and run it without
-          usage fees. Commercial support is for teams that want help with production architecture,
-          deployment, operations, or dedicated support.
-        </p>
+  <section class="section">
+    <div class="wrap cm-two">
+      <div>
+        <h2 class="h3">Open source core</h2>
+        <p>Barrel is Apache 2.0 licensed. You can self-host it, embed it, fork it and run it without usage fees. Commercial support is for teams that want help with production architecture, deployment, operations or dedicated support.</p>
+      </div>
+      <div>
+        <h2 class="h3">Who this is for</h2>
+        <ul>{audience.map((a) => <li>{a}</li>)}</ul>
       </div>
     </div>
   </section>
 
-  <!-- Who this is for -->
-  <section class="py-16 px-4">
-    <div class="container mx-auto max-w-5xl">
-      <h2 class="text-3xl font-bold mb-4 text-center">Who this is for</h2>
-      <p class="text-ink/60 text-center mb-12 max-w-2xl mx-auto">
-        Commercial support fits teams running Barrel DB where their data cannot leave, or where production matters.
-      </p>
-      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {audience.map((a) => (
-          <div class="bg-surface p-6 rounded-xl border border-line/30 flex items-start gap-3">
-            <svg class="w-5 h-5 text-accent flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-            <span class="text-ink/80">{a}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  </section>
-
-  <!-- How engagements work -->
-  <section class="py-16 px-4 bg-surface/50">
-    <div class="container mx-auto max-w-5xl">
-      <h2 class="text-3xl font-bold mb-4 text-center">How engagements work</h2>
-      <p class="text-ink/60 text-center mb-12 max-w-2xl mx-auto">
-        Start small with a fixed-scope pilot, then continue with support or a managed deployment.
-      </p>
-      <div class="grid md:grid-cols-3 gap-6">
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">How it works</h2>
+      <ol class="cm-steps">
         {steps.map((s) => (
-          <div class="bg-surface p-6 rounded-xl border border-line/30">
-            <div class="w-12 h-12 bg-coral/20 rounded-lg flex items-center justify-center mb-4 text-coral text-xl font-bold">
-              {s.n}
-            </div>
-            <h3 class="font-semibold text-ink mb-2">{s.title}</h3>
-            <p class="text-ink/60 text-sm">{s.text}</p>
-          </div>
+          <li><h3 class="cm-step-t">{s.title}</h3><p class="muted">{s.text}</p></li>
         ))}
-      </div>
+      </ol>
     </div>
   </section>
+</Base>
 
-  <!-- Final CTA -->
-  <section class="py-20 px-4 bg-gradient-to-t from-surface to-line/10">
-    <div class="container mx-auto max-w-4xl text-center">
-      <h2 class="text-3xl font-bold mb-4">Want to run Barrel DB in production?</h2>
-      <p class="text-ink/60 mb-8 max-w-2xl mx-auto">
-        Tell us what you are building: private RAG, agent memory, edge sync, embedded search, or managed Barrel DB.
-      </p>
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="mailto:hello@barrel-db.eu?subject=Commercial%20Barrel%20DB" class="bg-coral hover:bg-coral-dark text-white px-8 py-3 rounded-lg text-lg font-semibold transition">
-          Contact Enki Bridge
-        </a>
-      </div>
-    </div>
-  </section>
-</Layout>
+<style>
+  .cm-top { padding-top: 72px; padding-bottom: 48px; }
+  .cm-h1 { font-size: clamp(2.5rem, 5vw, 3.75rem); margin-bottom: 20px; max-width: 16em; }
+  .cm-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+  .cm-offers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px 48px; }
+  .cm-offer { border-top: 2px solid var(--ink); padding-top: 14px; scroll-margin-top: 24px; }
+  .cm-offer ul { padding-left: 20px; }
+  .cm-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; }
+  .cm-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; padding-left: 20px; }
+  .cm-step-t { font-size: 19px; margin: 0 0 6px; }
+  @media (max-width: 820px) { .cm-offers, .cm-two, .cm-steps { grid-template-columns: minmax(0, 1fr); } }
+</style>

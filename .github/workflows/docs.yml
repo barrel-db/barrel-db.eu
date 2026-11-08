@@ -3,6 +3,7 @@ name: Build Site
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
   repository_dispatch:
     types: [docs-update]
@@ -33,10 +34,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Runs scripts/build-docs.sh (ex_doc -> public/docs/lib), then astro
-      # build, then the pagefind index.
+      # ex_doc reference, guides synced from the umbrella, astro build, search index.
       - name: Build the site
         run: BARREL_DIR="$GITHUB_WORKSPACE/repos/barrel" npm run build
+
+      - name: Type check
+        run: npm run check
+
+      # Every nav entry has a page, versions match the umbrella, internal links
+      # resolve, house style holds.
+      - name: Check the built site
+        run: BARREL_DIR="$GITHUB_WORKSPACE/repos/barrel" npm run check:site
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -45,21 +53,26 @@ jobs:
           path: dist
           retention-days: 7
 
-  # Optional: deploy to GitHub Pages
-  # deploy:
-  #   needs: build
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     pages: write
-  #     id-token: write
-  #   environment:
-  #     name: github-pages
-  #   steps:
-  #     - uses: actions/download-artifact@v4
-  #       with:
-  #         name: site
-  #         path: dist
-  #     - uses: actions/upload-pages-artifact@v3
-  #       with:
-  #         path: dist
-  #     - uses: actions/deploy-pages@v4
+  examples:
+    # Every example under examples/ runs against the umbrella and its output is
+    # compared with the expected.txt shown on the site.
+    runs-on: ubuntu-latest
+    container:
+      image: erlang:28
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout the barrel umbrella
+        uses: actions/checkout@v4
+        with:
+          repository: barrel-db/barrel
+          path: repos/barrel
+          token: ${{ secrets.DOCS_TOKEN }}
+
+      - name: Install build tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends cmake nodejs npm curl
+
+      - name: Run the examples
+        run: BARREL_DIR="$GITHUB_WORKSPACE/repos/barrel" npm run verify:examples

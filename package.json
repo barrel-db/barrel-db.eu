@@ -4,10 +4,15 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
-    "build": "bash scripts/build-docs.sh && astro build && pagefind --site dist",
+    "sync": "node scripts/sync-guides.mjs",
+    "build:docs": "bash scripts/build-docs.sh",
+    "build": "bash scripts/build-docs.sh && node scripts/sync-guides.mjs && astro build && pagefind --site dist",
+    "build:site": "node scripts/sync-guides.mjs && astro build && pagefind --site dist",
     "preview": "astro preview",
-    "astro": "astro",
-    "build:docs": "bash scripts/build-docs.sh"
+    "check": "astro check",
+    "check:site": "node scripts/check-site.mjs",
+    "verify:examples": "bash scripts/verify-examples.sh",
+    "astro": "astro"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.3.13",
