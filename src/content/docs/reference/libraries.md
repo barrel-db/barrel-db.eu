@@ -1,45 +1,54 @@
 ---
 title: Libraries
-description: The independent libraries that make up Barrel, and where to find each one's deep reference.
+description: The independent libraries that make up Barrel, their versions and build profiles, and where to find each one's generated reference.
 ---
 
-Barrel is one database made of independent Apache 2.0 libraries. You use the full
-full `barrel` API, or depend on a single library. This page lists them and links the
-deeper per-library documentation where it exists.
+Barrel is one database made of independent Apache 2.0 libraries in one umbrella repository. You use the `barrel` API, run `barrel_server`, or depend on a single library. This page lists them, says what each needs to build, and links its generated reference: the guides it ships plus its module documentation, built with ex_doc from the source.
 
 ## The stack
 
-| Library | Role |
-|---------|------|
-| `barrel` | The API you use in these docs: documents, blobs, and vectors under one id. |
-| `barrel_docdb` | The document layer: version-vector MVCC, BQL, attachments, replication. |
-| `barrel_vectordb` | The vector layer: HNSW, DiskANN, FAISS, and BM25 with hybrid search. |
-| `barrel_embed` | Embedding generation across providers (OpenAI, Ollama, local, and more). |
-| `barrel_rerank` | Cross-encoder reranking. |
-| `barrel_crypto` | Encryption-at-rest primitives and key providers. |
-| `barrel_spaces` | The agent layer: spaces, capability tokens, sessions, handoffs. |
-| `barrel_server` | The REST/JSON and MCP server over the `barrel` API. |
-| `barrel_faiss` | Optional Erlang NIF bindings for FAISS. |
-| `barrel-lite` | The offline-first TypeScript browser client. |
+| Library | Version | Role | Reference |
+|---|---|---|---|
+| `barrel` | 1.12.0 | The database: documents, attachments and vectors under one id, BQL, record mode, timeline, contexts | [/docs/lib/barrel/](/docs/lib/barrel/) |
+| `barrel_docdb` | 2.1.0 | Documents, versions, queries, attachments, replication | [/docs/lib/docdb/](/docs/lib/docdb/) |
+| `barrel_vectordb` | 2.5.1 | Vector index (HNSW, DiskANN, FAISS), BM25, hybrid search | [/docs/lib/vectordb/](/docs/lib/vectordb/) |
+| `barrel_ngram` | 0.11.4 | Exact substring and regex search over a docdb database | [source](https://github.com/barrel-db/barrel/tree/main/apps/barrel_ngram) |
+| `barrel_embed` | 2.6.1 | Embedding providers, local or cloud | [/docs/lib/embed/](/docs/lib/embed/) |
+| `barrel_rerank` | 1.0.2 | Cross-encoder reranking | [/docs/lib/rerank/](/docs/lib/rerank/) |
+| `barrel_crypto` | 1.0.0 | Encryption-at-rest primitives and key providers | [/docs/lib/crypto/](/docs/lib/crypto/) |
+| `barrel_spaces` | 1.3.1 | Spaces, capability tokens, sessions, handoffs | [/docs/lib/spaces/](/docs/lib/spaces/) |
+| `barrel_server` | 1.13.0 | REST and MCP over HTTP | [/docs/lib/server/](/docs/lib/server/) |
+| `barrel_att_s3` | 0.1.4 | Attachments in S3-compatible storage | [source](https://github.com/barrel-db/barrel/tree/main/apps/barrel_att_s3) |
+| `barrel_faiss` | 1.0.1 | NIF bindings to FAISS | [HexDocs](https://hexdocs.pm/barrel_faiss) |
+| `barrel-lite` | 0.1.0 | TypeScript client with a copy in the browser; not published to npm | [guide](/docs/guides/barrel-lite) |
 
-## Per-library documentation
+`barrel_faiss` links against a system FAISS build, so its reference is not built with this site; read it on HexDocs. `barrel_ngram` and `barrel_att_s3` have no reference site here yet; their README and module docs are in the repository.
 
-Each library publishes its own reference site: the guides it ships, plus an API
-reference generated from the module documentation, so it cannot drift from the
-source.
+For the HTTP and MCP surface, use the [REST API](/docs/reference/rest-api) and [MCP tools](/docs/reference/mcp-tools) pages.
 
-- [barrel](/docs/lib/barrel/) - the full database.
-- [barrel_docdb](/docs/lib/docdb/) - the document layer.
-- [barrel_vectordb](/docs/lib/vectordb/) - the vector layer.
-- [barrel_embed](/docs/lib/embed/) - embedding providers.
-- [barrel_server](/docs/lib/server/) - the REST/JSON and MCP server.
-- [barrel_spaces](/docs/lib/spaces/) - the agent layer.
-- [barrel_rerank](/docs/lib/rerank/) - cross-encoder reranking.
-- [barrel_crypto](/docs/lib/crypto/) - encryption at rest.
+## Build profiles
 
-`barrel_faiss` links against a system FAISS build, so its reference ships on
-[HexDocs](https://hexdocs.pm/barrel_faiss) rather than here. Every library is on
-HexDocs under its own name.
+A plain build of the umbrella leaves out the apps that need extra toolchains or pull network dependencies:
 
-The source for every library lives in the umbrella repository at
-[github.com/barrel-db/barrel](https://github.com/barrel-db/barrel).
+```shell
+rebar3 compile              # barrel and its libraries
+rebar3 as server compile    # adds barrel_server
+rebar3 as s3 compile        # adds barrel_att_s3
+rebar3 as faiss compile     # adds barrel_faiss
+```
+
+- Every app needs OTP 26 or later. barrel_docdb, barrel_vectordb and barrel_ngram build C or C++ code with CMake.
+- `barrel_faiss` needs the FAISS library, OpenMP and BLAS. It builds on Linux, macOS and the BSDs, not Windows.
+- `barrel_embed` and `barrel_rerank` install Python packages into a venv for their local models.
+
+See [Build and test](/docs/contribute/build-and-test) for the test commands.
+
+## Depend on one library
+
+Each library has its own `rebar.config` and depends on its siblings by version. For example, documents and replication without vectors:
+
+```erlang
+{deps, [{barrel_docdb, "~> 2.0"}]}.
+```
+
+The source of every library is at [github.com/barrel-db/barrel](https://github.com/barrel-db/barrel), under `apps/`.

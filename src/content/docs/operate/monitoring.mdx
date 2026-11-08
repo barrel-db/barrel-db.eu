@@ -1,0 +1,118 @@
+---
+title: Monitoring
+description: What Barrel measures, how to read the metrics, how to send them to a collector, and how to watch replication tasks and health.
+---
+import Callout from '../../../components/Callout.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+
+This page covers what Barrel measures, how you read it, and how you watch replication tasks. Read it when you put a node in production and need to know it is healthy and keeping up.
+
+## What Barrel measures
+
+The document layer, barrel_docdb, records metrics on every node, whether or not you export them. They use Prometheus naming. A labeled metric is exported under a name that carries its labels, so write your queries against the names below.
+
+| Exported name | Type | What it counts |
+|---|---|---|
+| `barrel_doc_operations_db_operation_total{db,operation}` | counter | Document puts, gets and deletes |
+| `barrel_doc_operation_duration_seconds_vec_db_operation` | histogram | Time per document operation |
+| `barrel_write_group_size_vec_db` | histogram | Writes committed together in one batch |
+| `barrel_query_operations_db_total{db}` | counter | Queries run |
+| `barrel_query_duration_seconds_vec_db` | histogram | Time per query |
+| `barrel_query_timeouts_total` | counter | Queries that hit their deadline |
+| `barrel_replication_docs_direction_total{direction}` | counter | Documents written by replication |
+| `barrel_replication_errors_task_id_total{task_id}` | counter | Replication errors, per replication id |
+| `barrel_db_stubs_total`, `barrel_db_stubs_bytes` | gauge | Deleted documents kept as stubs, per database, after each retention sweep |
+
+Each declared metric is also printed once without labels; that copy stays at 0. Check `export_text/0` for the exact labeled name before you write an alert.
+
+<Callout label="Not recorded yet" kind="limit">
+`barrel_db_documents_total`, `barrel_db_size_bytes`, `barrel_db_attachments_total`, `barrel_replication_lag_seconds` and `barrel_replication_active` are declared but never set; they always read 0. Use the stats calls below instead.
+</Callout>
+
+barrel_vectordb, barrel, barrel_server, barrel_spaces and barrel_embed record no metrics.
+
+## Read the metrics
+
+Inside the node, `barrel_metrics:export_text/0` returns the Prometheus text format as a binary (`export/0` returns iodata).
+
+```erlang
+io:format("~s", [barrel_metrics:export_text()]).
+```
+
+<CodeBlock output label="Output, trimmed, after one write, one read and one query on db mon (live run against barrel_server 1.13.0)" code={`barrel_doc_operations_db_operation_total{db="mon",operation="put"} 1.0
+barrel_doc_operations_db_operation_total{db="mon",operation="get"} 1.0
+barrel_query_operations_db_total{db="mon"} 1.0
+barrel_doc_operation_duration_seconds_vec_db_operation_count{db="mon",operation="put"} 1`} />
+
+## Send them to a collector
+
+barrel_server does not serve a `/metrics` route. Push the metrics over OTLP to your collector, which Prometheus or another backend then reads. Set the exporters in the `barrel_docdb` application environment:
+
+```erlang
+[{barrel_docdb, [
+   {metrics, [{exporter, otlp},
+              {otlp_endpoint, "http://collector:4318"}]},
+   {tracing, [{enabled, true}, {exporter, otlp},
+              {otlp_endpoint, "http://collector:4318"}]}
+ ]}].
+```
+
+The exporter is `none` by default; `console` and `{Mod, Map}` are also accepted. Metrics, tracing and logging each take their own exporter, see [Configuration](/docs/reference/configuration#barrel_docdb).
+
+Tracing covers document operations, queries and replication. Outgoing replication requests carry trace headers to the peer.
+
+<Callout label="Note">
+The `export_interval` key shown in some barrel_docdb docs is never read.
+</Callout>
+
+If you want a scrape endpoint, serve `barrel_metrics:export_text()` from a handler in your own application.
+
+## Stats you can ask for
+
+| Call | Returns |
+|---|---|
+| `barrel:info(Db)`, `GET /db/:db` | Configuration, retention, history floor, write-group counters, embedder. No document count or size. |
+| `barrel:vector_stats(Db)` | Vector count, dimension, index type and whether the index was loaded or rebuilt |
+| `barrel_docdb:stub_stats(Name)` | Stub count and bytes. Scans the change feed in the caller. |
+| `barrel_rep_tasks:list_tasks()` | Every replication task with its status |
+| `barrel_rep_tasks:get_task(Id)` | One task: `status`, `last_seq`, `last_error`, `paused_reason` |
+
+```erlang
+{ok, S} = barrel:vector_stats(Db),
+maps:with([count, dimension, index_origin], S).
+```
+
+The MCP tool `db_info` says it returns a document count; it returns the same map as `barrel:info/1`, which has none.
+
+## Watch replication tasks
+
+A continuous task keeps the status `running` while it retries, with exponential backoff. The error is on the task, not in its status, so alert on `last_error`.
+
+```erlang
+{ok, Tasks} = barrel_rep_tasks:list_tasks(#{mode => continuous}),
+[{Id, Status, maps:get(last_error, T, none)}
+ || #{id := Id, status := Status} = T <- Tasks].
+```
+
+- Statuses: `pending`, `running`, `paused`, `completed`, `failed`.
+- `paused` with `paused_reason` `<<"db_closed">>` means the task's local database is not open. It resumes when the database opens.
+- A one-shot task fails fast; only continuous tasks retry.
+
+## Health checks
+
+`GET /health` answers `200 {"status":"ok"}` without authentication. It says the HTTP listener is up; it does not open a database or check a store.
+
+```shell
+curl -s localhost:8080/health
+```
+
+For a deeper check, read `GET /db/:db` on a database you care about, with a token. Note that this creates the database if it does not exist.
+
+```shell
+curl -s -H "authorization: Bearer $TOKEN" \
+  localhost:8080/db/kb
+```
+
+<Callout label="Known gap" kind="limit">
+There is no readiness route and no HTTP request metrics in barrel_server yet.
+</Callout>

@@ -1,0 +1,1000 @@
+{
+ "barrelServer": "1.13.0",
+ "serverInfo": {
+  "name": "barrel",
+  "version": "4.4.1"
+ },
+ "protocolVersion": "2025-06-18",
+ "generated": "2026-11-08",
+ "tools": [
+  {
+   "description": "Fork a database into a branch, optionally at a changes cursor.",
+   "inputSchema": {
+    "properties": {
+     "at": {
+      "type": "string"
+     },
+     "db": {
+      "type": "string"
+     },
+     "name": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "db",
+     "name"
+    ],
+    "type": "object"
+   },
+   "name": "branch_create"
+  },
+  {
+   "annotations": {
+    "readOnlyHint": true
+   },
+   "description": "List a database's branches and its own lineage.",
+   "inputSchema": {
+    "properties": {
+     "db": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "db"
+    ],
+    "type": "object"
+   },
+   "name": "branch_list"
+  },
+  {
+   "annotations": {
+    "readOnlyHint": true
+   },
+   "description": "Read the changes feed from a cursor (absent = from the start). Returns the changes and the next cursor.",
+   "inputSchema": {
+    "properties": {
+     "db": {
+      "type": "string"
+     },
+     "since": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "db"
+    ],
+    "type": "object"
+   },
+   "name": "changes"
+  },
+  {
+   "description": "Add a context to a working set: the contexts you work with, which context_materialize and context_import can copy locally for offline use. Omit working_set to create one; the answer's id is the working set to pass next. Logical: nothing is opened or copied. Example: {\"context\": \"otp/tools\"}.",
+   "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+     "context": {
+      "description": "A context name (e.g. \"otp/sasl\") or id (ctx_...).",
+      "examples": [
+       "otp/sasl"
+      ],
+      "type": "string"
+     },
+     "credential_ref": {
+      "description": "Name of a token in the node's ctx_credentials, for a remote location.",
+      "type": "string"
+     },
+     "mode": {
+      "description": "Which location of the card to use. Default: local if the card has one, else remote.",
+      "enum": [
+       "local",
+       "remote"
+      ],
+      "type": "string"
+     },
+     "working_set": {
+      "description": "Working-set id (ws_...). Omit to create a new working set.",
+      "type": "string"
+     }
+    },
+    "required": [
+     "context"
+    ],
+    "type": "object"
+   },
+   "name": "context_attach"
+  },
+  {
+   "annotations": {
+    "readOnlyHint": true
+   },
+   "description": "What a context query may look like: the accepted statement shapes with examples, the merges, the limits (contexts per query, largest LIMIT, timeouts), working-set budgets and whether the node is offline. Call it before a first context_query. No arguments.",
+   "inputSchema": {
+    "additionalProperties": false,
+    "properties": {},
+    "type": "object"
+   },
+   "name": "context_capabilities"
+  },
+  {
+   "annotations": {
+    "destructiveHint": true
+   },
+   "description": "Remove a context from a working set; a saved slice of it is deleted. Returns the working set. Example: {\"working_set\": \"ws_...\", \"context\": \"otp/eunit\"}.",
+   "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+     "context": {
+      "description": "A context name (e.g. \"otp/sasl\") or id (ctx_...).",
+      "examples": [
+       "otp/sasl"
+      ],
+      "type": "string"
+     },
+     "working_set": {
+      "description": "Working-set id (ws_...), from context_attach or context_working_sets.",
+      "type": "string"
+     }
+    },
+    "required": [
+     "working_set",
+     "context"
+    ],
+    "type": "object"
+   },
+   "name": "context_detach"
+  },
+  {
+   "annotations": {
+    "readOnlyHint": true
+   },
+   "description": "Find contexts about a topic: every word of q must appear in a card's name, title, description or topics (a plural matches its stem). A filter, not a ranking: other contexts may still hold answers. Returns {contexts, summary}. Example: {\"q\": \"release\"}.",
+   "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+     "q": {
+      "description": "Words to look for, e.g. \"release handling\".",
+      "examples": [
+       "release",
+       "testing"
+      ],
+      "type": "string"
+     }
+    },
+    "required": [
+     "q"
+    ],
+    "type": "object"
+   },
+   "name": "context_discover"
+  },
+  {
+   "description": "Import a published snapshot (a directory written by an export, holding manifest.json) into this node, read only, as a working-set member that answers offline for that generation. Omit working_set to create one. Example: {\"dir\": \"/srv/export_sasl_g1\"}.",
+   "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+     "dir": {
+      "description": "Path of the export directory on this node.",
+      "type": "string"
+     },
+     "name": {
+      "description": "Local database name for the copy. Default: derived from the context and generation.",
+      "type": "string"
+     },
+     "working_set": {
+      "description": "Working-set id (ws_...). Omit to create a new working set.",
+      "type": "string"
+     }
+    },
+    "required": [
+     "dir"
+    ],
+    "type": "object"
+   },
+   "name": "context_import"
+  },
+  {
+   "annotations": {
+    "readOnlyHint": true
+   },
+   "description": "Read one context card: where it lives (local db, or remote endpoint and db), title, topics, embedding. Example: {\"context\": \"otp/sasl\"}.",
+   "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+     "context": {
+      "description": "A context name (e.g. \"otp/sasl\") or id (ctx_...).",
+      "examples": [
+       "otp/sasl"
+      ],
+      "type": "string"
+     }
+    },
+    "required": [
+     "context"
+    ],
+    "type": "object"
+   },
+   "name": "context_inspect"
+  },
+  {
+   "annotations": {
+    "readOnlyHint": true
+   },
+   "description": "List the registered contexts: named datasets, each a database on this node or on a remote Barrel server. Returns {contexts: [card]}; pass a card's name (or id) to the other context tools. Example: {\"prefix\": \"otp/\"}.",
+   "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+     "prefix": {
+      "description": "Only names starting with this text, e.g. \"otp/\".",
+      "type": "string"
+     },
+     "unlisted": {
+      "default": false,
+      "description": "Include cards registered as unlisted.",
+      "type": "boolean"
+     }
+    },
+    "type": "object"
+   },
+   "name": "context_list"
+  },
+  {
+   "description": "Save the documents a query returns into a working set so they answer offline: one frozen slice per answering context, holding exactly those documents (by id). Omit working_set to create one. A context already in the working set must be detached first. Example: {\"from_query\": {\"query\": \"SELECT b.id FROM bm25_top_k('test', k => 5) AS b\", \"contexts\": [\"otp/eunit\"]}}.",
+   "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+     "from_query": {
+      "description": "The query whose rows (by id) are saved.",
+      "properties": {
+       "contexts": {
+        "description": "Context names or ids.",
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       "query": {
+        "description": "A BQL statement returning the id of each document.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "query",
+       "contexts"
+      ],
+      "type": "object"
+     },
+     "include": {
+      "description": "What to copy besides documents.",
+      "properties": {
+       "attachments": {
+        "default": false,
+        "description": "Not supported; true is refused.",
+        "type": "boolean"
+       },
+       "embeddings": {
+        "default": true,
+        "description": "Copy vectors (needed for vector search on the slice).",
+        "type": "boolean"
+       }
+      },
+      "type": "object"
+     },
+     "max_bytes": {
+      "description": "Refuse the slice when the fetched documents are larger than this.",
+      "minimum": 1,
+      "type": "integer"
+     },
+     "working_set": {
+      "description": "Working-set id (ws_...). Omit to create a new working set.",
+      "type": "string"
+     }
+    },
+    "required": [
+     "from_query"
+    ],
+    "type": "object"
+   },
+   "name": "context_materialize"
+  },
+  {
+   "annotations": {
+    "idempotentHint": true
+   },
+   "description": "Read or switch the node's offline mode. Offline, remote contexts are skipped and never contacted; local databases, slices and snapshots still answer. Omit offline to read the mode. Example: {\"offline\": true}.",
+   "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+     "offline": {
+      "description": "true to go offline, false to go back online.",
+      "type": "boolean"
+     }
+    },
+    "type": "object"
+   },
+   "name": "context_offline"
+  },
+  {
+   "annotations": {
+    "readOnlyHint": true
+   },
+   "description": "Run one BQL statement over several contexts (names or ids) or over a working set. Returns rows (or groups per context), one sources entry per context saying whether it answered and what its answer covers, and a summary: read it first. Row queries need LIMIT (<= 1000); add ORDER BY a selected field to merge rows in order. isError is true when no context answered. Example: {\"query\": \"SELECT id, lines FROM c ORDER BY lines DESC LIMIT 10\", \"contexts\": [\"otp/tools\", \"otp/sasl\"]}.",
+   "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+     "contexts": {
+      "description": "Context names or ids. Give this or working_set, not both.",
+      "examples": [
+       [
+        "otp/tools",
+        "otp/sasl"
+       ]
+      ],
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 8,
+      "minItems": 1,
+      "type": "array"
+     },
+     "deadline_ms": {
+      "default": 5000,
+      "description": "Deadline for the whole request, at most 60000.",
+      "minimum": 1,
+      "type": "integer"
+     },
+     "max_parallel": {
+      "default": 8,
+      "description": "Remote contexts queried at once, at most 16.",
+      "minimum": 1,
+      "type": "integer"
+     },
+     "merge": {
+      "description": "Leave unset for the default: ordered with ORDER BY, grouped otherwise, score for comparable vector_top_k.",
+      "enum": [
+       "ordered",
+       "grouped",
+       "interleave",
+       "score"
+      ],
+      "type": "string"
+     },
+     "offline": {
+      "description": "true: answer from local copies only, never contact a remote server. Default: the node's offline mode.",
+      "type": "boolean"
+     },
+     "params": {
+      "description": "Values for $name parameters in the statement.",
+      "type": "object"
+     },
+     "per_context_timeout_ms": {
+      "default": 4000,
+      "description": "Deadline per context, at most 60000.",
+      "minimum": 1,
+      "type": "integer"
+     },
+     "query": {
+      "description": "One BQL statement. Strings use single quotes. Shapes: see context_capabilities.",
+      "examples": [
+       "SELECT id, path FROM c ORDER BY path LIMIT 20",
+       "SELECT b.id, b._score FROM bm25_top_k('release upgrade', k => 5) AS b"
+      ],
+      "type": "string"
+     },
+     "working_set": {
+      "description": "A working-set id (ws_...) instead of contexts: queries its members, local copies first.",
+      "type": "string"
+     }
+    },
+    "required": [
+     "query"
+    ],
+    "type": "object"
+   },
+   "name": "context_query"
+  },
+  {
+   "annotations": {
+    "destructiveHint": true
+   },
+   "description": "Delete a working set and the slices it saved (imported snapshots stay). Example: {\"working_set\": \"ws_...\"}.",
+   "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+     "working_set": {
+      "description": "Working-set id (ws_...), from context_attach or context_working_sets.",
+      "type": "string"
+     }
+    },
+    "required": [
+     "working_set"
+    ],
+    "type": "object"
+   },
+   "name": "context_working_set_delete"
+  },
+  {
+   "annotations": {
+    "readOnlyHint": true
+   },
+   "description": "List the working sets on this node with their member names, or, given working_set, read one in full: each member's mode, membership (what its answers cover), answers_offline, budget, usage and a summary. Example: {} or {\"working_set\": \"ws_...\"}.",
+   "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+     "working_set": {
+      "description": "Working-set id (ws_...), from context_attach or context_working_sets.",
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "name": "context_working_sets"
+  },
+  {
+   "annotations": {
+    "idempotentHint": true
+   },
+   "description": "Create (or open) a database by name.",
+   "inputSchema": {
+    "properties": {
+     "db": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "db"
+    ],
+    "type": "object"
+   },
+   "name": "db_create"
+  },
+  {
+   "annotations": {
+    "readOnlyHint": true
+   },
+   "description": "Info about a database: document count, lineage, retention.",
+   "inputSchema": {
+    "properties": {
+     "db": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "db"
+    ],
+    "type": "object"
+   },
+   "name": "db_info"
+  },
+  {
+   "annotations": {
+    "readOnlyHint": true
+   },
+   "description": "List the databases currently open on this node (scoped to your grant).",
+   "inputSchema": {
+    "properties": {},
+    "type": "object"
+   },
+   "name": "db_list"
+  },
+  {
+   "annotations": {
+    "destructiveHint": true
+   },
+   "description": "Delete a document by id.",
+   "inputSchema": {
+    "properties": {
+     "db": {
+      "type": "string"
+     },
+     "id": {
+      "type": "string"
+     },
+     "session": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "db",
+     "id"
+    ],
+    "type": "object"
+   },
+   "name": "doc_delete"
+  },
+  {
+   "annotations": {
+    "readOnlyHint": true
+   },
+   "description": "Read a document by id.",
+   "inputSchema": {
+    "properties": {
+     "db": {
+      "type": "string"
+     },
+     "id": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "db",
+     "id"
+    ],
+    "type": "object"
+   },
+   "name": "doc_get"
+  },
+  {
+   "description": "Write a document (the doc object must carry its id). Optional session tags the write's provenance.",
+   "inputSchema": {
+    "properties": {
+     "db": {
+      "type": "string"
+     },
+     "doc": {
+      "type": "object"
+     },
+     "session": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "db",
+     "doc"
+    ],
+    "type": "object"
+   },
+   "name": "doc_put"
+  },
+  {
+   "description": "Accept a handoff by presenting its token: opens the shared space and creates a session in it (context is read in place).",
+   "inputSchema": {
+    "properties": {
+     "agent": {
+      "type": "string"
+     },
+     "token": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "token"
+    ],
+    "type": "object"
+   },
+   "name": "handoff_accept"
+  },
+  {
+   "description": "Complete a handoff (revokes its token by default).",
+   "inputSchema": {
+    "properties": {
+     "notes": {
+      "type": "string"
+     },
+     "result": {},
+     "revoke": {
+      "type": "boolean"
+     },
+     "token": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "token"
+    ],
+    "type": "object"
+   },
+   "name": "handoff_complete"
+  },
+  {
+   "description": "Hand work off: issues a capability for the space and returns its token once; whoever holds the token accepts.",
+   "inputSchema": {
+    "properties": {
+     "completed": {
+      "type": "array"
+     },
+     "context": {},
+     "expires_at": {
+      "type": "integer"
+     },
+     "from_agent": {
+      "type": "string"
+     },
+     "from_session": {
+      "type": "string"
+     },
+     "pending": {
+      "type": "array"
+     },
+     "rights": {
+      "type": "array"
+     },
+     "space": {
+      "type": "string"
+     },
+     "task_name": {
+      "type": "string"
+     },
+     "to_agent": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "space",
+     "task_name"
+    ],
+    "type": "object"
+   },
+   "name": "handoff_create"
+  },
+  {
+   "annotations": {
+    "readOnlyHint": true
+   },
+   "description": "Handoffs, filtered by space, status, to_agent, from_agent (capability callers see their own space only).",
+   "inputSchema": {
+    "properties": {
+     "from_agent": {
+      "type": "string"
+     },
+     "space": {
+      "type": "string"
+     },
+     "status": {
+      "type": "string"
+     },
+     "to_agent": {
+      "type": "string"
+     }
+    },
+    "type": "object"
+   },
+   "name": "handoff_list"
+  },
+  {
+   "annotations": {
+    "destructiveHint": true
+   },
+   "description": "Merge a branch back into its parent.",
+   "inputSchema": {
+    "properties": {
+     "db": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "db"
+    ],
+    "type": "object"
+   },
+   "name": "merge"
+  },
+  {
+   "annotations": {
+    "readOnlyHint": true
+   },
+   "description": "Exact substring or regex search over a database's documents via a trigram index. mode literal (default) or regex; each hit carries the document id and match spans.",
+   "inputSchema": {
+    "properties": {
+     "db": {
+      "type": "string"
+     },
+     "limit": {
+      "type": "integer"
+     },
+     "mode": {
+      "type": "string"
+     },
+     "query": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "db",
+     "query"
+    ],
+    "type": "object"
+   },
+   "name": "ngram_search"
+  },
+  {
+   "annotations": {
+    "readOnlyHint": true
+   },
+   "description": "Run a BQL query. Rows are bounded by max_rows (default 100, cap 1000); pass the returned continuation to page. SUBSCRIBE statements are rejected: use query_subscribe.",
+   "inputSchema": {
+    "properties": {
+     "continuation": {
+      "type": "string"
+     },
+     "db": {
+      "type": "string"
+     },
+     "max_rows": {
+      "type": "integer"
+     },
+     "params": {
+      "type": "object"
+     },
+     "query": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "db",
+     "query"
+    ],
+    "type": "object"
+   },
+   "name": "query"
+  },
+  {
+   "description": "Start a live query from a BQL SUBSCRIBE statement. Returns a resource URI: read it for the materialized rows, subscribe to it for update notifications.",
+   "inputSchema": {
+    "properties": {
+     "db": {
+      "type": "string"
+     },
+     "params": {
+      "type": "object"
+     },
+     "query": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "db",
+     "query"
+    ],
+    "type": "object"
+   },
+   "name": "query_subscribe"
+  },
+  {
+   "annotations": {
+    "idempotentHint": true
+   },
+   "description": "Stop a live query by sub id.",
+   "inputSchema": {
+    "properties": {
+     "sub": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "sub"
+    ],
+    "type": "object"
+   },
+   "name": "query_unsubscribe"
+  },
+  {
+   "annotations": {
+    "readOnlyHint": true
+   },
+   "description": "Search a database: mode bm25 or hybrid with a query string, mode vector with a query vector.",
+   "inputSchema": {
+    "properties": {
+     "db": {
+      "type": "string"
+     },
+     "k": {
+      "type": "integer"
+     },
+     "mode": {
+      "type": "string"
+     },
+     "query": {
+      "type": "string"
+     },
+     "vector": {
+      "type": "array"
+     }
+    },
+    "required": [
+     "db",
+     "mode"
+    ],
+    "type": "object"
+   },
+   "name": "search"
+  },
+  {
+   "description": "Append a message to a session's history.",
+   "inputSchema": {
+    "properties": {
+     "content": {},
+     "metadata": {
+      "type": "object"
+     },
+     "role": {
+      "type": "string"
+     },
+     "session": {
+      "type": "string"
+     },
+     "space": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "space",
+     "session",
+     "role",
+     "content"
+    ],
+    "type": "object"
+   },
+   "name": "session_add_message"
+  },
+  {
+   "description": "Create a working session in a space (sliding TTL).",
+   "inputSchema": {
+    "properties": {
+     "agent": {
+      "type": "string"
+     },
+     "data": {
+      "type": "object"
+     },
+     "space": {
+      "type": "string"
+     },
+     "ttl": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "space"
+    ],
+    "type": "object"
+   },
+   "name": "session_create"
+  },
+  {
+   "annotations": {
+    "readOnlyHint": true
+   },
+   "description": "A session's messages in chronological order (since/before unix ms, limit, order asc|desc).",
+   "inputSchema": {
+    "properties": {
+     "before": {
+      "type": "integer"
+     },
+     "limit": {
+      "type": "integer"
+     },
+     "order": {
+      "type": "string"
+     },
+     "session": {
+      "type": "string"
+     },
+     "since": {
+      "type": "integer"
+     },
+     "space": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "space",
+     "session"
+    ],
+    "type": "object"
+   },
+   "name": "session_get_messages"
+  },
+  {
+   "description": "Slide a session's TTL.",
+   "inputSchema": {
+    "properties": {
+     "session": {
+      "type": "string"
+     },
+     "space": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "space",
+     "session"
+    ],
+    "type": "object"
+   },
+   "name": "session_touch"
+  },
+  {
+   "description": "Create a space: a shared context database agents reach with capability tokens. Management only.",
+   "inputSchema": {
+    "properties": {
+     "label": {
+      "type": "string"
+     },
+     "owner": {
+      "type": "string"
+     },
+     "purpose": {
+      "type": "string"
+     },
+     "session_ttl": {
+      "type": "integer"
+     },
+     "vectordb": {
+      "type": "object"
+     }
+    },
+    "type": "object"
+   },
+   "name": "space_create"
+  },
+  {
+   "description": "Issue a capability token for a space (rights: read, write, admin). The token is shown once.",
+   "inputSchema": {
+    "properties": {
+     "expires_at": {
+      "type": "integer"
+     },
+     "label": {
+      "type": "string"
+     },
+     "rights": {
+      "type": "array"
+     },
+     "space": {
+      "type": "string"
+     },
+     "subject": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "space"
+    ],
+    "type": "object"
+   },
+   "name": "space_grant"
+  },
+  {
+   "annotations": {
+    "readOnlyHint": true
+   },
+   "description": "The registry document of a space.",
+   "inputSchema": {
+    "properties": {
+     "space": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "space"
+    ],
+    "type": "object"
+   },
+   "name": "space_info"
+  },
+  {
+   "annotations": {
+    "destructiveHint": true,
+    "idempotentHint": true
+   },
+   "description": "Revoke a grant of a space by token id.",
+   "inputSchema": {
+    "properties": {
+     "space": {
+      "type": "string"
+     },
+     "token_id": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "space",
+     "token_id"
+    ],
+    "type": "object"
+   },
+   "name": "space_revoke"
+  }
+ ]
+}
