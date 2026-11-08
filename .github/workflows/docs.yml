@@ -23,7 +23,7 @@ jobs:
         with:
           repository: barrel-db/barrel
           path: repos/barrel
-          token: ${{ secrets.DOCS_TOKEN }}
+          token: ${{ secrets.DOCS_TOKEN || github.token }}
 
       - name: Install build tools
         # barrel_vectordb builds a NIF through CMake.
@@ -80,7 +80,7 @@ jobs:
         with:
           repository: barrel-db/barrel
           path: repos/barrel
-          token: ${{ secrets.DOCS_TOKEN }}
+          token: ${{ secrets.DOCS_TOKEN || github.token }}
 
       - name: Install build tools
         run: |
