@@ -50,7 +50,7 @@ const themes = { light: 'github-light', dark: 'github-dark' };
   <div class="panels">
     {tabs.map((tab, i) => (
       <div class="panel" data-i={i}>
-        <Code code={tab.code} lang={tab.lang ?? 'erlang'} themes={themes} defaultColor={false} />
+        <Code code={tab.code} lang={(tab.lang ?? 'erlang') as any} themes={themes as any} defaultColor={false} />
       </div>
     ))}
   </div>

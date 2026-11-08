@@ -1,0 +1,40 @@
+---
+// Stamps data-theme on <html> before first paint, so there is no flash of the
+// wrong theme. Must live in <head>, before any styled markup.
+//
+// It also mirrors the choice into ex_doc's own settings key. The library
+// reference at /docs/lib/* is ex_doc output on this same origin, so writing
+// that key means a reader who picks light here stays in light when they click
+// through to the API reference.
+---
+
+<script is:inline>
+  (function () {
+    var stored = null;
+    try {
+      stored = localStorage.getItem('theme');
+    } catch (e) {
+      /* private mode: fall through to the system preference */
+    }
+
+    var theme = stored === 'light' || stored === 'dark'
+      ? stored
+      : (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+
+    document.documentElement.dataset.theme = theme;
+
+    try {
+      var settings = {};
+      try {
+        settings = JSON.parse(localStorage.getItem('ex_doc:settings')) || {};
+      } catch (e) {
+        settings = {};
+      }
+      settings.theme = theme;
+      localStorage.setItem('ex_doc:settings', JSON.stringify(settings));
+      localStorage.setItem('night-mode', theme === 'dark' ? 'true' : 'false');
+    } catch (e) {
+      /* nothing to sync without storage */
+    }
+  })();
+</script>
