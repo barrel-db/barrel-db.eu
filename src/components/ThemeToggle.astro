@@ -1,9 +1,11 @@
 ---
+import { langOf, t } from '../i18n';
+const s = t(langOf(Astro.url));
 // Flips data-theme and remembers it. Mirrors the choice into ex_doc's settings so the
 // library reference under /docs/lib keeps the same theme.
 ---
 
-<button type="button" class="theme-toggle" data-theme-toggle aria-label="Switch between light and dark theme">
+<button type="button" class="theme-toggle" data-theme-toggle aria-label={s.switchTheme}>
   <svg class="icon-moon" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"></path></svg>
   <svg class="icon-sun" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path stroke-linecap="round" d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>
 </button>

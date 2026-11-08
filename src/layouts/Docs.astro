@@ -1,8 +1,8 @@
 ---
 import Base from './Base.astro';
-import { docsNav, docsOrder, sectionOf } from '../data/docs-nav';
-import { SITE_REPO, GITHUB } from '../data/site';
-import { statusLabel, type Status } from '../data/site';
+import { SITE_REPO, GITHUB, type Status } from '../data/site';
+import { navFor } from '../data/i18n';
+import { langOf, localize, counterpart, t } from '../i18n';
 
 interface Heading { depth: number; slug: string; text: string; }
 interface Props {
@@ -15,26 +15,31 @@ interface Props {
   commit?: string;
   updated?: string;
   status?: Status;
-  /** File path of a site page, relative to src/content/docs. */
+  /** Path of the page's file in the site repository, for "Edit this page". */
   file?: string;
 }
 
 const { title, description, slug, headings = [], source, commit, updated, status, file } = Astro.props;
+const lang = langOf(Astro.url);
+const s = t(lang);
+const { docsNav, docsOrder, sectionOf } = navFor(lang);
+const D = (sl: string) => localize(`/docs/${sl}`, lang);
+const isFr = lang === 'fr';
 const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
 const section = sectionOf(slug);
 const idx = docsOrder.findIndex((i) => i.slug === slug);
 const prev = idx > 0 ? docsOrder[idx - 1] : undefined;
 const next = idx >= 0 && idx < docsOrder.length - 1 ? docsOrder[idx + 1] : undefined;
-const editUrl = source
-  ? `${GITHUB}/edit/main/${source}`
-  : file ? `${SITE_REPO}/edit/main/src/content/docs/${file}` : undefined;
+const editUrl = file
+  ? `${SITE_REPO}/edit/main/${file}`
+  : source ? `${GITHUB}/edit/main/${source}` : undefined;
 ---
 
-<Base title={title} description={description} markdown={slug ? `/docs/${slug}.md` : undefined}>
+<Base title={title} description={description} markdown={slug ? `${D(slug)}.md` : undefined}>
   <div class="dk">
-    <nav class="dk-side" aria-label="Documentation">
+    <nav class="dk-side" aria-label={s.documentation}>
       <details class="dk-mobile-nav">
-        <summary>Browse the docs</summary>
+        <summary>{s.browseDocs}</summary>
         <div class="dk-tree" set:html="" />
       </details>
       <div class="dk-tree">
@@ -45,7 +50,7 @@ const editUrl = source
               <summary class:list={{ 'is-open': open }}>{s.title}</summary>
               <ul>
                 {s.items.map((i) => (
-                  <li><a href={`/docs/${i.slug}`} aria-current={i.slug === slug ? 'page' : undefined}>{i.label}</a></li>
+                  <li><a href={D(i.slug)} aria-current={i.slug === slug ? 'page' : undefined}>{i.label}</a></li>
                 ))}
               </ul>
             </details>
@@ -56,31 +61,33 @@ const editUrl = source
 
     <article class="dk-main">
       <nav aria-label="Breadcrumb" class="dk-crumbs">
-        <a href="/docs">Docs</a>{section && <> / <span>{section.title}</span></>}
+        <a href={localize('/docs', lang)}>{s.docs}</a>{section && <> / <span>{section.title}</span></>}
       </nav>
       <h1 class="dk-title">{title}</h1>
-      {status && status !== 'today' && <p class={`mark mark--${status} dk-status`}>{statusLabel[status]}</p>}
+      {status && status !== 'today' && <p class={`mark mark--${status} dk-status`}>{s.status[status]}</p>}
       <div class="dk-prose" data-pagefind-meta={`title:${title}`}>
         <slot />
       </div>
 
-      <nav class="dk-pager" aria-label="Previous and next pages">
-        {prev ? <a href={`/docs/${prev.slug}`}><span class="small muted">Previous</span>{prev.label}</a> : <span />}
-        {next && <a href={`/docs/${next.slug}`} class="dk-next"><span class="small muted">Next</span>{next.label}</a>}
+      <nav class="dk-pager" aria-label={`${s.previous} / ${s.next}`}>
+        {prev ? <a href={D(prev.slug)}><span class="small muted">{s.previous}</span>{prev.label}</a> : <span />}
+        {next && <a href={D(next.slug)} class="dk-next"><span class="small muted">{s.next}</span>{next.label}</a>}
       </nav>
       <p class="dk-meta" data-pagefind-ignore>
-        {source
-          ? <span>From <a href={`${GITHUB}/blob/main/${source}`}>{source}</a> in the barrel repository{commit && <> at {commit}</>}{updated && <>, updated {updated}</>}</span>
-          : <span>Written for the site</span>}
-        {editUrl && <a href={editUrl}>Edit this page</a>}
-        {slug && <a href={`/docs/${slug}.md`}>View as Markdown</a>}
+        {isFr
+          ? <span>{s.translatedFrom}: <a href={counterpart(Astro.url.pathname)} hreflang="en">{counterpart(Astro.url.pathname)}</a>{source && <> ({source})</>}</span>
+          : source
+            ? <span>From <a href={`${GITHUB}/blob/main/${source}`}>{source}</a> in the barrel repository{commit && <> at {commit}</>}{updated && <>, updated {updated}</>}</span>
+            : <span>{s.writtenForSite}</span>}
+        {editUrl && <a href={editUrl}>{s.editPage}</a>}
+        {slug && <a href={`${D(slug)}.md`}>{s.viewMarkdown}</a>}
       </p>
     </article>
 
-    <aside class="dk-toc" aria-label="On this page" data-pagefind-ignore>
+    <aside class="dk-toc" aria-label={s.onThisPage} data-pagefind-ignore>
       {toc.length > 0 && (
         <div class="dk-toc-in">
-          <p class="dk-toc-h">On this page</p>
+          <p class="dk-toc-h">{s.onThisPage}</p>
           {toc.map((h) => <a href={`#${h.slug}`} class:list={[`d${h.depth}`]} data-toc>{h.text}</a>)}
         </div>
       )}

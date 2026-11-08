@@ -13,16 +13,17 @@
     "check:site": "node scripts/check-site.mjs",
     "verify:examples": "bash scripts/verify-examples.sh",
     "astro": "astro",
-    "test": "node --experimental-strip-types --test tests/*.test.mjs"
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "i18n": "node scripts/i18n.mjs",
+    "i18n:status": "node scripts/i18n.mjs status",
+    "i18n:stamp": "node scripts/i18n.mjs stamp"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.3.13",
     "@astrojs/sitemap": "^3.7.4",
     "@fontsource-variable/archivo": "^5.3.0",
     "@fontsource/fragment-mono": "^5.3.0",
-    "@tailwindcss/vite": "^4.1.18",
-    "astro": "^5.17.1",
-    "tailwindcss": "^4.1.18"
+    "astro": "^5.17.1"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",

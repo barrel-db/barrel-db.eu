@@ -11,6 +11,7 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join, dirname, resolve, relative, posix } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -55,7 +56,7 @@ function frontmatter(md) {
   const h = lines.findIndex((l) => /^#\s+/.test(l));
   const title = h >= 0 ? lines[h].replace(/^#\s+/, '').trim() : 'Untitled';
   const body = h >= 0 ? [...lines.slice(0, h), ...lines.slice(h + 1)].join('\n') : md;
-  const para = body.split(/\n\s*\n/).map((p) => p.trim()).find((p) => p && !/^[#`|>-]/.test(p)) || '';
+  const para = body.split(/\n\s*\n/).map((p) => p.trim()).find((p) => p && !/^(#|```|\||>|- |\* )/.test(p)) || '';
   const description = para.replace(/\s+/g, ' ').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/`/g, '').slice(0, 300);
   return { title, description, body };
 }
@@ -71,6 +72,8 @@ for (const [src, slug] of SOURCES) {
   const dest = join(out, `${slug}.md`);
   mkdirSync(dirname(dest), { recursive: true });
   const updated = statSync(file).mtime.toISOString().slice(0, 10);
-  writeFileSync(dest, `---\ntitle: ${q(title)}\ndescription: ${q(description)}\nsource: ${q(src)}\ncommit: ${q(commit)}\nupdated: ${q(updated)}\n---\n${body.replace(/^\n+/, '\n')}`);
+  // Hash of the upstream file: French translations record it and CI compares.
+  const sourceHash = createHash('sha256').update(raw).digest('hex').slice(0, 16);
+  writeFileSync(dest, `---\ntitle: ${q(title)}\ndescription: ${q(description)}\nsource: ${q(src)}\nsource_hash: ${q(sourceHash)}\ncommit: ${q(commit)}\nupdated: ${q(updated)}\n---\n${body.replace(/^\n+/, '\n')}`);
 }
 console.log(`synced ${SOURCES.length} files from ${relative(root, barrel) || barrel} at ${commit}`);

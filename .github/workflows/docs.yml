@@ -45,6 +45,12 @@ jobs:
       - name: Type check
         run: npm run check
 
+      # Every English page has a French translation made from its current version.
+      # A change to an English page or an upstream guide fails here until the French
+      # file is updated and stamped (npm run i18n:stamp <file>).
+      - name: Translations up to date
+        run: npm run i18n
+
       - name: Unit tests (demo logic)
         run: npm test
 

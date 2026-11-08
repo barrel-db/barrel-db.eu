@@ -1,46 +1,53 @@
 ---
-import { capabilities, components, componentGroups, mainNav, GITHUB } from '../data/site';
 import ThemeToggle from './ThemeToggle.astro';
+import { langOf, localize, counterpart, t } from '../i18n';
+import { siteFor } from '../data/i18n';
 
 const path = Astro.url.pathname;
-const active = (href: string) => path === href || path.startsWith(href + '/');
+const lang = langOf(Astro.url);
+const s = t(lang);
+const L = (href: string) => localize(href, lang);
+const { capabilities, components, componentGroups, mainNav, GITHUB } = siteFor(lang);
+const active = (href: string) => { const h = L(href); return path === h || path.startsWith(h + '/'); };
 const groups = componentGroups.map((g) => ({ title: g, items: components.filter((c) => c.group === g) }));
+const other = counterpart(path);
 ---
 
 <header class="hdr">
   <div class="wrap hdr-row">
-    <a href="/" class="brand" aria-label="Barrel home">
+    <a href={L('/')} class="brand" aria-label={s.home}>
       <img src="/logo-symbol-coral.svg" alt="" width="28" height="30" />
       <span>Barrel</span>
     </a>
 
-    <nav class="hdr-nav" aria-label="Main">
+    <nav class="hdr-nav" aria-label={lang === 'fr' ? 'Principal' : 'Main'}>
       <button type="button" class="hdr-link hdr-product" aria-expanded="false" aria-controls="product-menu" data-product-toggle>
-        Product
+        {s.product}
       </button>
       {mainNav.map((n) => (
-        <a href={n.href} class:list={['hdr-link', { 'is-active': active(n.href) }]} aria-current={active(n.href) ? 'page' : undefined}>{n.label}</a>
+        <a href={L(n.href)} class:list={['hdr-link', { 'is-active': active(n.href) }]} aria-current={active(n.href) ? 'page' : undefined}>{n.label}</a>
       ))}
     </nav>
 
     <div class="hdr-tools">
-      <button type="button" class="search-btn" data-open-search aria-label="Search the site">
+      <button type="button" class="search-btn" data-open-search aria-label={s.searchLabel}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
-        <span class="search-label">Search</span>
+        <span class="search-label">{s.search}</span>
         <kbd>⌘K</kbd>
       </button>
       <ThemeToggle />
+      <a href={other} class="lang" hreflang={lang === 'fr' ? 'en' : 'fr'} lang={lang === 'fr' ? 'en' : 'fr'} aria-label={s.otherLang}>{s.otherLangShort}</a>
       <a href={GITHUB} class="gh">GitHub</a>
-      <button type="button" class="menu-btn" aria-expanded="false" aria-controls="mobile-menu" data-mobile-toggle>Menu</button>
+      <button type="button" class="menu-btn" aria-expanded="false" aria-controls="mobile-menu" data-mobile-toggle>{s.menu}</button>
     </div>
   </div>
 
   <div id="product-menu" class="mega" hidden>
     <div class="wrap mega-grid">
       <div class="mega-caps">
-        <p class="mega-title">What it does</p>
+        <p class="mega-title">{s.whatItDoes}</p>
         {capabilities.map((c) => (
-          <a href={`/product/${c.slug}`} class="mega-cap">
+          <a href={L(`/product/${c.slug}`)} class="mega-cap">
             <span class="mega-cap-name">{c.name}</span>
             <span class="mega-cap-body">{c.body}</span>
           </a>
@@ -48,15 +55,15 @@ const groups = componentGroups.map((g) => ({ title: g, items: components.filter(
       </div>
       <div class="mega-libs">
         <div class="mega-libs-head">
-          <p class="mega-title">The libraries behind it</p>
-          <p class="mega-legend"><span class="mark mark--today">works today</span><span class="mark mark--optional">optional, needs setup</span></p>
+          <p class="mega-title">{s.librariesBehind}</p>
+          <p class="mega-legend"><span class="mark mark--today">{s.worksToday}</span><span class="mark mark--optional">{s.optionalSetup}</span></p>
         </div>
         <div class="mega-groups">
           {groups.map((g) => (
             <div>
               <p class="mega-group">{g.title}</p>
               {g.items.map((c) => (
-                <a href={`/product/${c.slug}`} class="mega-lib">
+                <a href={L(`/product/${c.slug}`)} class="mega-lib">
                   <span class={`mark mark--${c.status}`}><code>{c.name}</code></span>
                   <span class="mega-lib-v">{c.version}</span>
                   <span class="mega-lib-body">{c.body}</span>
@@ -65,18 +72,19 @@ const groups = componentGroups.map((g) => ({ title: g, items: components.filter(
             </div>
           ))}
         </div>
-        <p class="mega-foot"><a href="/use-cases">See all use cases</a><a href="/docs/architecture/overview">How the pieces fit</a><a href="/product/status">Status of every feature</a></p>
+        <p class="mega-foot"><a href={L('/use-cases')}>{s.seeUseCases}</a><a href={L('/docs/architecture/overview')}>{s.howPiecesFit}</a><a href={L('/product/status')}>{s.statusAll}</a></p>
       </div>
     </div>
   </div>
 
   <div id="mobile-menu" class="mobile" hidden>
     <div class="wrap">
-      <p class="mega-title">Product</p>
-      {capabilities.map((c) => <a href={`/product/${c.slug}`}>{c.name}</a>)}
-      <a href="/product">All libraries</a>
-      <p class="mega-title">Site</p>
-      {mainNav.map((n) => <a href={n.href}>{n.label}</a>)}
+      <p class="mega-title">{s.product}</p>
+      {capabilities.map((c) => <a href={L(`/product/${c.slug}`)}>{c.name}</a>)}
+      <a href={L('/product')}>{s.allLibraries}</a>
+      <p class="mega-title">{s.site}</p>
+      {mainNav.map((n) => <a href={L(n.href)}>{n.label}</a>)}
+      <a href={other} hreflang={lang === 'fr' ? 'en' : 'fr'}>{s.otherLang}</a>
       <a href={GITHUB}>GitHub</a>
     </div>
   </div>
@@ -93,6 +101,8 @@ const groups = componentGroups.map((g) => ({ title: g, items: components.filter(
   .hdr-tools { display: flex; align-items: center; gap: 10px; }
   .search-btn { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--card); color: var(--ink-2); font: inherit; font-size: 15px; cursor: pointer; }
   .search-btn kbd { font-size: 12px; border: 1px solid var(--rule); border-radius: 4px; padding: 0 5px; }
+  .lang { height: 40px; min-width: 40px; display: flex; align-items: center; justify-content: center; padding: 0 10px; border: 1px solid var(--rule); border-radius: var(--radius); text-decoration: none; color: var(--ink-2); font-size: 14px; font-weight: 600; }
+  .lang:hover { color: var(--ink); }
   .gh { height: 40px; display: flex; align-items: center; padding: 0 14px; border: 1px solid var(--rule); border-radius: var(--radius); text-decoration: none; color: var(--ink); font-size: 15px; }
   .menu-btn { display: none; height: 40px; padding: 0 14px; border: 1px solid var(--rule); border-radius: var(--radius); background: transparent; color: var(--ink); font: inherit; font-size: 15px; }
 

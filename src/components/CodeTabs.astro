@@ -1,5 +1,7 @@
 ---
 import { Code } from 'astro:components';
+import { langOf, t } from '../i18n';
+const s = t(langOf(Astro.url));
 
 interface Tab {
   /** Shown on the tab, and the key remembered across pages ("Erlang", "REST", "TypeScript"). */
@@ -19,12 +21,12 @@ const id = `ct-${Math.random().toString(36).slice(2, 9)}`;
 
 <div class="ct" data-tabs>
   <div class="ct-bar">
-    <div role="tablist" aria-label="Language">
+    <div role="tablist" aria-label={s.language}>
       {tabs.map((t, i) => (
         <button type="button" role="tab" id={`${id}-t${i}`} aria-controls={`${id}-p${i}`} aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? 0 : -1} data-key={t.label}>{t.label}</button>
       ))}
     </div>
-    <button type="button" class="ct-copy" data-copy>Copy</button>
+    <button type="button" class="ct-copy" data-copy data-copied={s.copied} data-select={s.selectCopy}>{s.copy}</button>
   </div>
   {tabs.map((t, i) => (
     <div role="tabpanel" id={`${id}-p${i}`} aria-labelledby={`${id}-t${i}`} data-key={t.label} hidden={i !== 0}>

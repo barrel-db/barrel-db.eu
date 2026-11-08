@@ -17,7 +17,16 @@ export function isSynced(e: DocEntry): e is CollectionEntry<'synced'> {
   return e.collection === 'synced';
 }
 
-/** File name of a site page relative to src/content/docs, for "Edit this page". */
-export function siteFile(e: DocEntry): string | undefined {
-  return e.collection === 'docs' ? (e as any).filePath?.replace(/^src\/content\/docs\//, '') : undefined;
+/** Path of a site page in the site repository, for "Edit this page". */
+export function siteFile(e: { collection: string; filePath?: string }): string | undefined {
+  return e.collection === 'synced' ? undefined : e.filePath;
+}
+
+export type FrEntry = CollectionEntry<'docsFr'> | CollectionEntry<'guidesFr'>;
+
+/** French docs: translated site pages and translated guides, by slug. */
+export async function allDocsFr(): Promise<FrEntry[]> {
+  const site = await getCollection('docsFr');
+  const guides = await getCollection('guidesFr');
+  return [...site, ...guides];
 }

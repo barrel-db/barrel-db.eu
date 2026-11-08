@@ -4,6 +4,7 @@ import ThemeScript from '../components/ThemeScript.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import CommandMenu from '../components/CommandMenu.astro';
+import { langOf, counterpart, t } from '../i18n';
 
 interface Props {
   title: string;
@@ -14,20 +15,24 @@ interface Props {
   noindex?: boolean;
 }
 
+const lang = langOf(Astro.url);
+const s = t(lang);
 const {
   title,
-  description = 'Barrel is a database for agents: documents, files and vectors under one id, with search, versions, branches, active-active replication and capability-scoped access. Embedded in Erlang, served over REST and MCP, or in the browser.',
+  description = s.defaultDescription,
   markdown,
   noindex = false,
 } = Astro.props;
 
 const site = Astro.site ?? new URL('https://barrel-db.eu');
 const canonical = new URL(Astro.url.pathname, site).toString();
-const fullTitle = title === 'Barrel' ? 'Barrel: a database for agents' : `${title} | Barrel`;
+const fullTitle = title === 'Barrel' ? s.titleHome : `${title} | Barrel`;
+const enPath = lang === 'fr' ? counterpart(Astro.url.pathname) : Astro.url.pathname;
+const frPath = lang === 'fr' ? Astro.url.pathname : counterpart(Astro.url.pathname);
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={lang}>
   <head>
     <ThemeScript />
     <meta charset="utf-8" />
@@ -35,6 +40,10 @@ const fullTitle = title === 'Barrel' ? 'Barrel: a database for agents' : `${titl
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="en" href={new URL(enPath, site).toString()} />
+    <link rel="alternate" hreflang="fr" href={new URL(frPath, site).toString()} />
+    <link rel="alternate" hreflang="x-default" href={new URL(enPath, site).toString()} />
+    <meta property="og:locale" content={lang === 'fr' ? 'fr_FR' : 'en_US'} />
     <link rel="icon" type="image/svg+xml" href="/logo-symbol-coral.svg" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={fullTitle} />
@@ -48,7 +57,7 @@ const fullTitle = title === 'Barrel' ? 'Barrel: a database for agents' : `${titl
     <slot name="head" />
   </head>
   <body>
-    <a class="skip-link" href="#main">Skip to content</a>
+    <a class="skip-link" href="#main">{s.skip}</a>
     <Header />
     <main id="main" data-pagefind-body={noindex ? undefined : ''}>
       <slot />
@@ -63,9 +72,10 @@ const fullTitle = title === 'Barrel' ? 'Barrel: a database for agents' : `${titl
         const host = b.closest('.cb, .ct');
         const pre = host?.querySelector('[role=tabpanel]:not([hidden]) pre') ?? host?.querySelector('pre');
         if (!pre) return;
-        try { await navigator.clipboard.writeText(pre.textContent || ''); b.textContent = 'Copied'; }
-        catch { b.textContent = 'Select and copy'; }
-        setTimeout(() => { b.textContent = 'Copy'; }, 1600);
+        const label = b.textContent;
+        try { await navigator.clipboard.writeText(pre.textContent || ''); b.textContent = b.dataset.copied || 'Copied'; }
+        catch { b.textContent = b.dataset.select || 'Select and copy'; }
+        setTimeout(() => { b.textContent = label; }, 1600);
       });
     </script>
   </body>

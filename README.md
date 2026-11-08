@@ -29,7 +29,8 @@ npm run preview
 
 ```bash
 npm run check         # astro check: types and templates
-npm run check:site    # after a build: pages, versions, links, house style
+npm run check:site    # after a build: pages in both languages, versions, links, house style
+npm run i18n          # every French file matches its current English source
 npm run verify:examples   # run every example against ../barrel
 ```
 
@@ -46,7 +47,7 @@ CI (`.github/workflows/docs.yml`) runs all three on every pull request.
 | Examples | `examples/<slug>/` | Runnable projects with `expected.txt`; their pages import the files, so the site shows the tested code. |
 | MCP tool reference | `src/data/mcp-tools.json` | Regenerate with `scripts/update-mcp-tools.mjs` against a running server. |
 | Library API reference | ex_doc output in `public/docs/lib/` | Built by `scripts/build-docs.sh`. |
-| French pages | `src/pages/fr`, `src/content/docs-fr`, `src/legacy/` | The previous site, kept until translated. |
+| French | `src/pages/fr`, `src/content/fr`, `src/data/fr`, `examples/*/README.fr.md` | Each file names its English source and hash; `npm run i18n` checks they match. See AGENTS.md. |
 
 Agents and tools can read every docs page as Markdown at `/docs/<page>.md`,
 and the whole set through `/llms.txt` and `/llms-full.txt`.

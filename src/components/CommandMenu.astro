@@ -1,18 +1,21 @@
 ---
+import { langOf, t } from '../i18n';
+const s = t(langOf(Astro.url));
+const strings = { noIndex: s.cmdNoIndex, nothing: s.cmdNothing('{q}'), groups: s.cmdGroups };
 // Site-wide search in a dialog: ⌘K / Ctrl+K or "/" opens it. Results come from the
 // Pagefind index built after `astro build`; it is loaded only when the dialog opens.
 ---
 
-<dialog class="cmd" aria-label="Search the site" data-cmd>
+<dialog class="cmd" aria-label={s.searchLabel} data-cmd data-strings={JSON.stringify(strings)}>
   <div class="cmd-box">
     <label class="cmd-input">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
-      <span class="visually-hidden">Search</span>
-      <input type="search" placeholder="Search docs, API, MCP tools, examples" autocomplete="off" spellcheck="false" data-cmd-q role="combobox" aria-expanded="true" aria-controls="cmd-results" aria-autocomplete="list" />
+      <span class="visually-hidden">{s.search}</span>
+      <input type="search" placeholder={s.cmdPlaceholder} autocomplete="off" spellcheck="false" data-cmd-q role="combobox" aria-expanded="true" aria-controls="cmd-results" aria-autocomplete="list" />
       <kbd>esc</kbd>
     </label>
     <div id="cmd-results" class="cmd-results" role="listbox" data-cmd-results></div>
-    <p class="cmd-foot"><span>Up and down to move</span><span>Enter to open</span></p>
+    <p class="cmd-foot"><span>{s.cmdMove}</span><span>{s.cmdOpen}</span></p>
   </div>
 </dialog>
 
@@ -42,14 +45,18 @@
   const box = document.querySelector<HTMLDivElement>('[data-cmd-results]')!;
   let sel = 0;
   let seq = 0;
+  const S = JSON.parse(dlg.dataset.strings || '{}');
+  const G = S.groups;
 
-  const groupOf = (url: string) =>
-    url.startsWith('/docs/reference') ? 'Reference'
-    : url.startsWith('/docs/lib') ? 'Library API'
-    : url.startsWith('/docs') ? 'Guides'
-    : url.startsWith('/product') ? 'Product'
-    : url.startsWith('/use-cases') ? 'Use cases'
-    : url.startsWith('/examples') ? 'Examples' : 'Site';
+  const groupOf = (u: string) => {
+    const url = u.replace(/^\/fr(?=\/)/, '');
+    return url.startsWith('/docs/reference') ? G.reference
+      : url.startsWith('/docs/lib') ? G.lib
+      : url.startsWith('/docs') ? G.guides
+      : url.startsWith('/product') ? G.product
+      : url.startsWith('/use-cases') ? G.useCases
+      : url.startsWith('/examples') ? G.examples : G.site;
+  };
 
   async function load() {
     if (pf) return pf;
@@ -68,14 +75,14 @@
     if (pf === false) {
       const p = document.createElement('p');
       p.className = 'cmd-empty';
-      p.textContent = 'The search index is created by npm run build. Run a build, then npm run preview.';
+      p.textContent = S.noIndex;
       box.append(p);
       return;
     }
     if (term && hits.length === 0) {
       const p = document.createElement('p');
       p.className = 'cmd-empty';
-      p.textContent = `Nothing matches "${term}". Try a function name like branch, or a tool name like handoff_create.`;
+      p.textContent = S.nothing.replace('{q}', term);
       box.append(p);
       return;
     }

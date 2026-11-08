@@ -1,5 +1,7 @@
 ---
 import { Code } from 'astro:components';
+import { langOf, t } from '../i18n';
+const s = t(langOf(Astro.url));
 
 interface Props {
   code: string;
@@ -18,7 +20,7 @@ const themes = { light: 'github-light', dark: 'github-dark' } as const;
   {(label || !output) && (
     <div class="cb-bar">
       <span>{label}</span>
-      <button type="button" class="cb-copy" data-copy>Copy</button>
+      <button type="button" class="cb-copy" data-copy data-copied={s.copied} data-select={s.selectCopy}>{s.copy}</button>
     </div>
   )}
   {output

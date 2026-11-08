@@ -1,7 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 
-import tailwindcss from '@tailwindcss/vite';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 
@@ -33,9 +32,7 @@ function devDirectoryIndex() {
 // https://astro.build/config
 export default defineConfig({
   site: 'https://barrel-db.eu',
-  // Tailwind is only used by the legacy French pages under src/legacy; the new site
-  // uses plain CSS from src/styles/site.css.
-  integrations: [mdx(), sitemap({ filter: (p) => !p.includes('/fr/') })],
+  integrations: [mdx(), sitemap({ i18n: { defaultLocale: 'en', locales: { en: 'en', fr: 'fr' } } })],
   markdown: {
     // Keep text as written: smart dashes turn "--" in prose and flags into em dashes.
     smartypants: false,
@@ -49,6 +46,6 @@ export default defineConfig({
     },
   },
   vite: {
-    plugins: /** @type {any} */ ([tailwindcss(), devDirectoryIndex()])
+    plugins: /** @type {any} */ ([devDirectoryIndex()])
   }
 });

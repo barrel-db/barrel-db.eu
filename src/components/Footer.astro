@@ -1,32 +1,37 @@
 ---
-import { GITHUB, capabilities } from '../data/site';
+import { langOf, localize, t } from '../i18n';
+import { siteFor } from '../data/i18n';
+const lang = langOf(Astro.url);
+const s = t(lang);
+const L = (h: string) => localize(h, lang);
+const { GITHUB, capabilities } = siteFor(lang);
 ---
 
 <footer class="ftr">
   <div class="wrap ftr-grid">
     <div class="ftr-about">
-      <a href="/" class="ftr-brand"><img src="/logo-symbol-coral.svg" alt="" width="24" height="26" /> Barrel</a>
-      <p>Open source under the Apache 2.0 license. Built by Enki Bridge in Europe.</p>
+      <a href={L('/')} class="ftr-brand"><img src="/logo-symbol-coral.svg" alt="" width="24" height="26" /> Barrel</a>
+      <p>{s.footerAbout}</p>
     </div>
     <div>
-      <p class="ftr-h">Product</p>
-      {capabilities.map((c) => <a href={`/product/${c.slug}`}>{c.name}</a>)}
-      <a href="/product">All libraries</a>
+      <p class="ftr-h">{s.product}</p>
+      {capabilities.map((c) => <a href={L(`/product/${c.slug}`)}>{c.name}</a>)}
+      <a href={L('/product')}>{s.allLibraries}</a>
     </div>
     <div>
-      <p class="ftr-h">Build</p>
-      <a href="/docs">Documentation</a>
-      <a href="/examples">Examples</a>
-      <a href="/use-cases">Use cases</a>
+      <p class="ftr-h">{s.footerBuild}</p>
+      <a href={L('/docs')}>{s.documentation}</a>
+      <a href={L('/examples')}>{s.examples}</a>
+      <a href={L('/use-cases')}>{s.useCases}</a>
       <a href="/llms.txt">llms.txt</a>
     </div>
     <div>
-      <p class="ftr-h">Project</p>
+      <p class="ftr-h">{s.footerProject}</p>
       <a href={GITHUB}>GitHub</a>
-      <a href={`${GITHUB}/blob/main/CHANGELOG.md`}>Changelog</a>
-      <a href="/opensource">Open source</a>
-      <a href="/commercial">Commercial support</a>
-      <a href="/contact">Contact</a>
+      <a href={`${GITHUB}/blob/main/CHANGELOG.md`}>{s.changelog}</a>
+      <a href={L('/opensource')}>{s.openSource}</a>
+      <a href={L('/commercial')}>{s.commercial}</a>
+      <a href={L('/contact')}>{s.contact}</a>
     </div>
   </div>
 </footer>

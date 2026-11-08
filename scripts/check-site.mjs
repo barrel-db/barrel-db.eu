@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Checks run after `astro build`, so the published site cannot quietly break:
-//   - every docs sidebar entry, product page, use case and example has a built page;
+//   - every docs sidebar entry, product page, use case and example has a built page,
+//     in English and in French;
 //   - library versions in src/data/site.ts match the barrel checkout (BARREL_DIR);
 //   - no em dash and no banned word in the new pages (house style);
 //   - every internal link in the built HTML points at a page that exists.
@@ -21,17 +22,19 @@ const built = (url) => {
   return [join(dist, p, 'index.html'), join(dist, p), join(dist, `${p}.html`)].some((f) => existsSync(f) && statSync(f).isFile());
 };
 
-// 1. Pages that the navigation promises.
+// 1. Pages that the navigation promises, in both languages.
+const PREFIXES = ['', '/fr'];
+const need = (url, what) => { for (const p of PREFIXES) if (!built(`${p}${url}`)) problems.push(`${what} missing: ${p}${url}`); };
 const nav = read('src/data/docs-nav.ts');
-for (const [, slug] of nav.matchAll(/slug: '([^']+)'/g)) if (!built(`/docs/${slug}`)) problems.push(`docs page missing: /docs/${slug}`);
+for (const [, slug] of nav.matchAll(/slug: '([^']+)'/g)) need(`/docs/${slug}`, 'docs page');
 const site = read('src/data/site.ts');
 const block = (name) => site.split(`export const ${name}`)[1]?.split('];')[0] ?? '';
-for (const [, slug] of block('capabilities').matchAll(/slug: '([^']+)'/g)) if (!built(`/product/${slug}`)) problems.push(`capability page missing: /product/${slug}`);
-for (const [, slug] of block('components').matchAll(/slug: '([^']+)'/g)) if (!built(`/product/${slug}`)) problems.push(`component page missing: /product/${slug}`);
-for (const [, slug] of block('useCases').matchAll(/slug: '([^']+)'/g)) if (!built(`/use-cases/${slug}`)) problems.push(`use case page missing: /use-cases/${slug}`);
+for (const [, slug] of block('capabilities').matchAll(/slug: '([^']+)'/g)) need(`/product/${slug}`, 'capability page');
+for (const [, slug] of block('components').matchAll(/slug: '([^']+)'/g)) need(`/product/${slug}`, 'component page');
+for (const [, slug] of block('useCases').matchAll(/slug: '([^']+)'/g)) need(`/use-cases/${slug}`, 'use case page');
 if (existsSync(join(root, 'examples'))) {
   for (const d of readdirSync(join(root, 'examples'))) {
-    if (statSync(join(root, 'examples', d)).isDirectory() && !built(`/examples/${d}`)) problems.push(`example page missing: /examples/${d}`);
+    if (statSync(join(root, 'examples', d)).isDirectory()) need(`/examples/${d}`, 'example page');
   }
 }
 
@@ -61,7 +64,7 @@ const pages = [];
     const p = join(dir, f);
     if (statSync(p).isDirectory()) {
       const rel = p.slice(dist.length);
-      if (rel === '/fr' || rel === '/docs/lib' || rel === '/pagefind') continue;
+      if (rel === '/docs/lib' || rel === '/pagefind') continue;
       walk(p);
     } else if (f.endsWith('.html')) pages.push(p);
   }
@@ -73,9 +76,10 @@ for (const p of pages) {
   const rel = p.slice(dist.length);
   const text = skipText(html);
   if (text.includes('—')) problems.push(`em dash in ${rel}`);
+  if (rel.startsWith('/fr/') && !/<html lang="fr"/.test(html)) problems.push(`French page without lang="fr": ${rel}`);
   if (/comprehensive/i.test(text)) problems.push(`banned word "comprehensive" in ${rel}`);
   for (const [, href] of html.matchAll(/href="(\/[^"#?]*)/g)) {
-    if (href.startsWith('/docs/lib/') || href.startsWith('/fr') || href.startsWith('/_astro') || href.startsWith('/pagefind')) continue;
+    if (href.startsWith('/docs/lib/') || href.startsWith('/_astro') || href.startsWith('/pagefind')) continue;
     if (/\.(svg|png|ico|xml|txt|md|json|yaml)$/.test(href) && existsSync(join(dist, href))) continue;
     if (!built(href)) problems.push(`broken link in ${rel}: ${href}`);
   }
