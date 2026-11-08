@@ -1,0 +1,59 @@
+---
+// The closing section of a capability page: plain limits, then where to read on.
+import Rich from './Rich.astro';
+import { docsOrder } from '../../data/docs-nav';
+import { components } from '../../data/site';
+
+interface Props {
+  title?: string;
+  limits: string[];
+  /** Slugs from docs-nav.ts. */
+  docs?: string[];
+  /** Component slugs from site.ts, linked as /product/<slug>. */
+  libs?: string[];
+  /** Other pages on the site: use cases, examples. */
+  more?: { href: string; label: string }[];
+}
+const { title = 'Limits', limits, docs = [], libs = [], more = [] } = Astro.props;
+const docLinks = docs.map((slug) => {
+  const item = docsOrder.find((d) => d.slug === slug);
+  if (!item) throw new Error(`Related: unknown docs slug ${slug}`);
+  return { href: `/docs/${slug}`, label: item.label };
+});
+const libLinks = libs.map((slug) => {
+  const c = components.find((x) => x.slug === slug);
+  if (!c) throw new Error(`Related: unknown component ${slug}`);
+  return { href: `/product/${slug}`, name: c.name, status: c.status };
+});
+---
+
+<section class="section rel">
+  <div class="wrap pf-narrow">
+    <h2 class="h3">{title}</h2>
+    <ul class="rel-limits">
+      {limits.map((l) => <li><Rich text={l} /></li>)}
+    </ul>
+    {docLinks.length + more.length > 0 && (
+      <div class="rel-g">
+        <h3 class="rel-h">Read next</h3>
+        <ul class="rel-links">{[...docLinks, ...more].map((d) => <li><a href={d.href}>{d.label}</a></li>)}</ul>
+      </div>
+    )}
+    {libLinks.length > 0 && (
+      <div class="rel-g">
+        <h3 class="rel-h">The libraries behind it</h3>
+        <ul class="rel-links">{libLinks.map((c) => <li><a href={c.href} class={`mark mark--${c.status}`}><code>{c.name}</code></a></li>)}</ul>
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .rel { padding-bottom: 96px; }
+  .rel-limits { margin: 0 0 32px; padding-left: 20px; }
+  .rel-limits li { margin-bottom: 8px; }
+  .rel-g { border-top: 1px solid var(--rule); padding-top: 16px; margin-top: 16px; }
+  .rel-h { font-size: 17px; margin: 0 0 8px; }
+  .rel-links { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 28px; }
+  .rel-links code { background: none; padding: 0; }
+</style>

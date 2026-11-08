@@ -1,0 +1,189 @@
+---
+// Three peers and a browser tab: cut links, go offline, edit, sync with relay,
+// resolve. A demonstration in the browser; the rules live in mesh-model.ts.
+---
+
+<div class="mesh" data-mesh>
+  <div class="mesh-head">
+    <div>
+      <h3 class="mesh-t">Three sites and a browser</h3>
+      <p class="muted small mesh-intro">Cut links, take the browser offline, edit anywhere, then sync. Edits relay through whichever peers are reachable, and every copy ends on the same winner with the same conflicts.</p>
+    </div>
+    <div class="mesh-acts">
+      <button type="button" class="button button--small" data-act="reset">Start over</button>
+      <button type="button" class="button button--small button--primary" data-act="sync">Sync over open links</button>
+    </div>
+  </div>
+
+  <div class="mesh-stage">
+    <svg class="mesh-lines" viewBox="0 0 1120 560" preserveAspectRatio="none" aria-hidden="true" data-lines></svg>
+    <div class="mesh-onstage" data-stage-links></div>
+    <ul class="mesh-nodes" aria-label="Copies of task:1" data-nodes></ul>
+  </div>
+
+  <div class="mesh-list-links">
+    <h4 class="mesh-lh">Links</h4>
+    <ul data-list-links></ul>
+  </div>
+
+  <div class="mesh-call">
+    <p class="small muted mesh-call-h"><span data-caption aria-live="polite"></span><span>Demonstration in your browser, following barrel's replication rules</span></p>
+    <pre data-call aria-live="polite"></pre>
+  </div>
+</div>
+
+<style>
+  .mesh { border: 1px solid var(--rule); border-radius: 12px; padding: 28px; background: var(--paper); }
+  .mesh-head { display: flex; justify-content: space-between; gap: 16px 32px; flex-wrap: wrap; margin-bottom: 20px; }
+  .mesh-t { margin: 0 0 4px; font-size: 22px; font-stretch: 108%; }
+  .mesh-intro { margin: 0; max-width: 46em; }
+  .mesh-acts { display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; }
+  .mesh-stage { position: relative; height: 560px; border: 1px solid var(--rule); border-radius: 10px; background: var(--card); }
+  .mesh-lines { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .mesh :global(.mesh-line) { stroke: var(--teal); stroke-width: 2; vector-effect: non-scaling-stroke; }
+  .mesh :global(.mesh-line.is-down) { stroke: var(--coral); stroke-dasharray: 6 6; }
+  .mesh-nodes { list-style: none; margin: 0; padding: 0; }
+  .mesh :global(.mnode) { position: absolute; transform: translate(-50%, -50%); width: 260px; padding: 12px 14px; border-radius: var(--radius); border: 1.5px solid var(--ink); background: var(--card); }
+  .mesh :global(.mnode.is-tab) { background: var(--paper); }
+  .mesh :global(.mnode-h) { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; gap: 8px; }
+  .mesh :global(.mnode-n) { font-weight: 650; }
+  .mesh :global(.mnode-role) { font-size: 12px; color: var(--ink-2); }
+  .mesh :global(.mnode-st) { font-size: 13px; font-weight: 600; color: var(--teal); margin-bottom: 6px; }
+  .mesh :global(.mnode-st.is-off) { color: var(--coral); }
+  .mesh :global(.mver) { display: flex; gap: 8px; align-items: baseline; padding: 5px 8px; margin-bottom: 4px; border-radius: 5px; border: 1.5px solid var(--ink); background: var(--paper-2); }
+  .mesh :global(.mver.is-conflict) { border-color: var(--coral); background: transparent; }
+  .mesh :global(.mver-k) { font-size: 12px; font-weight: 650; min-width: 52px; }
+  .mesh :global(.mver-b) { font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere; }
+  .mesh :global(.mver-by) { margin-left: auto; font-size: 11px; color: var(--ink-2); }
+  .mesh :global(.mnode-acts) { display: flex; gap: 6px; margin-top: 6px; }
+  .mesh :global(.mnode-acts .button) { flex: 1; min-height: 36px; padding: 0 8px; }
+  .mesh :global(.resolve) { border-color: var(--teal); color: var(--teal); }
+  .mesh :global(.mlink) { position: absolute; transform: translate(-50%, -50%); min-height: 32px; padding: 0 10px; border-radius: 16px; border: 1.5px solid var(--teal); background: var(--card); color: var(--teal); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .mesh :global(.mlink.is-down) { border-color: var(--coral); color: var(--coral); }
+  .mesh-list-links { display: none; }
+  .mesh-lh { margin: 16px 0 8px; font-size: 17px; }
+  .mesh-list-links ul { list-style: none; margin: 0; padding: 0; }
+  .mesh :global(.mll) { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid var(--rule); font-size: 15px; }
+  .mesh :global(.mll-s) { color: var(--teal); font-weight: 600; }
+  .mesh :global(.mll-s.is-down) { color: var(--coral); }
+  .mesh-call { margin-top: 20px; }
+  .mesh-call-h { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin: 0 0 6px; }
+  .mesh-call pre { min-height: 116px; }
+
+  @media (max-width: 900px) {
+    .mesh { padding: 18px; }
+    .mesh-stage { height: auto; border: 0; background: none; }
+    .mesh-lines, .mesh-onstage { display: none; }
+    .mesh-nodes { display: grid; gap: 12px; }
+    .mesh :global(.mnode) { position: static; transform: none; width: auto; }
+    .mesh-list-links { display: block; }
+  }
+</style>
+
+<script>
+  import * as M from './mesh-model';
+  import type { Link, MeshState, Site } from './mesh-model';
+
+  // Positions on the 1120 x 560 stage: x as a percentage, y in pixels.
+  const POS: Record<Site, [number, number]> = { paris: [190, 120], berlin: [930, 120], lyon: [560, 300], tab: [930, 450] };
+  const ROLE: Record<Site, string> = { paris: 'barrel_server', lyon: 'barrel_server', berlin: 'barrel_server', tab: 'barrel-lite in a tab' };
+  const SVG = 'http://www.w3.org/2000/svg';
+  const pct = (x: number) => `${(x / 1120) * 100}%`;
+
+  document.querySelectorAll<HTMLElement>('[data-mesh]').forEach((root) => {
+    let s: MeshState = M.initial();
+    const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string) => {
+      const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e;
+    };
+    const button = (cls: string, text: string, key: string, onClick: () => void) => {
+      const b = el('button', cls, text); b.type = 'button'; b.dataset.fkey = key;
+      b.addEventListener('click', onClick); return b;
+    };
+    const set = (next: MeshState) => { s = next; draw(); };
+    const linkText = (k: Link) => {
+      const up = s.up[k];
+      return k === 'lt' ? (up ? 'Go offline' : 'Back online') : (up ? 'Cut' : 'Restore');
+    };
+    const linkAria = (k: Link) => {
+      const [a, b] = M.pair(k);
+      if (k === 'lt') return s.up[k] ? 'Take the browser offline' : 'Bring the browser back online';
+      return (s.up[k] ? 'Cut the link between ' : 'Restore the link between ') + M.label(a) + ' and ' + M.label(b);
+    };
+
+    function drawNodes() {
+      const host = root.querySelector<HTMLElement>('[data-nodes]')!;
+      host.replaceChildren();
+      M.SITES.forEach((site) => {
+        const li = el('li', site === 'tab' ? 'mnode is-tab' : 'mnode');
+        li.style.left = pct(POS[site][0]); li.style.top = `${POS[site][1]}px`;
+        const h = el('div', 'mnode-h');
+        h.append(el('span', 'mnode-n', M.name(site)), el('span', 'mnode-role', ROLE[site]));
+        li.append(h);
+        if (site === 'tab') li.append(el('div', s.up.lt ? 'mnode-st' : 'mnode-st is-off', M.tabStatus(s)));
+        M.versions(s, site).forEach((v) => {
+          const row = el('div', v.kind === 'winner' ? 'mver' : 'mver is-conflict');
+          row.append(el('span', 'mver-k', v.kind), el('span', 'mver-b', `"${v.body}"`), el('span', 'mver-by', v.by));
+          li.append(row);
+        });
+        const acts = el('div', 'mnode-acts');
+        const edit = button('button button--small', 'Edit here', `edit-${site}`, () => set(M.edit(s, site)));
+        edit.setAttribute('aria-label', `Edit on ${M.name(site)}`);
+        acts.append(edit);
+        if (s.nodes[site].live.length > 1) {
+          const r = button('button button--small resolve', 'Resolve', `resolve-${site}`, () => set(M.resolve(s, site)));
+          r.setAttribute('aria-label', `Resolve on ${M.name(site)}`);
+          acts.append(r);
+        }
+        li.append(acts);
+        host.append(li);
+      });
+    }
+
+    function drawLinks() {
+      const svg = root.querySelector<SVGSVGElement>('[data-lines]')!;
+      const stage = root.querySelector<HTMLElement>('[data-stage-links]')!;
+      const list = root.querySelector<HTMLElement>('[data-list-links]')!;
+      svg.replaceChildren(); stage.replaceChildren(); list.replaceChildren();
+      M.LINKS.forEach((k) => {
+        const [a, b] = M.pair(k); const up = s.up[k];
+        const [x1, y1] = POS[a]; const [x2, y2] = POS[b];
+        const line = document.createElementNS(SVG, 'line');
+        line.setAttribute('x1', String(x1)); line.setAttribute('y1', String(y1));
+        line.setAttribute('x2', String(x2)); line.setAttribute('y2', String(y2));
+        line.setAttribute('class', up ? 'mesh-line' : 'mesh-line is-down');
+        svg.append(line);
+
+        const t = button(up ? 'mlink' : 'mlink is-down', linkText(k), `stage-${k}`, () => set(M.toggle(s, k)));
+        t.setAttribute('aria-label', linkAria(k)); t.setAttribute('aria-pressed', String(!up));
+        t.style.left = pct((x1 + x2) / 2); t.style.top = `${(y1 + y2) / 2}px`;
+        stage.append(t);
+
+        const li = el('li', 'mll');
+        const who = el('span');
+        who.append(el('span', '', `${M.name(a)} and ${M.name(b)}: `), el('span', up ? 'mll-s' : 'mll-s is-down', k === 'lt' ? (up ? 'online' : 'offline') : (up ? 'link up' : 'link cut')));
+        const lb = button('button button--small', linkText(k), `list-${k}`, () => set(M.toggle(s, k)));
+        lb.setAttribute('aria-label', linkAria(k)); lb.setAttribute('aria-pressed', String(!up));
+        li.append(who, lb);
+        list.append(li);
+      });
+    }
+
+    function draw() {
+      // Controls are rebuilt on every step: keep keyboard focus on the same control.
+      const active = document.activeElement as HTMLElement | null;
+      const key = active && root.contains(active) ? active.dataset.fkey : undefined;
+      drawNodes(); drawLinks();
+      if (key) {
+        const again = root.querySelector<HTMLElement>(`[data-fkey="${key}"]`)
+          ?? root.querySelector<HTMLElement>(`[data-fkey="${key.replace('resolve-', 'edit-')}"]`);
+        again?.focus();
+      }
+      root.querySelector('[data-caption]')!.textContent = s.caption;
+      root.querySelector('[data-call]')!.textContent = s.call;
+    }
+
+    root.querySelector('[data-act=sync]')!.addEventListener('click', () => set(M.sync(s)));
+    root.querySelector('[data-act=reset]')!.addEventListener('click', () => set(M.initial()));
+    draw();
+  });
+</script>

@@ -1,0 +1,255 @@
+---
+import ProductFrame from '../../components/product/ProductFrame.astro';
+import Guarantees from '../../components/product/Guarantees.astro';
+import FlowDiagram from '../../components/product/FlowDiagram.astro';
+import Related from '../../components/product/Related.astro';
+import Rich from '../../components/product/Rich.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import CodeTabs from '../../components/CodeTabs.astro';
+
+const kinds = [
+  { name: 'Vector', mark: 'today', body: 'Nearest neighbours by meaning. HNSW by default, DiskANN, or FAISS through `barrel_faiss`. Text queries need an embedder; you can also pass the query vector yourself.' },
+  { name: 'Keyword (BM25)', mark: 'optional', body: 'Ranked keyword search. Off on a plain database until you set `bm25_backend` to `memory` or `disk`; record mode turns it on with `disk`.' },
+  { name: 'Hybrid', mark: 'optional', body: 'Vector and BM25 fused into one ranking: reciprocal rank fusion by default (`rrf_k` 60), or a linear mix with `bm25_weight` and `vector_weight`. Needs BM25 enabled.' },
+  { name: 'Substring and regex', mark: 'optional', body: 'Exact strings and PCRE patterns over documents with `barrel_ngram`, a trigram index fed by the changes feed. Every hit is confirmed against the text and carries its byte spans.' },
+  { name: 'Reranking', mark: 'optional', body: 'A second pass with a cross-encoder in `barrel_rerank`: you hand it the query and the texts of your top hits, it returns them reordered with a score each.' },
+  { name: 'BQL table functions', mark: 'today', body: '`vector_top_k`, `bm25_top_k` and `hybrid_top_k` as the FROM of a query: hits join their documents, then WHERE, ORDER BY and projections apply.' },
+];
+
+const defaults = [
+  ['`barrel:search/3`, `search_vector/3`', 'k 5'],
+  ['`barrel:search_bm25/3`, `search_hybrid/3`', 'k 10'],
+  ['BQL `vector_top_k`, `bm25_top_k`, `hybrid_top_k`', 'k 10'],
+  ['REST `/db/:db/search/*` and the MCP `search` tool', 'k 10 (REST caps it at 10000)'],
+  ['MCP `ngram_search`', 'limit 50 (cap 1000)'],
+];
+
+const searchStages = [
+  { boxes: [{ name: 'Query text', note: 'or a query vector' }], edge: 'embed with the store’s provider' },
+  { boxes: [{ name: 'Vector index', note: 'HNSW, DiskANN or FAISS' }, { name: 'BM25 index', note: 'memory or disk', dashed: true }], edge: 'fuse ranks (RRF, k 60)' },
+  { boxes: [{ name: 'Hybrid hits', note: 'id, score, text, metadata' }], edge: 'BQL: join to documents, then WHERE' },
+  { boxes: [{ name: 'Rows', note: 'fields, _score', rec: true }] },
+];
+
+const ngramStages = [
+  { boxes: [{ name: 'barrel_docdb', note: 'documents' }], edge: 'changes feed' },
+  { boxes: [{ name: 'Trigram segments', note: 'immutable, checksummed' }], edge: 'candidates from postings' },
+  { boxes: [{ name: 'Confirm on the text', note: 'drops false positives' }], edge: 'hits' },
+  { boxes: [{ name: 'id and spans', note: 'byte offset, length', rec: true }] },
+];
+
+const guarantees = [
+  { title: 'Exact means exact', body: 'Substring and regex search confirm every candidate against the stored text, so trigram collisions never show up as hits.', check: '`oracle_equivalence` in barrel_ngram_SUITE, which compares every answer with a brute-force scan.' },
+  { title: 'The vector follows the document', body: 'In record mode an edit re-embeds, a delete removes the vector, and the marker for the indexer is written in the same batch as the document.', check: 'barrel_record_SUITE: `indexer_update_reembeds`, `indexer_delete_removes_vector`, `indexer_crash_restart`.' },
+  { title: 'Read your write, when you ask for it', body: 'Record mode with `mode => sync` embeds before the write returns. If the embedder fails, the write fails and nothing is stored.', check: 'barrel_record_SUITE: `sync_put_immediate_search`, `sync_embed_failure_fails_put`.' },
+  { title: 'A disk BM25 index survives a kill', body: 'Acknowledged writes are still in the index after the process is killed and the store reopened. A memory index rebuilds from the stored text at open.', check: 'barrel_vectordb_bm25_persistence_tests (`disk: kill then reopen loses no acked write`).' },
+  { title: 'Replicated documents get indexed', body: 'Documents that arrive by replication are embedded on the receiving copy; the version that lost a conflict is not.', check: 'barrel_record_SUITE: `replicated_docs_embedded`, `replicated_loser_not_reembedded`.' },
+  { title: 'Same model, or no open', body: 'Each store records its embedder’s fingerprint: provider, model, dimensions, distance. A record-mode space opened with another model is refused.', check: '`embedder_fingerprint` in barrel_record_SUITE.' },
+];
+
+const openPlain = `{ok, Db} = barrel:open(<<"research">>, #{vectordb => #{
+    db_path      => "data/research_vec",
+    dimensions   => 64,
+    embedder     => {kb_embed, #{}},
+    bm25_backend => memory}}),
+{ok, #{inserted := 4}} = barrel:vector_add_batch(Db, Notes).`;
+
+const searchTabs = [
+  { label: 'Erlang', lang: 'erlang', code: `barrel:search(Db, <<"leader election">>, #{k => 2}),
+barrel:search_bm25(Db, <<"keyword search">>, #{k => 2}),
+barrel:search_hybrid(Db, <<"nearest neighbor search">>,
+                     #{k => 2}).` },
+  { label: 'REST', lang: 'bash', code: `curl -X POST localhost:8080/db/research/search/bm25 \\
+  -H 'content-type: application/json' \\
+  -d '{"query":"keyword search","k":2}'
+curl -X POST localhost:8080/db/research/search/hybrid \\
+  -H 'content-type: application/json' \\
+  -d '{"query":"nearest neighbor search","k":2}'` },
+  { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":3,"method":"tools/call",
+ "params":{"name":"search","arguments":{
+   "db":"research","mode":"hybrid",
+   "query":"nearest neighbor search","k":2}}}` },
+];
+
+const bm25Out = `{ok,[{<<"paper:bm25">>,1.9587592623731485},
+     {<<"paper:hnsw">>,0.6586049622596158}]}`;
+
+const bqlTabs = [
+  { label: 'Erlang', lang: 'erlang', code: `barrel:query(Db,
+    <<"SELECT h.id, h._score, topic "
+      "FROM hybrid_top_k($q, k => 3) AS h "
+      "ORDER BY h._score DESC">>,
+    #{params => #{<<"q">> => <<"replicated consensus">>}}).` },
+  { label: 'REST', lang: 'bash', code: `curl -X POST localhost:8080/db/research/query \\
+  -H 'content-type: text/plain' \\
+  --data-binary "SELECT b.id, b._score
+    FROM bm25_top_k('search', k => 3) AS b
+    WHERE b.year > 2000"` },
+  { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":4,"method":"tools/call",
+ "params":{"name":"query","arguments":{
+   "db":"research",
+   "query":"SELECT v.id FROM vector_top_k($q) AS v",
+   "params":{"q":"consensus"}}}}` },
+];
+
+const bqlOut = `{ok,[#{<<"_score">> => 0.01639344262295082,
+       <<"id">> => <<"paper:raft">>,
+       <<"topic">> => <<"distributed-systems">>},
+     #{<<"_score">> => 0.016001024065540194,
+       <<"id">> => <<"paper:crdt">>, ...},
+     #{<<"_score">> => 0.008536214242239805,
+       <<"id">> => <<"paper:bm25">>, ...}], ...}`;
+
+const record = `Embedder = {ollama, #{model => <<"nomic-embed-text">>}},
+Policy = #{fields => [<<"title">>, <<"body">>],
+           mode => sync, embedder => Embedder,
+           dimensions => 768},
+{ok, Db} = barrel:open(<<"notes">>, #{embedding => Policy,
+    vectordb => #{db_path => "data/notes_vec"}}),
+{ok, _} = barrel:put_doc(Db, #{<<"id">> => <<"n1">>,
+    <<"title">> => <<"Raft">>,
+    <<"body">> => <<"Leader election and log replication">>}),
+barrel:search(Db, <<"how do replicas agree?">>, #{k => 1}).`;
+
+const ngramTabs = [
+  { label: 'Erlang', lang: 'erlang', code: `ok = barrel_ngram:open(<<"rb_idx">>, #{db => <<"runbooks">>,
+    fields => [<<"title">>, <<"body">>]}),
+barrel_ngram:search(<<"rb_idx">>, <<"ERR_CONN_TIMEOUT">>),
+barrel_ngram:search(<<"rb_idx">>, <<"redis">>,
+                    #{case_sensitive => false}),
+barrel_ngram:regex(<<"rb_idx">>,
+                   <<"pg-(primary|replica)-\\\\d+">>).` },
+  { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":5,"method":"tools/call",
+ "params":{"name":"ngram_search","arguments":{
+   "db":"runbooks","mode":"regex",
+   "query":"pg-(primary|replica)-\\\\d+"}}}` },
+];
+
+const ngramOut = `{ok,[#{id => <<"rb:db">>,spans => [{11,16}]}]}
+{ok,[#{id => <<"rb:cache">>,spans => [{68,5}]}]}
+{ok,[#{id => <<"rb:db">>,spans => [{35,13},{58,13}]}]}`;
+
+const rerank = `{ok, Hits} = barrel:search(Db, Q, #{k => 20}),
+Texts = [maps:get(text, H) || H <- Hits],
+{ok, R} = barrel_rerank:rerank(Ranker, Q, Texts,
+                               #{top_k => 5}),
+%% R is [{Index, Score}], best first; Index is 0-based
+Top = [lists:nth(I + 1, Hits) || {I, _Score} <- R].`;
+
+const rerankOut = `{ok,[{0,9.581769943237305},
+     {2,-5.255744457244873},
+     {1,-9.625640869140625}]}`;
+
+const limits = [
+  'BM25 is off on a plain database, including the databases a default barrel_server opens (a 768-dimension cosine store, BM25 off). BM25 and hybrid then answer `bm25_not_enabled` or `embedder_not_configured`, over REST as a 500.',
+  'There is no built-in offline embedder. Bring your own vectors, run Ollama locally, use the local Python provider, or write a provider module.',
+  'The metadata filter (`filter => fun`) runs after the nearest-neighbour step, so a tight filter can return fewer than `k` hits.',
+  'Substring and regex search are not in the `barrel` API or in BQL: call `barrel_ngram` or the MCP tool `ngram_search`. The index takes about 34 times the size of the text, and its fields are fixed when you create it.',
+  'Reranking needs Python 3 with transformers and torch, and downloads its model on first use. Scores are raw cross-encoder logits, not values between 0 and 1.',
+  'In plain mode the document and its vector are two writes with nothing tying them; record mode is the path that keeps them together.',
+  'In the browser, barrel-lite ranks synced vectors locally by brute-force cosine; keyword and hybrid queries go to the server.',
+];
+---
+
+<ProductFrame
+  title="Search"
+  description="Vector, BM25, hybrid, substring and regex search in Barrel, with reranking and BQL table functions. Defaults, guarantees and limits."
+  heading="Find it by meaning, by word, or by the exact string."
+  lead="Barrel keeps a document and its vector under one id, so one query can rank by meaning, by keyword, or both, and come back as rows with the document's fields. For identifiers and error strings that meaning misses, a trigram index finds the exact text."
+  sub="Search runs where the database runs: in your Erlang node, behind the REST and MCP server, or over vectors synced into a browser."
+  ctas={[{ label: 'Vector, keyword and hybrid', href: '/docs/search/hybrid' }, { label: 'Substring and regex', href: '/docs/search/substring-regex' }]}
+>
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Six ways to find a record</h2>
+      <p class="section-intro">Each one is a separate index or step you turn on. The mark says whether it works with no setup.</p>
+      <ul class="sr-kinds">
+        {kinds.map((k) => (
+          <li>
+            <h3 class={`mark mark--${k.mark} sr-kt`}>{k.name}</h3>
+            <p><Rich text={k.body} /></p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">How a hybrid query runs</h2>
+      <p class="section-intro">Both indexes answer the same text; their ranks are fused, and a BQL table function joins each hit to its document before WHERE applies. Table functions fetch 3 times k (at most 1000) so a WHERE still has rows to keep.</p>
+      <FlowDiagram label="Hybrid search, from query to rows" stages={searchStages} caption="The BM25 box is dashed: it exists only when bm25_backend is set, or in record mode." />
+      <h3 class="pf-h3 sr-gap">How substring and regex search runs</h3>
+      <FlowDiagram label="Trigram search, from documents to hits" stages={ngramStages} />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">What holds, and what tests it</h2>
+      <p class="section-intro">Properties you can rely on, with the test that checks each one in the repository.</p>
+      <Guarantees items={guarantees} />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap pf-narrow">
+      <h2 class="h2">Use it</h2>
+
+      <h3 class="pf-h3">Open a database with a vector store and BM25</h3>
+      <p class="pf-p">The recorded run below used <code>kb_embed</code>, a 64-dimension feature-hashing provider written for the test: it matches shared words, it is not semantic.</p>
+      <CodeBlock code={openPlain} />
+
+      <h3 class="pf-h3">Vector, keyword and hybrid</h3>
+      <CodeTabs tabs={searchTabs} />
+      <CodeBlock code={bm25Out} output label="Output of search_bm25, recorded on barrel 1.12.0" />
+
+      <h3 class="pf-h3">Search inside a query</h3>
+      <p class="pf-p"><code>_score</code> is 1 minus the distance for vectors, the raw BM25 score, or the fused value for hybrid. It can be selected and ordered, not filtered.</p>
+      <CodeTabs tabs={bqlTabs} />
+      <CodeBlock code={bqlOut} output label="Output of the Erlang hybrid_top_k query, recorded (trimmed)" />
+
+      <h3 class="pf-h3">Record mode: the policy embeds for you</h3>
+      <p class="pf-p">Name the fields to embed. With <code>mode =&gt; sync</code> the write returns after the vector is indexed; the default, <code>async</code>, indexes in the background and heals after a crash.</p>
+      <CodeBlock code={record} />
+
+      <h3 class="pf-h3">Exact substrings and regular expressions</h3>
+      <p class="pf-p">The MCP tool opens the index for the database on first use and refreshes it before each search. There is no REST route.</p>
+      <CodeTabs tabs={ngramTabs} />
+      <CodeBlock code={ngramOut} output label="Output of the three Erlang calls, recorded on barrel_ngram 0.11.4" />
+
+      <h3 class="pf-h3">Rerank the top hits <span class="mark mark--optional">optional</span></h3>
+      <p class="pf-p"><code>Ranker</code> is a <code>barrel_rerank:start_link(#{})</code> server (default model <code>cross-encoder/ms-marco-MiniLM-L-6-v2</code>).</p>
+      <CodeBlock code={rerank} />
+      <CodeBlock code={rerankOut} output label="Output of rerank/3 on three short texts, recorded on barrel_rerank 1.0.2" />
+
+      <h3 class="pf-h3">Defaults that differ by entry point</h3>
+      <div class="sr-tw">
+        <table class="sr-t">
+          <thead><tr><th scope="col">Entry point</th><th scope="col">Results when you pass nothing</th></tr></thead>
+          <tbody>{defaults.map(([e, d]) => <tr><td><Rich text={e} /></td><td>{d}</td></tr>)}</tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <Related
+    limits={limits}
+    docs={['search/hybrid', 'search/substring-regex', 'search/reranking', 'search/embedding-providers', 'guides/record-mode', 'guides/query-bql']}
+    more={[{ href: '/use-cases/private-rag', label: 'Use case: private knowledge search' }, { href: '/use-cases/code-search', label: 'Use case: code search' }]}
+    libs={['barrel', 'vectordb', 'ngram', 'embed', 'rerank', 'faiss']}
+  />
+</ProductFrame>
+
+<style>
+  .sr-kinds { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px 40px; }
+  .sr-kinds li { border-top: 1px solid var(--rule); padding-top: 14px; min-width: 0; }
+  .sr-kt { font-size: 19px; margin: 0 0 6px; }
+  .sr-kinds p { margin: 0; font-size: 15px; }
+  .sr-gap { margin-top: 48px; margin-bottom: 16px; }
+  .sr-tw { overflow-x: auto; }
+  .sr-t { width: 100%; border-collapse: collapse; font-size: 15px; }
+  .sr-t th, .sr-t td { text-align: left; padding: 10px 12px 10px 0; border-top: 1px solid var(--rule); vertical-align: top; }
+  .sr-t th { font-weight: 650; }
+  @media (max-width: 900px) { .sr-kinds { grid-template-columns: minmax(0, 1fr); } }
+</style>
