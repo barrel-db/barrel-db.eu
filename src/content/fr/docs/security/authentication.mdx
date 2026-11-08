@@ -1,0 +1,216 @@
+---
+translation_of: src/content/docs/security/authentication.mdx
+source_hash: "a30189eb30a0557a"
+title: Authentification
+description: Verrouillez barrel_server avec des jetons bearer, des jetons de capacité, des requêtes signées Ed25519 ou mTLS, et donnez leurs identifiants aux clients de réplication via l’app env.
+---
+import CodeBlock from '../../../../components/CodeBlock.astro';
+import Callout from '../../../../components/Callout.astro';
+
+`barrel_server` est ouvert tant que vous ne configurez pas `auth`. Vous
+pouvez alors accepter des jetons bearer globaux, des jetons de capacité
+par espace, des requêtes signées Ed25519 et des certificats clients
+(mTLS). Les clients de réplication trouvent leurs identifiants dans
+l’app env de `barrel_docdb`. Lisez cette page avant d’exposer un
+serveur, de donner accès à un navigateur ou à un agent, ou de répliquer
+entre nœuds.
+
+## Quelle méthode
+
+| Méthode | Qui l’utilise | Ce qu’elle prouve |
+|--------|-------------|--------|
+| Bearer global | Opérateurs, services de confiance | Le détenteur d’un secret partagé ; accès complet |
+| Jeton de capacité (`bsp_...`) | Agents, navigateurs | Le détenteur d’un jeton pour un espace, avec des droits |
+| Requête signée (Ed25519, v3) | Nœuds qui répliquent | Le détenteur de la clé a envoyé exactement cette requête |
+| mTLS | Nœuds sur un réseau privé | Un certificat de votre autorité de certification ; pas quel client |
+
+Sans TLS, un jeton bearer peut être capturé et rejoué. Faites tourner le
+serveur en HTTPS quand vous utilisez des jetons sur un réseau non fiable.
+
+## Jetons bearer
+
+```erlang
+{barrel_server, [{auth, #{tokens => [<<"s3cret">>]}}]}
+```
+
+Chaque route sauf `/health` exige alors `Authorization: Bearer <token>`.
+Une liste vous permet la rotation : ajoutez le nouveau jeton, basculez
+les clients, retirez l’ancien. `/` n’est plus public une fois l’auth
+activée.
+
+```shell
+curl localhost:8080/db/demo/doc/a
+curl -H 'authorization: Bearer s3cret' \
+  localhost:8080/db/demo/doc/a
+```
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_server 1.13.0" code={`HTTP/1.1 401 Unauthorized
+www-authenticate: Bearer
+{"error":"unauthorized"}
+
+HTTP/1.1 200 OK
+{"_rev":"000001a1b876972d00000000@w78160d59891ba7d7","id":"a",
+ "kind":"note","n":1,"title":"hello world"}`} />
+
+## Jetons de capacité
+
+Un jeton de capacité est émis pour un espace avec les droits `read`,
+`write` ou `admin` (voir [Espaces et capacités](/fr/docs/concepts/spaces)) :
+
+```shell
+curl -X POST localhost:8080/spaces/sp_wh2tq2ocmemj52ln/grants \
+  -H 'authorization: Bearer s3cret' \
+  -H 'content-type: application/json' \
+  -d '{"rights":["read"],"subject":"agent-1"}'
+```
+
+Il est accepté sur `/spaces`, `/handoffs`, `/mcp`, et sur `/db/:db/...`
+quand `:db` est l’espace concerné. Un jeton de lecture sur son propre
+espace, puis une écriture, une autre base, et un appel sur le cycle de
+vie d’une base :
+
+<CodeBlock output label="Réponses d’une exécution sur barrel_server 1.13.0, une ligne par requête" code={`GET /db/sp_wh2tq2ocmemj52ln         200 OK
+PUT /db/sp_wh2tq2ocmemj52ln/doc/x   403 {"error":"forbidden"}
+GET /db/demo/doc/a                  403 {"error":"forbidden"}
+PUT /db/sp_wh2tq2ocmemj52ln         403 {"error":"forbidden"}`} />
+
+Un jeton mort ou inconnu répond 401 ; un jeton valide sur le mauvais
+espace ou sans le droit voulu répond 403. Le cycle de vie des bases,
+`_timeline` et toute route non associée à un droit répondent toujours
+403 à un jeton de capacité.
+
+## Requêtes signées
+
+Chaque requête est signée avec une clé Ed25519. Le serveur connaît la
+clé publique de chaque pair :
+
+```erlang
+{barrel_server, [{auth, #{
+    accept  => [bearer, signed],
+    signers => #{<<"node1">> => PubKey32},
+    skew_ms => 300000}}]}
+```
+
+Le client signe avec la clé privée, définie dans l’app env pour que les
+configurations de tâches restent sans secrets :
+
+```erlang
+{barrel_docdb, [{sync_signing, #{
+    <<"https://edge-1.example.com:8443">> =>
+        #{key_id => <<"node1">>, priv_key => Priv32}}}]}
+```
+
+Générez une paire avec `crypto:generate_key(eddsa, ed25519)`.
+
+Ce que couvre une signature v3 :
+
+- l’horodatage, l’id de clé, un nonce neuf, la méthode, le chemin avec sa
+  query string brute, et le SHA-256 du corps ;
+- les en-têtes qui changent l’effet d’une écriture : `content-type`,
+  `if-match`, `if-none-match`, `x-barrel-actor`, `x-barrel-session`,
+  `x-barrel-source`, `x-barrel-hlc`, `x-barrel-att-origin`,
+  `x-barrel-digest` et `x-barrel-att-touch`, chacun signé comme présent
+  avec sa valeur ou comme absent.
+
+Comment le serveur la vérifie :
+
+- Sur chaque route, pour chaque requête signée avec un corps, le corps
+  est comparé au `x-barrel-content-sha256` signé avant que le handler
+  s’exécute. Un hachage absent ou faux répond 401
+  `content_hash_mismatch`.
+- Un nonce rejoué ou un horodatage hors de `skew_ms` est refusé.
+- Une requête qui présente une signature est jugée sur elle seule. Une
+  signature en échec répond 401, même si un jeton bearer ou un
+  certificat client aurait laissé passer la requête.
+- Les signatures v1 et v2 répliquent encore les documents, mais sont
+  refusées avec 401 `signature_v3_required` quand elles écrivent une
+  pièce jointe ou portent l’un des en-têtes ci-dessus. Les clients
+  barrel_docdb 2.1.0 n’envoient que du v3 : mettez donc d’abord à jour
+  les serveurs. Fermez l’ancienne fenêtre avec `accept => [signed]` et
+  `require_nonce => true`.
+
+Un proxy placé devant le serveur doit transmettre le chemin, la query
+string et les en-têtes signés sans les modifier.
+
+<Callout label="Note">
+La signature authentifie le client et protège chaque requête. Elle ne
+masque ni la requête ni la réponse, et elle n’authentifie pas le
+serveur. Utilisez pour cela du HTTPS vérifié.
+</Callout>
+
+## mTLS
+
+```erlang
+{barrel_server, [
+  {listeners, #{http => #{port => 8443, tls => true}}},
+  {tls, #{certfile => "server.pem", keyfile => "server.key",
+          cacertfile => "ca.pem", verify => verify_peer}},
+  {auth, #{accept => [mtls]}}]}
+```
+
+Le client présente son certificat via `sync_ssl` :
+
+```erlang
+{barrel_docdb, [{sync_ssl, #{
+    <<"https://edge-1.example.com:8443">> =>
+        [{certfile, "client.pem"}, {keyfile, "client.key"},
+         {cacertfile, "ca.pem"}]}}]}
+```
+
+- Un certificat ne compte que pour une requête sans en-tête
+  `Authorization`. Si la requête porte un jeton ou une signature, c’est
+  cet identifiant qui décide, et un identifiant en échec répond 401 même
+  avec un bon certificat.
+- mTLS prouve que le certificat remonte à votre autorité de
+  certification, pas quel client l’a envoyé : `accept => [mtls]` seul
+  donne à chacun de ces clients l’accès à toutes les bases.
+  Combinez-le, par exemple `accept => [mtls, signed]`.
+- `mtls` est retiré de `accept` quand la configuration TLS n’a pas
+  `verify => verify_peer`.
+- HTTP/3 sert du TLS mais ne filtre pas encore par certificat client. Ne
+  comptez pas sur lui pour mTLS.
+
+Une liste `accept` échoue en position fermée : une liste vide verrouille
+le serveur.
+
+## Identifiants pour la réplication
+
+Le client de réplication lit trois clés de l’app env de `barrel_docdb`.
+Chacune associe une URL de base, ou une origine (`scheme://host:port`),
+à un identifiant ; l’URL complète est cherchée en premier.
+
+| Clé | Valeur |
+|-----|-------|
+| `sync_auth` | un jeton bearer |
+| `sync_signing` | `#{key_id, priv_key}` |
+| `sync_ssl` | une liste d’options `ssl` |
+
+```erlang
+{barrel_docdb, [{sync_auth, #{
+    <<"http://edge-1.example.com:8080">> => <<"s3cret">>,
+    <<"http://edge-2.example.com:8080/db/orders">> =>
+        <<"other">>}}]}
+```
+
+Un `barrel_rep:replicate/3` ponctuel peut aussi prendre `auth`,
+`signing` ou `ssl_options` dans la map du point d’accès. Les tâches de
+réplication les refusent : une configuration de tâche avec `auth`,
+`signing`, `ssl_options`, `headers`, ou un utilisateur et un mot de passe
+dans l’URL renvoie `{error, {inline_credentials, Keys}}`. Les tâches
+lisent leurs identifiants dans l’app env à chaque démarrage, pause et
+reprise. Quand les deux sont définis, la signature l’emporte sur un
+jeton bearer.
+
+## MCP
+
+`/mcp` n’accepte que des jetons bearer : un jeton global (accès complet)
+ou un jeton de capacité (limité, outil par outil, à son espace et à ses
+droits). Il n’accepte ni les requêtes signées ni mTLS. Un appel d’outil
+refusé revient comme résultat d’outil avec `isError: true`. Voir [Point
+d’accès MCP](/fr/docs/guides/mcp).
+
+## Navigateurs
+
+`barrel-lite` envoie un jeton bearer. Donnez-lui un jeton de capacité
+pour son espace, jamais le jeton global, et activez CORS. Voir
+[Démarrage rapide : navigateur](/fr/docs/start/quickstart-browser).

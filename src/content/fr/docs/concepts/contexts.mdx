@@ -1,0 +1,115 @@
+---
+translation_of: src/content/docs/concepts/contexts.mdx
+source_hash: "a6dde923fe06af6f"
+title: Contextes et ensembles de travail
+description: Ce que sont un contexte, une requête de contexte et un ensemble de travail, ce qui est implémenté aujourd’hui, et ce qui est prévu.
+---
+import Callout from '../../../../components/Callout.astro';
+
+Un contexte est un jeu de données nommé (une base Barrel aujourd’hui) qui
+vit sur ce nœud, sur un autre `barrel_server`, ou dans un snapshot
+importé. Vous lui enregistrez une fiche, puis vous lancez une seule
+instruction BQL sur plusieurs contextes désignés par leur nom, et vous
+obtenez une seule réponse qui indique quels contextes ont répondu et ce
+que couvre chaque réponse. Un ensemble de travail est la liste des
+contextes avec lesquels vous travaillez, dont certains sont enregistrés
+en local pour répondre hors ligne. Lisez cette page pour connaître le
+modèle et ses limites avant de suivre [Interroger plusieurs jeux de
+données](/fr/docs/guides/contexts).
+
+## Le modèle
+
+| Terme | Ce que c’est |
+|------|------------|
+| Fiche | Un document du catalogue du nœud (`_barrel_catalog`) : un nom comme `support/eu`, un id `ctx_...`, un ou plusieurs emplacements, et en option un titre, des sujets et un embedding. Les fiches ne contiennent jamais de secrets. |
+| Emplacement | `local` (une base sur ce nœud), `remote` (un point d’accès et une base sur un autre serveur) ou `snapshot` (un export importé) |
+| Requête de contexte | Une instruction BQL, la liste des `contexts` (ou un `working_set`), et la façon de fusionner les réponses |
+| Ensemble de travail | Une liste de contextes. Un membre peut être distant, une tranche enregistrée de résultats de requête, ou un snapshot importé |
+| Tranche | Les documents qu’une requête a renvoyés d’un contexte, enregistrés dans une base locale |
+| Snapshot | Une copie en lecture seule d’une base, faite avec `barrel_ctx_export:export/3` et importée sur un autre nœud |
+
+## Comment une requête s’exécute
+
+BQL n’a pas de syntaxe pour les contextes. Vous les nommez dans la
+requête, à côté de l’instruction. Chaque membre exécute la même
+instruction (le nom de collection après `FROM` est ignoré), en parallèle,
+dans des budgets, et le nœud fusionne les lignes.
+
+```erlang
+{ok, R} = barrel_ctx:query(#{
+    query => <<"SELECT id, subject, minutes FROM c "
+               "ORDER BY minutes DESC LIMIT 2">>,
+    contexts => [<<"support/eu">>, <<"support/us">>]}).
+```
+
+La réponse porte `execution` (`succeeded`, `partial` ou `failed`),
+`rows` ou `groups`, une entrée `sources` par contexte, `coverage`, et un
+`summary` d’un paragraphe. Un contexte qui ne répond pas est signalé dans
+son entrée de source, et non comme une requête en échec.
+
+Règles :
+
+- Une requête de lignes exige `LIMIT` (au plus 1000). Ajoutez `ORDER BY`
+  sur un champ sélectionné pour fusionner les lignes dans l’ordre.
+- Les réponses de `bm25_top_k` et `hybrid_top_k` restent groupées par
+  contexte ; elles ne sont jamais fusionnées en un seul classement.
+- Refusés : `SUBSCRIBE`, `OFFSET`, `UNNEST`, les continuations, et les
+  fusions `rrf` et `rerank`.
+- Budgets par défaut : 8 contextes par requête, une échéance de 5 s (60 s
+  au plus), 4 s par membre, 8 membres en parallèle (16 au plus).
+
+## Ce qui est implémenté aujourd’hui
+
+<span class="mark mark--today">Fonctionne aujourd’hui</span>
+
+- Le catalogue : enregistrer, lister, inspecter, découvrir par sujet,
+  désenregistrer.
+- Les requêtes de contexte sur des membres locaux, distants et snapshots,
+  depuis Erlang (`barrel_ctx`), REST (`/contexts/_query`) et MCP
+  (`context_query`).
+- Les ensembles de travail : attacher et détacher des membres,
+  matérialiser des tranches à partir d’une requête, importer des
+  snapshots, mode hors ligne qui ignore les membres distants.
+- L’export et l’import en lecture seule de snapshots.
+- Les identifiants des serveurs distants dans la configuration du nœud
+  (`ctx_credentials`), jamais dans les fiches.
+
+## Ce qui est prévu
+
+<Callout kind="planned" label="Prévu">
+Rien de tout cela n’existe encore. Ces points sont listés dans la
+conception des contextes, sous « Not supported yet ».
+</Callout>
+
+- La fédération en direct (`SUBSCRIBE` sur plusieurs contextes).
+- Le classement BM25 et hybride sur plusieurs contextes, qui demande des
+  statistiques BM25 partagées ; les fusions `rrf` et `rerank`.
+- Le contrôle de la propriété des ensembles de travail : le libellé
+  `owner` est stocké, pas vérifié. N’importe quel principal global peut
+  lire ou supprimer n’importe quel ensemble de travail.
+- Une permission de requête seule : un droit qui permet d’interroger une
+  source sans copier depuis elle.
+- Un catalogue partagé ou répliqué ; aujourd’hui chaque nœud a le sien,
+  rempli à la main.
+- La publication de générations et de paquets d’index ngram vers un
+  stockage objet.
+- La réutilisation des connexions et des options TLS dans le client
+  distant.
+- Les sous-ensembles continus, les snapshots par prédicat, la pagination
+  et la déduplication entre réplicas.
+- Des routes REST et MCP pour mettre à jour une fiche
+  (`barrel_ctx:update/2` est en Erlang seulement), et des outils MCP pour
+  enregistrer et désenregistrer.
+
+## Notes
+
+- `barrel_ctx_export:export/3` refuse une base sans stockage vectoriel
+  (`{error, no_vector_store}`).
+- Un snapshot importé s’ouvre en lecture seule ; ce n’est pas une
+  restauration.
+- Les routes d’enregistrement, de suppression et d’ensembles de travail
+  exigent le jeton global sur `barrel_server` ; l’interrogation est
+  ouverte aux jetons de capacité, et chaque membre local est alors
+  vérifié comme une requête sur cette base.
+- La conception se trouve dans [Conception des
+  contextes](/fr/docs/architecture/contexts).
