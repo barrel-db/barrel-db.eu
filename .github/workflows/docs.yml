@@ -26,10 +26,10 @@ jobs:
           token: ${{ secrets.DOCS_TOKEN || github.token }}
 
       - name: Install build tools
-        # barrel_vectordb builds a NIF through CMake.
+        # CMake builds the NIFs; rocksdb links the system compression libraries.
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends cmake
+          apt-get install -y --no-install-recommends cmake libsnappy-dev liblz4-dev libzstd-dev
 
       - uses: actions/setup-node@v4
         with:
@@ -85,7 +85,7 @@ jobs:
       - name: Install build tools
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends cmake curl
+          apt-get install -y --no-install-recommends cmake curl libsnappy-dev liblz4-dev libzstd-dev
 
       - uses: actions/setup-node@v4
         with:
