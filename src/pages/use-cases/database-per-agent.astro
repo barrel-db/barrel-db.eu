@@ -1,0 +1,129 @@
+---
+import UseCasePage from '../../components/usecase/UseCasePage.astro';
+import type { ArchColumn, Step } from '../../components/usecase/types';
+
+const arch: ArchColumn[] = [
+  { who: 'Planner (admin token)', boxes: [
+    { name: 'space_create', note: 'one space per agent' },
+    { name: 'space_grant', note: 'read and write, for one subject' } ] },
+  { who: 'barrel_server', boxes: [
+    { name: 'sp_research', note: 'the researcher’s database', rec: true },
+    { name: 'sp_writer', note: 'the writer’s database', rec: true } ] },
+  { who: 'Agents (their own token each)', boxes: [
+    { name: 'Research agent', note: 'MCP, bearer bsp_…' },
+    { name: 'Writer agent', note: 'MCP, bearer bsp_…' } ] },
+];
+
+const steps: Step[] = [
+  { title: 'Start the server with auth on',
+    body: 'Every request then needs a token. The admin token is yours; agents never see it.',
+    label: 'sys.config', lang: 'erlang',
+    code: `[{barrel_server, [
+   {http_port, 8080},
+   {auth, #{tokens => [<<"admin-token">>]}}
+ ]}].` },
+  { title: 'Create a space for the agent',
+    body: 'The planner calls `space_create` with the admin token. A capability token cannot create spaces.',
+    tabs: [
+      { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":3,"method":"tools/call",
+ "params":{"name":"space_create",
+  "arguments":{"label":"research","owner":"planner"}}}` },
+      { label: 'REST', lang: 'bash', code: `curl -X POST localhost:8080/spaces \\
+  -H 'authorization: Bearer admin-token' \\
+  -H 'content-type: application/json' \\
+  -d '{"label":"research","owner":"planner"}'` } ],
+    outLabel: 'REST response, from a recorded run',
+    out: `HTTP/1.1 201 Created
+{"ok":true,"space":"sp_wh2tq2ocmemj52ln"}` },
+  { title: 'Grant it a token',
+    body: 'The token is returned once; only its hash is stored. Hand it to the agent and keep the `token_id` to revoke it later.',
+    tabs: [
+      { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":4,"method":"tools/call",
+ "params":{"name":"space_grant",
+  "arguments":{"space":"sp_…",
+               "rights":["read","write"],
+               "subject":"researcher"}}}` },
+      { label: 'REST', lang: 'bash', code: `curl -X POST localhost:8080/spaces/sp_…/grants \\
+  -H 'authorization: Bearer admin-token' \\
+  -H 'content-type: application/json' \\
+  -d '{"rights":["read","write"],
+       "subject":"researcher"}'` } ],
+    outLabel: 'REST response, from a recorded run with a read grant (wrapped, token shortened)',
+    out: `{"token":"bsp_cc36jf4gfrnkk6sm_ps5i…",
+ "grant":{"id":"grant:cc36jf4gfrnkk6sm",
+  "token_id":"cc36jf4gfrnkk6sm",
+  "rights":["read"],"subject":"agent-1",
+  "space":"sp_wh2tq2ocmemj52ln",
+  "expires_at":0,"revoked_at":0,"type":"grant", …}}` },
+  { title: 'The agent works in its space',
+    body: 'It connects to `/mcp` with its own token as a bearer and writes to the space database. The write is recorded with the agent as actor.',
+    label: 'MCP request from the research agent', lang: 'json',
+    code: `{"jsonrpc":"2.0","id":8,"method":"tools/call",
+ "params":{"name":"doc_put",
+  "arguments":{"db":"sp_…",
+   "doc":{"id":"note-1",
+          "title":"sources for Q3 report"}}}}`,
+    outLabel: 'Response shape, from a recorded run (wrapped, rev shortened)',
+    out: `data: {"id":8,"jsonrpc":"2.0","result":{"content":[
+  {"type":"text","text":"{\\"id\\":\\"note-1\\",
+  \\"ok\\":true,\\"rev\\":\\"000001a1…\\"}"}]}}` },
+  { title: 'Other databases stay closed to it',
+    body: 'The same token on another database is refused: 403 over REST, a tool result with `isError` over MCP. So is a write with a read-only grant.',
+    label: 'REST', lang: 'bash',
+    code: `curl -H 'authorization: Bearer bsp_…' \\
+  localhost:8080/db/demo/doc/a`,
+    outLabel: 'From a recorded run',
+    out: `HTTP/1.1 403 Forbidden
+{"error":"forbidden"}` },
+  { title: 'Revoke the token when the job ends',
+    body: 'Revocation is immediate on this node. The space and its data stay for the next agent or for review.',
+    tabs: [
+      { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":9,"method":"tools/call",
+ "params":{"name":"space_revoke",
+  "arguments":{"space":"sp_…",
+               "token_id":"cc36jf4gfrnkk6sm"}}}` },
+      { label: 'REST', lang: 'bash', code: `curl -X DELETE \\
+  localhost:8080/spaces/sp_…/grants/cc36jf4gfrnkk6sm \\
+  -H 'authorization: Bearer admin-token'` } ] },
+];
+---
+
+<UseCasePage
+  title="A database per agent"
+  lead="Give each agent its own database and decide, per agent, what it may read and write. When an agent misbehaves or its job is done, revoke its token; nothing else is touched."
+  sub="Built from spaces and capability tokens, enforced by barrel_server on REST and MCP. Runs on one node with no other service."
+  problem="Several agents writing to one shared database step on each other's data, and every access rule lives in your prompt or your glue code. Taking one agent's access away, or cleaning up after it, means finding its rows."
+  arch={arch}
+  edges={['creates and grants', 'token over MCP']}
+  archNote="The planner holds an admin token and creates one space per agent. Each agent connects to `/mcp` with its own token; the server refuses a token used on another space or without the right it needs."
+  stepsIntro="Six steps against a running barrel_server. Each MCP request is a `tools/call` sent to `POST /mcp` after the usual `initialize`."
+  steps={steps}
+  barrel={[
+    'Creates and drops each agent’s database',
+    'Issues, checks and revokes tokens with read, write or admin rights',
+    'Keeps sessions and messages per agent, with expiry',
+    'Records who wrote what, in which session',
+  ]}
+  app={[
+    'Decides which agent gets which space and rights',
+    'Stores each token where only that agent can use it',
+    'Runs the agents and their model calls',
+    'Calls revoke when a job ends',
+  ]}
+  limits={[
+    'Tokens are enforced by the server. Code inside your own Erlang node can open any space without one; give spaces their own encryption keys if they must not read each other.',
+    'Each space is a full database with its own files on disk. Idle spaces close themselves, but size the node for the spaces you keep open at once.',
+    'A space’s vector store stays on the node that built it; replicate the documents and rebuild it elsewhere.',
+    'A capability token reaches the space itself only, not branches of that space.',
+    'Over REST and MCP, spaces open with default options, so encrypted spaces are Erlang API only for now.',
+  ]}
+  links={[
+    { label: 'Example: two agents and a handoff', href: '/examples/agents-handoff' },
+    { label: 'Spaces, sessions, handoffs', href: '/docs/guides/spaces' },
+    { label: 'MCP endpoint', href: '/docs/guides/mcp' },
+    { label: 'Spaces and capabilities', href: '/docs/concepts/spaces' },
+    { label: 'barrel_spaces', href: '/product/spaces' },
+    { label: 'Agent layer', href: '/product/agents' },
+    { label: 'Use case: memory for agents', href: '/use-cases/agent-memory' },
+  ]}
+/>

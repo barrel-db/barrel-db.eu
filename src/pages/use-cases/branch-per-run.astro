@@ -1,0 +1,122 @@
+---
+import UseCasePage from '../../components/usecase/UseCasePage.astro';
+import type { ArchColumn, Step } from '../../components/usecase/types';
+
+const arch: ArchColumn[] = [
+  { who: 'Your orchestrator', boxes: [
+    { name: 'Before the run', note: 'branch/3, a constant-time fork' },
+    { name: 'The agent', note: 'writes to the branch only' } ] },
+  { who: 'Barrel', boxes: [
+    { name: 'main', note: 'live data, untouched by the run', rec: true },
+    { name: 'run_42', note: 'the branch: a normal database', rec: true } ] },
+  { who: 'Review', boxes: [
+    { name: 'Changes since the fork', note: 'what the run did' },
+    { name: 'merge/1 or delete/1', note: 'keep it or throw it away' } ] },
+];
+
+const steps: Step[] = [
+  { title: 'Fork before the run',
+    body: 'A branch is a hard-link checkpoint of the stores, so forking costs the same whatever the size. A record-mode branch gets its own vector store, rebuilt from the embeddings already stored in the documents.',
+    tabs: [
+      { label: 'Erlang', lang: 'erlang', code: `{ok, Run} = barrel:branch(Db, run_42,
+    #{vectordb => #{db_path => "data/run_42_vec"}}).` },
+      { label: 'REST', lang: 'bash', code: `curl -X POST localhost:8080/db/demo/_timeline/branch \\
+  -H 'content-type: application/json' \\
+  -d '{"name":"demo-exp"}'` },
+      { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":20,"method":"tools/call",
+ "params":{"name":"branch_create",
+  "arguments":{"db":"demo","name":"demo-exp"}}}` } ],
+    outLabel: 'REST response, from a recorded run',
+    out: `HTTP/1.1 201 Created
+{"ok":true,"parent":"demo","fork_hlc":"AAABobh22gAAAAAA",
+ "branch":"demo-exp"}` },
+  { title: 'Let the agent write to the branch',
+    body: 'The branch takes reads, writes, queries and search like any database. Point the agent at its name; `main` does not change.',
+    tabs: [
+      { label: 'Erlang', lang: 'erlang', code: `{ok, D} = barrel:get_doc(Run, <<"kb:201">>),
+{ok, _} = barrel:put_doc(Run,
+    D#{<<"title">> => <<"Export invoices and credit notes">>}).` },
+      { label: 'REST', lang: 'bash', code: `curl -X PUT localhost:8080/db/demo-exp/doc/e \\
+  -H 'content-type: application/json' \\
+  -d '{"kind":"note","title":"on branch"}'` } ] },
+  { title: 'Review what the run changed',
+    body: 'Read the branch’s changes since its fork instant. `fork_hlc` is a changes cursor.',
+    tabs: [
+      { label: 'Erlang', lang: 'erlang', code: `{ok, #{fork_hlc := Fork}} = barrel:info(Run),
+{ok, Changed, _Last} = barrel:changes(Run, Fork).` },
+      { label: 'REST', lang: 'bash', code: `FORK=AAABobh22gAAAAAA   # fork_hlc from step 1
+curl "localhost:8080/db/demo-exp/changes?since=$FORK"` } ] },
+  { title: 'Merge it, or throw it away',
+    body: 'A merge ships only the documents the branch changed. Edits made on `main` meanwhile on the same documents become ordinary conflicts. Merging again later is incremental.',
+    tabs: [
+      { label: 'Erlang', lang: 'erlang', code: `{ok, _Report} = barrel:merge(Run),
+ok = barrel:delete(Run).` },
+      { label: 'REST', lang: 'bash', code: `curl -X POST localhost:8080/db/demo-exp/_timeline/merge
+curl -X DELETE 'localhost:8080/db/demo-exp?purge=true'` },
+      { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":21,"method":"tools/call",
+ "params":{"name":"merge",
+  "arguments":{"db":"demo-exp"}}}` } ],
+    outLabel: 'REST merge response, from a recorded run (trimmed)',
+    out: `{"failed":[],"last_merged":"AAABobh224EAAAAA",
+ "docs_read":1,"docs_written":1,"doc_write_failures":0,
+ "att_sync":{"atts_written":0, …}, …}` },
+  { title: 'Recover a state from before the run',
+    body: 'Keep a changes cursor before each run. Branching `at` that cursor gives you every document as it was then, next to today’s data, as long as the instant is inside the retention window (30 days by default). Over REST, `at_time` also takes an RFC 3339 time.',
+    tabs: [
+      { label: 'Erlang', lang: 'erlang', code: `{ok, _, Before} = barrel:changes(Db, first),
+%% ... the run happens ...
+{ok, Then} = barrel:branch(Db, before_run_42,
+    #{at => Before,
+      vectordb => #{db_path => "data/before_42_vec"}}).` },
+      { label: 'REST', lang: 'bash', code: `curl -X POST localhost:8080/db/demo/_timeline/branch \\
+  -H 'content-type: application/json' \\
+  -d '{"name":"before-run",
+       "at_time":"2026-11-07T09:00:00Z"}'` },
+      { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":22,"method":"tools/call",
+ "params":{"name":"branch_create",
+  "arguments":{"db":"demo","name":"before-run",
+               "at":"AAABobh22gAAAAAA"}}}` } ] },
+];
+---
+
+<UseCasePage
+  title="A branch per agent run"
+  lead="Fork the database before an agent run, let the agent write to the copy, review what changed, then merge it or throw it away. Fork at a past instant to get back what a run broke."
+  sub="Built from the barrel timeline: `barrel:branch/3`, `merge/1` and `delete/1`, the same operations over REST and as the MCP tools `branch_create` and `merge`."
+  problem="Letting an agent edit live data is risky, and copying a database to give it a sandbox is slow and leaves you to work out the differences by hand. When a run goes wrong, you want the data as it was before it started."
+  arch={arch}
+  edges={['branch/3', 'changes, then merge']}
+  archNote="The branch shares files with `main` copy-on-write until either side compacts. Its writes carry their own source id, so a merge can tell what the branch did from what it inherited."
+  stepsIntro="Five steps. The REST and MCP examples use a database named `demo` and a branch `demo-exp`, as in the recorded run."
+  steps={steps}
+  barrel={[
+    'Forks in constant time and isolates the branch completely',
+    'Merges only what the branch changed, through the replication machinery',
+    'Keeps concurrent edits on both sides as conflicts',
+    'Restores a past instant within the retention window',
+    'Rebuilds a record-mode branch’s vectors from the stored embeddings',
+  ]}
+  app={[
+    'Names a branch per run and points the agent at it',
+    'Decides what review means: a person, a test suite or another agent',
+    'Resolves conflicts left by a merge',
+    'Deletes branches it no longer needs',
+  ]}
+  limits={[
+    'Lineage is linear: a branch of a branch is refused with `cannot_branch_a_branch`.',
+    'A past instant below the history floor fails with `pitr_window_exceeded`.',
+    'A point-in-time branch is not merged back as a revert; rolling `main` back to an instant is not available yet.',
+    'Plain (not record-mode) branches start with an empty vector store.',
+    'Attachments on a point-in-time branch are as of the fork, not as of the chosen instant.',
+    'There is no per-merge conflict policy; the parent’s `conflict_resolver` applies. A capability token cannot reach a branch of its space; `branch_create` and `merge` need admin rights.',
+  ]}
+  links={[
+    { label: 'Example: experiment on a branch', href: '/examples/branch-experiment' },
+    { label: 'Branch, merge, recover', href: '/docs/guides/timeline' },
+    { label: 'Conflicts', href: '/docs/replicate/conflicts' },
+    { label: 'Audit and provenance', href: '/docs/guides/audit-provenance' },
+    { label: 'Timeline', href: '/product/timeline' },
+    { label: 'barrel', href: '/product/barrel' },
+    { label: 'barrel_docdb', href: '/product/docdb' },
+  ]}
+/>

@@ -1,0 +1,107 @@
+---
+import UseCasePage from '../../components/usecase/UseCasePage.astro';
+import type { ArchColumn, Step } from '../../components/usecase/types';
+
+const arch: ArchColumn[] = [
+  { who: 'Your SaaS backend', boxes: [
+    { name: 'Onboarding', note: 'one space per customer' },
+    { name: 'Offboarding', note: 'drop the space' } ] },
+  { who: 'Barrel, in your Erlang node', boxes: [
+    { name: 'sp_acme', note: 'Acme’s database, its own key', rec: true },
+    { name: 'sp_globex', note: 'Globex’s database, its own key', rec: true } ] },
+  { who: 'Your key store', boxes: [
+    { name: 'tenant_keys', note: 'key_for_db/1, your module' },
+    { name: 'KMS or vault', note: 'holds the keys, never on disk' } ] },
+];
+
+const steps: Step[] = [
+  { title: 'Write a key provider',
+    body: 'Barrel asks the provider for a key each time it opens a database, by its keyspace (the space id). Return exactly 32 bytes. An error fails the open.',
+    label: 'Erlang', lang: 'erlang',
+    code: `-module(tenant_keys).
+-behaviour(barrel_keyprovider).
+-export([key_for_db/1]).
+
+key_for_db(Keyspace) ->
+    %% my_kms is your code: fetch or derive the key
+    {ok, my_kms:data_key(Keyspace)}.` },
+  { title: 'Create one space per customer',
+    body: 'Documents, attachments in the default store, vectors and disk index files are encrypted under that key. Keep the returned id with the customer record.',
+    label: 'Erlang', lang: 'erlang',
+    code: `{ok, _} = application:ensure_all_started(barrel_spaces),
+Enc = #{provider => tenant_keys},
+{ok, #{id := Acme, db := Db}} =
+    barrel_spaces:create_space(#{label => <<"acme">>,
+                                 encryption => Enc}),
+{ok, _} = barrel:put_doc(Db, #{<<"id">> => <<"inv-1">>,
+                               <<"total">> => 1200}).` },
+  { title: 'Issue tokens for the customer’s agents',
+    body: 'A grant is scoped to one space. barrel_server checks it on every request; your code can also verify it directly.',
+    label: 'Erlang', lang: 'erlang',
+    code: `{ok, Token, _Grant} = barrel_caps:grant(Acme,
+    #{rights => [read, write],
+      subject => <<"acme-support-bot">>}),
+{ok, _} = barrel_caps:verify(Token, Acme, write).` },
+  { title: 'Pass the key spec on every open',
+    body: 'Encryption is runtime configuration. Without the spec an encrypted space does not open; with the wrong key it fails closed.',
+    label: 'Erlang', lang: 'erlang',
+    code: `{error, db_is_encrypted} =
+    barrel_spaces:open_space(Acme),
+{ok, Space} =
+    barrel_spaces:open_space(Acme, #{encryption => Enc}).`,
+    outLabel: 'From a recorded run',
+    out: `open encrypted space without spec: {error,db_is_encrypted}
+open encrypted space with spec: ok` },
+  { title: 'Offboard the customer',
+    body: 'Dropping the space deletes its database, marks it dropped in the registry and revokes every grant issued for it. An encrypted space needs its spec to be opened for deletion.',
+    label: 'Erlang', lang: 'erlang',
+    code: `ok = barrel_spaces:drop_space(Acme,
+                              #{encryption => Enc}),
+{error, space_dropped} = barrel_spaces:open_space(Acme).`,
+    outLabel: 'From a recorded run (grants listed after the drop)',
+    out: `open dropped: {error,space_dropped}
+grants after drop: [true,true]   %% revoked_at > 0` },
+];
+---
+
+<UseCasePage
+  title="A database per customer"
+  lead="Give every customer their own database, encrypted under their own key. Queries never need a tenant filter, and offboarding deletes the database and revokes every token issued for it."
+  sub="Built from barrel_spaces and barrel_crypto, through the Erlang API. Your key store stays yours; Barrel only asks it for a key at open."
+  problem="Customer data mixed in shared tables needs a tenant filter on every query, one missed filter leaks data, and deleting a customer means hunting their rows across tables and backups."
+  arch={arch}
+  edges={['create, grant, drop', 'one key per space']}
+  archNote="Each customer is a space: a database with its own files and its own key. The key provider resolves the key from the space id, so no key is written next to the data; a cleartext key-check file lets a wrong key fail at open instead of reading garbage."
+  stepsIntro="Five steps in your Erlang application. The same spaces are reachable over REST and MCP, but those open spaces with default options, so encrypted spaces stay on the Erlang API for now."
+  steps={steps}
+  barrel={[
+    'Keeps each customer in a separate database with its own files',
+    'Encrypts documents, blob-store attachments, vectors and disk indexes under that database’s key',
+    'Refuses to open with a missing or wrong key',
+    'Scopes tokens to one space and revokes them all on drop',
+  ]}
+  app={[
+    'Maps customers to space ids',
+    'Holds the keys in a KMS or vault and serves them to the provider',
+    'Passes the encryption spec on every open',
+    'Decides when to offboard, and what happens to backups',
+  ]}
+  limits={[
+    'Attachments stored in S3 with barrel_att_s3 are not encrypted by database encryption: they sit in the bucket in plaintext. Use bucket-side encryption, or keep sensitive files in the default store.',
+    'Encrypted spaces are Erlang API only over REST and MCP for now.',
+    'No key rotation and no in-place encryption: replicate into a new database under a new key. A plaintext database cannot be opened encrypted (`cannot_encrypt_existing_db`).',
+    'A lost key means lost data.',
+    'The threat model is data at rest. The cipher is not authenticated, so an attacker who can write the files is out of scope, and keys in memory are not zeroized.',
+    'Code inside your node can open any space without a token; the key is what keeps one tenant from reading another.',
+  ]}
+  links={[
+    { label: 'Encryption at rest', href: '/docs/guides/encryption' },
+    { label: 'Spaces, sessions, handoffs', href: '/docs/guides/spaces' },
+    { label: 'Spaces and capabilities', href: '/docs/concepts/spaces' },
+    { label: 'Authentication', href: '/docs/security/authentication' },
+    { label: 'barrel_crypto', href: '/product/crypto' },
+    { label: 'barrel_spaces', href: '/product/spaces' },
+    { label: 'barrel_att_s3', href: '/product/att-s3' },
+    { label: 'Security', href: '/product/security' },
+  ]}
+/>
