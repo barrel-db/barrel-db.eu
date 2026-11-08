@@ -4,7 +4,7 @@ import { groups, tools, meta } from './_mcp-tools';
 
 const cell = (s: string) => s.replace(/\|/g, '\\|').replace(/\n/g, ' ');
 
-export const GET: APIRoute = () => {
+export function mcpToolsMarkdown(): string {
   const lines = [
     '# MCP tools',
     '',
@@ -26,5 +26,8 @@ export const GET: APIRoute = () => {
       lines.push('');
     }
   }
-  return new Response(lines.join('\n'), { headers: { 'content-type': 'text/markdown; charset=utf-8' } });
-};
+  return lines.join('\n');
+}
+
+export const GET: APIRoute = () =>
+  new Response(mcpToolsMarkdown(), { headers: { 'content-type': 'text/markdown; charset=utf-8' } });

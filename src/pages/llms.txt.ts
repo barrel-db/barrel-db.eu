@@ -18,6 +18,10 @@ export const GET: APIRoute = async () => {
     lines.push(`## ${s.title}`, '');
     for (const i of s.items) {
       const e = entries.get(i.slug);
+      if (!e && i.slug === 'reference/mcp-tools') {
+        lines.push(`- [${i.label}](https://barrel-db.eu/docs/${i.slug}.md): every tool barrel_server registers on /mcp, with its arguments, generated from tools/list`);
+        continue;
+      }
       if (!e) continue;
       lines.push(`- [${i.label}](https://barrel-db.eu/docs/${i.slug}.md)${e.data.description ? `: ${e.data.description}` : ''}`);
     }
