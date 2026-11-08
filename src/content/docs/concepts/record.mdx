@@ -1,0 +1,108 @@
+---
+title: The record
+description: What Barrel stores under one id - a JSON document, its attachments and its vector - and which fields Barrel adds or reserves.
+---
+import CodeBlock from '../../../components/CodeBlock.astro';
+import RecordFigure from '../../../components/RecordFigure.astro';
+
+A record is everything Barrel keeps under one id: a JSON document, the
+files attached to it, and in record mode the vector that represents it.
+They are read, written, replicated and deleted by that id. Read this to
+know what a document looks like on the way in and on the way out, which
+fields Barrel adds, and what moves with the record.
+
+<RecordFigure id="kb-142" caption="One id: the document on top, attachments on the left, the vector on the right." />
+
+## The three parts
+
+| Part | What it is | Versioned | Replicated |
+|------|------------|-----------|------------|
+| Document | A JSON object with an `id` | yes, every write is a version | yes |
+| Attachments | Named binary blobs, by document id and name | no, last write wins on its timestamp | yes, on their own feed |
+| Vector | The embedding of the fields you choose | follows the document | no, each copy rebuilds it |
+
+## The document
+
+You write a map with an `id`. Every path in it is indexed, so you can
+query any field without declaring an index.
+
+<CodeBlock label="Erlang shell" code={`barrel:put_doc(Db, #{<<"id">> => <<"kb-142">>,
+    <<"title">> => <<"Reset a locked account">>,
+    <<"_note">> => <<"dropped">>}),
+barrel:get_doc(Db, <<"kb-142">>).`} />
+
+<CodeBlock output label="Output from a run on barrel 1.12.0" code={`{ok,#{<<"_rev">> =>
+          <<"000001a1ba45b14e00000000@wddc4e1c028733ad0">>,
+      <<"id">> => <<"kb-142">>,
+      <<"title">> => <<"Reset a locked account">>}}`} />
+
+- `_rev` is the version token Barrel adds on read. Send it back to update
+  the document; a missing or stale `_rev` returns `{error, conflict}`.
+  See [Versions, conflicts, convergence](/docs/concepts/versions).
+- Top-level fields that start with `_` are reserved. Barrel drops the
+  ones you send (`_note` above) and never indexes them.
+- A delete writes a version that marks the document deleted. A read then
+  returns `{error, not_found}`, and the vector goes too.
+
+## Fields Barrel adds on request
+
+| Field | Read option | What it holds |
+|-------|-------------|---------------|
+| `_rev` | always | The winning version token |
+| `_conflicts` | `conflicts => true` | The other concurrent versions |
+| `_observed` | `conflicts => true` | Every version the read showed, to pass back when you resolve |
+| `_embedding` | `include_embedding => true` | `vector` and `source` (`computed` when Barrel embedded it) |
+
+## Attachments
+
+Attachments belong to a document id. Writing one does not change the
+document's `_rev`.
+
+<CodeBlock label="Erlang shell" code={`barrel:put_attachment(Db, <<"kb-142">>, <<"steps.md">>,
+                      <<"1. Open the console">>),
+barrel:list_attachments(Db, <<"kb-142">>).`} />
+
+<CodeBlock output label="Output from a run on barrel 1.12.0, digest trimmed" code={`{ok,#{name => <<"steps.md">>,length => 19,
+      digest => <<"sha256-dd490eb840644ed69f89e41c5...">>,
+      content_type => <<"application/octet-stream">>,
+      chunked => false}}
+[<<"steps.md">>]`} />
+
+See [Attachments](/docs/store/attachments).
+
+## The vector
+
+In [record mode](/docs/guides/record-mode) you give the database an
+embedding policy: which fields to embed, with which provider, at which
+dimension. Barrel embeds those fields on every write and drops the vector
+on delete. Search results read their text and metadata from the current
+document.
+
+In a plain database you manage vectors yourself with `vector_add`, under
+the same id or another one. The document and its vector are then two
+separate writes.
+
+## What else a write can carry
+
+| Write option | Effect |
+|--------------|--------|
+| `provenance => #{actor, session, source}` | Stored with the version, shown in history |
+| `expires_at => UnixMs` | The document disappears after that time |
+| `sync => true` | Waits for the write to reach disk |
+
+<CodeBlock label="Erlang shell" code={`barrel:put_doc(Db, Doc,
+    #{provenance => #{actor => <<"agent-7">>,
+                      session => <<"ses_42">>}}),
+barrel:doc_versions(Db, <<"kb-142">>).`} />
+
+<CodeBlock output label="Output from a run on barrel 1.12.0" code={`{ok,[#{status => current,
+       version =>
+           <<"000001a1ba45b14e00000000@wddc4e1c028733ad0">>,
+       deleted => false,
+       provenance => #{session => <<"ses_42">>,
+                       actor => <<"agent-7">>},
+       vv => #{<<"wddc4e1c028733ad0">> =>
+                   {timestamp,1794126491982,0}}}]}`} />
+
+Provenance is not replicated. See [Audit and
+provenance](/docs/guides/audit-provenance).

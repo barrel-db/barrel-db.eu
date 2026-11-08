@@ -1,0 +1,138 @@
+---
+title: "Quickstart: embedded"
+description: Add Barrel to an Erlang application, store support articles, query them with BQL, then search them by meaning.
+---
+import CodeBlock from '../../../components/CodeBlock.astro';
+import Callout from '../../../components/Callout.astro';
+
+Add Barrel to an Erlang application, store support articles, query them
+with BQL, then search them by meaning. It takes about ten minutes. Use
+this when Barrel will run inside your own OTP release, with no server in
+between.
+
+## Before you start
+
+- Erlang/OTP 26 or later and rebar3.
+- CMake and a C++ compiler: the vector store builds a native library.
+- For step 5 only: [Ollama](https://ollama.com) running locally with the
+  `nomic-embed-text` model (`ollama pull nomic-embed-text`).
+
+## 1. Create the project
+
+```shell
+rebar3 new release kb
+cd kb
+```
+
+Add barrel to the dependencies, and tell it where to keep its files.
+
+<CodeBlock label="rebar.config" code={`{deps, [{barrel, "~> 1.12"}]}.`} />
+
+<CodeBlock label="config/sys.config" code={`[{barrel_docdb, [{data_dir, "data/docdb"}]}].`} />
+
+## 2. Open a database
+
+Start a shell with `rebar3 shell`. `vectordb => none` opens the document
+store only, so nothing needs a model yet.
+
+<CodeBlock label="Erlang shell" code={`{ok, _} = application:ensure_all_started(barrel),
+{ok, Db} = barrel:open(<<"kb">>, #{vectordb => none}).`} />
+
+## 3. Write documents
+
+<CodeBlock label="Erlang shell" code={`Articles = [
+  #{<<"id">> => <<"kb-142">>, <<"product">> => <<"console">>,
+    <<"title">> => <<"Reset a locked account">>},
+  #{<<"id">> => <<"kb-207">>, <<"product">> => <<"console">>,
+    <<"title">> => <<"Rotate an API key">>},
+  #{<<"id">> => <<"kb-311">>, <<"product">> => <<"mobile">>,
+    <<"title">> => <<"Sign in with a passkey">>}],
+[{ok, _} = barrel:put_doc(Db, A) || A <- Articles],
+barrel:get_doc(Db, <<"kb-207">>).`} />
+
+<CodeBlock output label="Output from a run on barrel 1.12.0" code={`{ok,#{<<"_rev">> =>
+          <<"000001a1ba3fd05d00000000@w4f0cb98700ad5ffc">>,
+      <<"id">> => <<"kb-207">>,<<"product">> => <<"console">>,
+      <<"title">> => <<"Rotate an API key">>}}`} />
+
+`_rev` is the version token of the write. To update the document, send it
+back with your change. See [The record](/docs/concepts/record).
+
+## 4. Query with BQL
+
+<CodeBlock label="Erlang shell" code={`{ok, Rows, _Meta} = barrel:query(Db,
+    <<"SELECT id, title FROM kb "
+      "WHERE product = 'console' ORDER BY id">>).`} />
+
+<CodeBlock output label="Output from a run on barrel 1.12.0" code={`{ok,[#{<<"id">> => <<"kb-142">>,
+       <<"title">> => <<"Reset a locked account">>},
+     #{<<"id">> => <<"kb-207">>,
+       <<"title">> => <<"Rotate an API key">>}],
+    #{count => 2, ...}}`} />
+
+## 5. Search by meaning
+
+Open a second database in record mode. Barrel embeds the title of every
+document you write to it and keeps the vector index in step with later
+edits and deletes. Record mode only embeds documents written after it is
+on, so you write the articles again into this fresh database.
+
+<CodeBlock label="Erlang shell" code={`{ok, Kb} = barrel:open(<<"kb_search">>, #{
+    embedding => #{
+        fields   => [<<"title">>],
+        mode     => sync,
+        embedder => {ollama,
+                     #{model => <<"nomic-embed-text">>}}},
+    vectordb => #{db_path => "data/vectors/kb_search"}}),
+[{ok, _} = barrel:put_doc(Kb, A) || A <- Articles],
+barrel:search(Kb, <<"I cannot log in">>, #{k => 2}).`} />
+
+<CodeBlock output label="Output from a run on barrel 1.12.0 with Ollama nomic-embed-text" code={`{ok,[#{text => <<"Sign in with a passkey">>,
+       metadata =>
+           #{<<"product">> => <<"mobile">>,
+             <<"title">> => <<"Sign in with a passkey">>},
+       key => <<"kb-311">>,score => 0.5656703092487099},
+     #{text => <<"Reset a locked account">>,
+       metadata =>
+           #{<<"product">> => <<"console">>,
+             <<"title">> => <<"Reset a locked account">>},
+       key => <<"kb-142">>,score => 0.5460874853125287}]}`} />
+
+The same search runs from BQL, joined to the documents:
+
+<CodeBlock label="Erlang shell" code={`barrel:query(Kb,
+    <<"SELECT v.id, v._score, title "
+      "FROM vector_top_k('lost my credentials', k => 2) AS v">>).`} />
+
+<CodeBlock output label="Output from a run on barrel 1.12.0 with Ollama nomic-embed-text" code={`{ok,[#{<<"_score">> => 0.5919581721812395,
+       <<"id">> => <<"kb-142">>,
+       <<"title">> => <<"Reset a locked account">>},
+     #{<<"_score">> => 0.47384916313011594,
+       <<"id">> => <<"kb-311">>,
+       <<"title">> => <<"Sign in with a passkey">>}],
+    #{count => 2, ...}}`} />
+
+<Callout label="Note">
+Record mode embeds what you write after it is on; it does not index
+documents already in a database opened without it. No Ollama? Any
+provider works here: a local model through a Python virtualenv, or a
+cloud API with a key. See [Choose an embedding
+provider](/docs/search/embedding-providers).
+</Callout>
+
+Set `db_path` as above. Without it the vector store goes to
+`./priv/barrel_vectordb_kb_search` under the current directory.
+
+## 6. Close it
+
+<CodeBlock label="Erlang shell" code={`ok = barrel:close(Db),
+ok = barrel:close(Kb).`} />
+
+## Next
+
+- Hybrid search and BQL table functions: [Query with
+  BQL](/docs/guides/query-bql) and [Vector, keyword and
+  hybrid](/docs/search/hybrid).
+- Keep a second copy in step: [Synchronization](/docs/guides/synchronization).
+- Try changes without touching the original: [Branch, merge,
+  recover](/docs/guides/timeline).
