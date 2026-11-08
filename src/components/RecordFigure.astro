@@ -1,12 +1,15 @@
 ---
 // The record drawn as one isometric block: document on top, attachments left, vector right.
 // Same geometry as the logo. `id` labels the record; `animate` assembles it once on load.
-interface Props { id?: string; animate?: boolean; caption?: string; }
-const { id = 'kb-142', animate = false, caption } = Astro.props;
+interface Props { id?: string; animate?: boolean; caption?: string; /** Labels without database terms. */ plain?: boolean; }
+const { id = 'kb-142', animate = false, caption, plain = false } = Astro.props;
+const L = plain
+  ? { doc: ['the text', 'every version kept'], att: ['its files', 'pictures, PDFs, recordings'], vec: ['its meaning', 'what makes it findable'] }
+  : { doc: ['document', 'JSON, every version kept'], att: ['attachments', 'files, stored in chunks'], vec: ['vector', 'embedded from its fields'] };
 ---
 
 <figure class:list={['rec', { 'rec--anim': animate }]}>
-  <svg viewBox="0 0 460 420" role="img" aria-label={`One record, ${id}, drawn as a block of three faces: the document on top, its attachments on the left, its vector on the right.`}>
+  <svg viewBox="0 0 460 420" role="img" aria-label={`One record, ${id}, drawn as a block of three faces: ${L.doc[0]} on top, ${L.att[0]} on the left, ${L.vec[0]} on the right.`}>
     <g class="f-doc">
       <polygon points="230,66 340,130 230,194 120,130" class="fill-coral stroke-ink" />
       <line x1="213.5" y1="94.8" x2="290.5" y2="139.6" class="stroke-on" />
@@ -27,14 +30,14 @@ const { id = 'kb-142', animate = false, caption } = Astro.props;
       <line x1="230" y1="66" x2="230" y2="28" />
       <text x="230" y="20" text-anchor="middle" class="mono">id: {id}</text>
       <line x1="120" y1="130" x2="70" y2="112" />
-      <text x="36" y="84" class="t">document</text>
-      <text x="36" y="102" class="s">JSON, every version kept</text>
+      <text x="36" y="84" class="t">{L.doc[0]}</text>
+      <text x="36" y="102" class="s">{L.doc[1]}</text>
       <line x1="108" y1="282" x2="44" y2="330" />
-      <text x="20" y="348" class="t">attachments</text>
-      <text x="20" y="366" class="s">files, stored in chunks</text>
+      <text x="20" y="348" class="t">{L.att[0]}</text>
+      <text x="20" y="366" class="s">{L.att[1]}</text>
       <line x1="352" y1="282" x2="404" y2="326" />
-      <text x="440" y="344" text-anchor="end" class="t">vector</text>
-      <text x="440" y="362" text-anchor="end" class="s">embedded from its fields</text>
+      <text x="440" y="344" text-anchor="end" class="t">{L.vec[0]}</text>
+      <text x="440" y="362" text-anchor="end" class="s">{L.vec[1]}</text>
     </g>
   </svg>
   {caption && <figcaption class="small muted">{caption}</figcaption>}
