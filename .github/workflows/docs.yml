@@ -35,6 +35,13 @@ jobs:
         with:
           node-version: 22
 
+      # rocksdb's CRoaring fetches CPM.cmake from a GitHub release at configure
+      # time; that download fails at times. Provide it from a cache instead.
+      - name: Provide CPM.cmake
+        run: |
+          echo "CPM_SOURCE_CACHE=$GITHUB_WORKSPACE/.cpm-cache" >> "$GITHUB_ENV"
+          CPM_SOURCE_CACHE="$GITHUB_WORKSPACE/.cpm-cache" scripts/fetch-cpm.sh
+
       - name: Install dependencies
         run: npm ci
 
@@ -90,6 +97,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      # rocksdb's CRoaring fetches CPM.cmake from a GitHub release at configure
+      # time; that download fails at times. Provide it from a cache instead.
+      - name: Provide CPM.cmake
+        run: |
+          echo "CPM_SOURCE_CACHE=$GITHUB_WORKSPACE/.cpm-cache" >> "$GITHUB_ENV"
+          CPM_SOURCE_CACHE="$GITHUB_WORKSPACE/.cpm-cache" scripts/fetch-cpm.sh
 
       - name: Run the examples
         run: BARREL_DIR="$GITHUB_WORKSPACE/repos/barrel" npm run verify:examples
