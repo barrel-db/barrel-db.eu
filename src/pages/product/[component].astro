@@ -1,0 +1,22 @@
+---
+// The twelve library pages. Capability pages (replication, search...) are
+// separate static routes and are not generated here.
+import Base from '../../layouts/Base.astro';
+import ComponentPage from '../../components/product/ComponentPage.astro';
+import { components } from '../../data/site';
+import { componentContent } from '../../data/components';
+
+export function getStaticPaths() {
+  return components.map((c) => ({ params: { component: c.slug } }));
+}
+
+const { component } = Astro.params;
+const meta = components.find((c) => c.slug === component)!;
+const content = componentContent[component!];
+if (!content) throw new Error(`no content for /product/${component}`);
+const plain = content.lead.replace(/`/g, '');
+---
+
+<Base title={meta.name} description={plain}>
+  <ComponentPage content={content} />
+</Base>

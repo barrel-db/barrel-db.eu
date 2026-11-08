@@ -1,0 +1,48 @@
+---
+// Side panel of a library page: status, version, install, builds on, standalone, links.
+import { inline } from './inline';
+import { GITHUB, components, statusLabel, type Component } from '../../data/site';
+import type { ComponentContent } from '../../data/components/types';
+
+interface Props { content: ComponentContent; meta: Component; }
+const { content: c, meta } = Astro.props;
+const nameOf = (slug: string) => components.find((m) => m.slug === slug)?.name ?? slug;
+const oneLine = !c.install.code.includes('\n');
+---
+
+<aside class="fp" aria-label={`${meta.name} at a glance`}>
+  <dl>
+    <div><dt>Status</dt><dd><span class={`mark mark--${meta.status}`}>{statusLabel[meta.status]}</span></dd></div>
+    <div><dt>Version</dt><dd class="fp-strong">{meta.version}</dd></div>
+    <div><dt>Install</dt><dd>{oneLine ? <code>{c.install.code}</code> : <span>From the repository, not npm. <a href="#install">How to build it</a></span>}</dd></div>
+    <div><dt>Builds on</dt><dd>
+      {c.dependsOn.length
+        ? c.dependsOn.map((s, i) => <>{i > 0 && ', '}<a href={`/product/${s}`}>{nameOf(s)}</a></>)
+        : <span set:html={c.slug === 'lite' ? 'barrel_server, over HTTP' : 'No other Barrel library'} />}
+    </dd></div>
+    <div><dt>Used standalone</dt><dd>{c.standalone.short}</dd></div>
+    <div><dt>Reached through</dt><dd><ul>{c.reachedThrough.map((r) => <li set:html={inline(r)} />)}</ul></dd></div>
+  </dl>
+  <ul class="fp-links">
+    {c.guides.map((g) => <li><a href={g.href}>{g.label}</a></li>)}
+    {c.apiRef && <li><a href={c.apiRef}>API reference</a></li>}
+    <li><a href={`${GITHUB}/tree/main/${meta.app}`}>Source on GitHub</a></li>
+  </ul>
+</aside>
+
+<style>
+  .fp { grid-area: facts; border-top: 3px solid var(--ink); padding-top: 16px; font-size: 15px; margin-bottom: 40px; min-width: 0; }
+  dl { margin: 0; display: flex; flex-direction: column; gap: 16px; }
+  dt { color: var(--ink-2); }
+  dd { margin: 0; overflow-wrap: anywhere; }
+  dd code { font-size: 13px; }
+  dd ul { margin: 0; padding: 0; list-style: none; }
+  .fp-strong { font-weight: 600; }
+  .fp-links { list-style: none; margin: 18px 0 0; padding: 14px 0 0; border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: 6px; }
+  @media (max-width: 960px) {
+    dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; }
+  }
+  @media (max-width: 520px) {
+    dl { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

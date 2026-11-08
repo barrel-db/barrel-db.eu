@@ -1,0 +1,211 @@
+---
+// One library page under /product/<slug>, built from the Spaces artboard.
+import CodeBlock from '../CodeBlock.astro';
+import CodeTabs from '../CodeTabs.astro';
+import Callout from '../Callout.astro';
+import ApiTable from '../component/ApiTable.astro';
+import FactsPanel from '../component/FactsPanel.astro';
+import { inline } from '../component/inline';
+import { components } from '../../data/site';
+import { usedBy, optionalIn } from '../../data/components';
+import type { ComponentContent } from '../../data/components/types';
+
+interface Props { content: ComponentContent; }
+const { content: c } = Astro.props;
+const meta = components.find((m) => m.slug === c.slug)!;
+const nameOf = (slug: string) => components.find((m) => m.slug === slug)?.name ?? slug;
+const users = usedBy(c.slug);
+const optionalUsers = optionalIn(c.slug);
+const libLinks = (slugs: string[]) =>
+  slugs.map((s) => `<a href="/product/${s}"><code>${nameOf(s)}</code></a>`).join(', ');
+---
+
+<div class="wrap cp">
+  <nav aria-label="Breadcrumb" class="cp-crumb small">
+    <a href="/product">Product</a> / {meta.group} / <span aria-current="page">{meta.name}</span>
+  </nav>
+
+  <div class="cp-grid">
+    <header class="cp-head">
+      <h1 class="cp-title">{meta.name}</h1>
+      <p class="lead" set:html={inline(c.lead)} />
+    </header>
+
+    <FactsPanel content={c} meta={meta} />
+
+    <div class="cp-body">
+      <section aria-labelledby="solves">
+        <h2 id="solves" class="cp-h2">What it solves</h2>
+        <p class="cp-prose" set:html={inline(c.problem)} />
+      </section>
+
+      <section aria-labelledby="when">
+        <h2 id="when" class="cp-h2">When to use it</h2>
+        <ul class="cp-list">{c.useWhen.map((w) => <li set:html={inline(w)} />)}</ul>
+        <h3 class="cp-h3">When not to</h3>
+        <ul class="cp-list muted">{c.notWhen.map((w) => <li set:html={inline(w)} />)}</ul>
+      </section>
+
+      <section aria-labelledby="fits">
+        <h2 id="fits" class="cp-h2">How it fits into Barrel</h2>
+        <dl class="cp-fit">
+          <div><dt>Builds on</dt><dd set:html={c.dependsOn.length ? libLinks(c.dependsOn) : 'No other Barrel library'} /></div>
+          {c.optional && <div><dt>Works with, when present</dt><dd set:html={c.optional.map((o) => `${libLinks([o.slug])}: ${inline(o.text)}`).join('; ')} /></div>}
+          <div><dt>Used by</dt><dd set:html={users.length ? libLinks(users) : (c.slug === 'server' ? '<a href="/product/lite"><code>barrel-lite</code></a>, over HTTP' : 'No other Barrel library depends on it')} /></div>
+          {optionalUsers.length > 0 && <div><dt>Optional in</dt><dd set:html={libLinks(optionalUsers)} /></div>}
+          <div><dt>Other dependencies</dt><dd set:html={inline(c.external)} /></div>
+          <div><dt>On its own</dt><dd set:html={inline(c.standalone.text)} /></div>
+        </dl>
+      </section>
+
+      {c.flow && (
+        <section aria-labelledby="flow">
+          <h2 id="flow" class="cp-h2">{c.flow.title}</h2>
+          <p class="cp-prose muted">{c.flow.intro}</p>
+          <ol class="cp-flow">
+            {c.flow.steps.map((s) => (
+              <li class:list={{ 'is-accent': s.accent }}>
+                <h3>{s.title}</h3>
+                <p>{s.body}</p>
+                <code set:html={s.call.replace(/:/g, ':<wbr>').replace(/\//g, '<wbr>/')} />
+              </li>
+            ))}
+          </ol>
+          {c.table && (
+            <div class="cp-rights">
+              <div class="cp-scroll"><table>
+                <thead><tr>{c.table.head.map((h) => <th scope="col">{h}</th>)}</tr></thead>
+                <tbody>
+                  {c.table.rows.map((r) => (
+                    <tr>{r.map((cell, i) => i === 0 ? <th scope="row">{cell}</th> : <td data-label={c.table!.head[i]}><code>{cell}</code></td>)}</tr>
+                  ))}
+                </tbody>
+              </table></div>
+              <p class="small muted" set:html={inline(c.table.caption)} />
+            </div>
+          )}
+        </section>
+      )}
+
+      <section aria-labelledby="install">
+        <h2 id="install" class="cp-h2">Install</h2>
+        <CodeBlock code={c.install.code} lang={c.install.lang} label={c.install.label} />
+        {c.install.note && <p class="cp-prose small muted" set:html={inline(c.install.note)} />}
+      </section>
+
+      <section aria-labelledby="config">
+        <h2 id="config" class="cp-h2">Configuration</h2>
+        {c.config.map((t) => (
+          <div class="cp-tbl">
+            <h3 class="cp-h3">{t.title}</h3>
+            <table>
+              <thead><tr><th scope="col">Key</th><th scope="col">Default</th><th scope="col">What it does</th></tr></thead>
+              <tbody>
+                {t.rows.map((r) => (
+                  <tr>
+                    <th scope="row"><code>{r.key}</code></th>
+                    <td data-label="Default">{r.def ? <code>{r.def}</code> : ''}</td>
+                    <td data-label="What it does" set:html={inline(r.meaning)} />
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))}
+        <p class="small muted">The most used keys only. For every option, see the <a href="/docs/reference/configuration">configuration reference</a>{c.apiRef && <> and the <a href={c.apiRef}>API reference</a></>}.</p>
+      </section>
+
+      <section aria-labelledby="api">
+        <h2 id="api" class="cp-h2">The API by task</h2>
+        {c.api.map((g) => <ApiTable group={g} />)}
+      </section>
+
+      {c.examples.map((e, i) => (
+        <section aria-labelledby={`ex-${i}`}>
+          <h2 id={`ex-${i}`} class="cp-h2">{e.title}</h2>
+          <p class="cp-prose muted" set:html={inline(e.intro)} />
+          <CodeBlock code={e.code} lang={e.lang ?? 'erlang'} label={e.label} />
+          {e.output && <CodeBlock code={e.output} label={e.outputLabel ?? 'Output'} output />}
+        </section>
+      ))}
+
+      {c.tabs && (
+        <section aria-labelledby="tabs">
+          <h2 id="tabs" class="cp-h2">{c.tabs.title}</h2>
+          <p class="cp-prose muted">{c.tabs.intro}</p>
+          <CodeTabs tabs={c.tabs.tabs} />
+        </section>
+      )}
+
+      <section aria-labelledby="limits">
+        <h2 id="limits" class="cp-h2">Limits to know</h2>
+        <ul class="cp-list">{c.limits.map((l) => <li set:html={inline(l)} />)}</ul>
+        {c.gaps?.map((g) => (
+          <Callout label="Known gap" kind="limit"><p set:html={inline(g)} /></Callout>
+        ))}
+      </section>
+    </div>
+  </div>
+</div>
+
+<style>
+  .cp { padding-top: 32px; padding-bottom: 88px; }
+  .cp-crumb { color: var(--ink-2); margin-bottom: 24px; }
+  .cp-crumb a { color: var(--ink-2); }
+  .cp-grid {
+    display: grid; grid-template-columns: minmax(0, 1fr) 300px; column-gap: 64px;
+    grid-template-areas: 'head facts' 'body facts';
+    align-items: start;
+  }
+  .cp-head { grid-area: head; }
+  .cp-body { grid-area: body; min-width: 0; }
+  .cp-title { margin: 0 0 16px; font-size: clamp(2.5rem, 6vw, 3.75rem); font-weight: 620; font-stretch: 112%; letter-spacing: -0.03em; line-height: 1; overflow-wrap: anywhere; }
+  .cp-head .lead { margin: 0 0 40px; }
+  .cp-body section { margin-bottom: 56px; }
+  .cp-h2 { margin: 0 0 12px; font-size: var(--step-2); font-stretch: 108%; }
+  .cp-h3 { margin: 20px 0 8px; font-size: var(--step-0); }
+  .cp-prose { margin: 0 0 16px; max-width: 40em; }
+  .cp-list { margin: 0; padding-left: 20px; max-width: 40em; }
+  .cp-list li + li { margin-top: 8px; }
+  .cp-fit { margin: 0; display: grid; gap: 0; border-top: 1px solid var(--rule); }
+  .cp-fit > div { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+  .cp-fit dt { color: var(--ink-2); }
+  .cp-fit dd { margin: 0; }
+
+  .cp-flow { list-style: none; margin: 24px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; counter-reset: step; }
+  .cp-flow li { border-top: 3px solid var(--ink); padding-top: 12px; min-width: 0; counter-increment: step; }
+  .cp-flow li.is-accent { border-top-color: var(--coral); }
+  .cp-flow li::before { content: counter(step); display: block; font-stretch: 112%; font-weight: 620; font-size: var(--step-1); color: var(--teal); }
+  .cp-flow h3 { margin: 2px 0 6px; font-size: var(--step-0); }
+  .cp-flow p { margin: 0 0 8px; font-size: 15px; color: var(--ink-2); }
+  .cp-flow code { font-size: 13px; background: transparent; padding: 0; }
+
+  .cp-rights { margin-top: 28px; }
+  .cp-scroll { overflow-x: auto; }
+  .cp-scroll td code { white-space: nowrap; overflow-wrap: normal; }
+  @media (max-width: 640px) { .cp-scroll th, .cp-scroll td { padding: 8px 10px; font-size: 14px; } }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; border: 1px solid var(--rule); border-radius: var(--radius); }
+  th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-top: 1px solid var(--rule); }
+  thead th { background: var(--paper-2); font-weight: 600; border-top: 0; }
+  tbody th { font-weight: 600; }
+  td code, th code { overflow-wrap: anywhere; }
+  .cp-rights p { margin: 10px 0 0; }
+  .cp-tbl { margin-bottom: 20px; }
+  .cp-tbl th[scope='row'] { width: 32%; }
+  .cp-tbl td:nth-child(2) { width: 24%; }
+
+  @media (max-width: 960px) {
+    .cp-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'head' 'facts' 'body'; }
+    .cp-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 640px) {
+    .cp-fit > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+    .cp-flow { grid-template-columns: minmax(0, 1fr); }
+    .cp-tbl table, .cp-tbl tbody, .cp-tbl tr, .cp-tbl th, .cp-tbl td { display: block; width: auto !important; }
+    .cp-tbl thead { display: none; }
+    .cp-tbl tr { border-top: 1px solid var(--rule); padding: 8px 0; }
+    .cp-tbl tr:first-child { border-top: 0; }
+    .cp-tbl th, .cp-tbl td { border: 0; padding: 2px 14px; }
+    .cp-tbl td[data-label]::before { content: attr(data-label) ': '; color: var(--ink-2); }
+  }
+</style>
