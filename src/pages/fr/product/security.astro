@@ -1,0 +1,198 @@
+---
+// translation_of: src/pages/product/security.astro source_hash: a62157046c89dcf8
+import ProductFrame from '../../../components/product/ProductFrame.astro';
+import Guarantees from '../../../components/product/Guarantees.astro';
+import FlowDiagram from '../../../components/product/FlowDiagram.astro';
+import Related from '../../../components/product/Related.astro';
+import Rich from '../../../components/product/Rich.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+
+const keyStages = [
+  { boxes: [{ name: 'Secret maître', note: 'BARREL_ENCRYPTION_KEY' }, { name: 'Votre fournisseur de clés', note: 'KMS, coffre, par client' }], edge: 'HKDF-SHA256 avec le keyspace de la base' },
+  { boxes: [{ name: 'Une clé par base', note: '32 octets, jamais écrits sur disque', rec: true }], edge: 'AES-256-CTR, par fichier et par secteur' },
+  { boxes: [{ name: 'Chiffré', note: 'documents, WAL, pièces jointes blob, magasin de vecteurs, fichiers BM25 sur disque et DiskANN' }, { name: 'Non chiffré', note: 'pièces jointes sur le backend S3', dashed: true }] },
+];
+
+const covers = [
+  ['Magasin de documents (fichiers RocksDB, WAL)', 'Chiffré'],
+  ['Pièces jointes dans le magasin blob par défaut', 'Chiffré'],
+  ['Pièces jointes sur le backend S3 (`barrel_att_s3`)', 'Non chiffré : stocké en clair dans le bucket'],
+  ['Magasin de vecteurs, état HNSW et FAISS', 'Chiffré'],
+  ['Fichiers d’index BM25 sur disque et DiskANN', 'Chiffré, par secteur de 4096 octets'],
+  ['Branches de la timeline', 'Chiffré sous la clé du parent'],
+  ['Fichier de vérification de clé dans le répertoire de la base', 'En clair, à dessein : il fait échouer une mauvaise clé à l’ouverture'],
+];
+
+const auth = [
+  { model: 'Ouvert', config: 'pas de clé `auth`', what: 'Rien. Toutes les routes répondent.', where: 'REST, sync, MCP' },
+  { model: 'Bearer', config: '`#{tokens => [...]}`', what: 'Un secret partagé, comparé en temps constant. Une liste permet la rotation.', where: 'REST, sync, MCP' },
+  { model: 'Jeton de capacité', config: 'émis par espace (`bsp_...`)', what: 'Un espace, en lecture, écriture ou admin. Les routes de cycle de vie, de timeline et non associées le refusent.', where: 'REST, sync, MCP' },
+  { model: 'Requête signée (v3)', config: '`accept => [signed]`, `signers`', what: 'Une clé Ed25519 par client. Couvre la méthode, le chemin, la query, le hachage du corps et les en-têtes qui modifient une écriture ; les rejeux sont refusés.', where: 'REST, sync' },
+  { model: 'mTLS', config: '`accept => [mtls]`, `verify_peer`', what: 'Que le client détient un certificat de votre CA, pas de quel client il s’agit.', where: 'REST, sync sur HTTP/1.1 ou HTTP/2 avec TLS' },
+];
+
+const enforce = [
+  ['Jetons de capacité', 'Indicatifs : vérifiés seulement là où votre code appelle `barrel_caps:verify/3`. `open_space/1` et les appels de session ne prennent pas de jeton.', 'Vérifiés à chaque requête et à chaque appel d’outil MCP.'],
+  ['Droit admin (octroi, révocation, passations)', 'Non vérifié : les appels Erlang ne prennent pas de jeton.', 'Exigé par les routes.'],
+  ['Chiffrement par base', 'La frontière d’isolation : pas de clé, pas de données.', 'Appliqué à chaque base par `open_opts` ; les clés ne transitent jamais sur HTTP.'],
+];
+
+const guarantees = [
+  { title: 'Rien de lisible sur le disque', body: 'Avec le chiffrement actif, chercher dans chaque fichier un marqueur écrit dans un document, un texte de vecteur et une pièce jointe ne trouve rien ; la même écriture sans chiffrement le trouve.', check: 'une exécution de bout en bout enregistrée (plus bas), barrel_encryption_SUITE, barrel_encryption_facade_SUITE et barrel_vectordb_crypto_tests.' },
+  { title: 'Une mauvaise clé échoue à l’ouverture', body: 'Une mauvaise clé répond `wrong_encryption_key`, une ouverture en clair d’une base chiffrée `db_is_encrypted`, jamais des lectures corrompues.', check: 'l’exécution enregistrée et barrel_encryption_SUITE.' },
+  { title: 'Une signature invalide n’est jamais rattrapée', body: 'Une requête qui présente une signature est jugée sur elle seule, même si un bearer ou un certificat client la laisserait passer.', check: '`t_bearer_with_bad_signature_rejected` dans barrel_server_signed_SUITE, `t_bad_signature_rejected` dans barrel_server_mtls_SUITE.' },
+  { title: 'Corps et en-têtes signés ne peuvent pas être échangés', body: 'Le hachage du corps est vérifié avant l’exécution du handler, sur chaque route ; modifier un en-tête signé répond 401.', check: 'barrel_server_signed_SUITE : `t_tampered_body_rejected`, `t_rest_doc_body_swap_rejected`, `t_att_put_digest_tamper_rejected`, `t_replay_rejected`.' },
+  { title: 'Les jetons de capacité échouent fermés', body: 'Une route non associée à un droit refuse un jeton de capacité avec 403 ; un jeton mort reçoit 401.', check: '`t_capability_fail_closed` et `t_capability_dead_tokens` dans barrel_server_auth_SUITE.' },
+  { title: 'mTLS refuse un client sans certificat', body: 'À la poignée de main TLS, avant l’exécution de toute route.', check: '`t_certless_refused` dans barrel_server_mtls_SUITE.' },
+];
+
+const enc = `%% export BARREL_ENCRYPTION_KEY="a long passphrase"
+{ok, Db} = barrel:open(secret, #{encryption => default,
+    vectordb => #{dimension => 3, bm25_backend => disk,
+                  db_path => "data/secret_vec"}}),
+
+%% or your own provider: key_for_db(Keyspace) -> {ok, <<_:256>>}
+{ok, Db2} = barrel:open(tenant_a,
+    #{encryption => #{provider => my_kms_provider}}).`;
+
+const encOut = `read back: <<"TOPSECRETMARKER">>
+bm25 hits: 1
+files containing plaintext marker:        0
+plaintext open: {error,db_is_encrypted}
+wrong key open: {error,wrong_encryption_key}
+reopened with right key: <<"TOPSECRETMARKER">>
+encrypt existing plaintext db: {error,cannot_encrypt_existing_db}`;
+
+const serverEnc = `{barrel_server, [
+    {open_opts, #{encryption => default}}
+]}`;
+
+const bearer = `{barrel_server, [
+    {auth, #{tokens => [<<"new-token">>, <<"old-token">>]}}
+]}`;
+
+const signed = `%% server: know each peer's public key
+application:set_env(barrel_server, auth,
+    #{accept  => [bearer, signed],
+      signers => #{<<"node1">> => PubKey32},
+      skew_ms => 300000}),
+
+%% client: sign with the private key, kept out of task configs
+application:set_env(barrel_docdb, sync_signing,
+    #{<<"https://edge-1.example.com:8443">> =>
+          #{key_id => <<"node1">>, priv_key => Priv32}}).`;
+
+const mtls = `application:set_env(barrel_server, listeners,
+    #{http => #{port => 8443, tls => true}}),
+application:set_env(barrel_server, tls,
+    #{certfile => "server.pem", keyfile => "server.key",
+      cacertfile => "ca.pem", verify => verify_peer}),
+application:set_env(barrel_server, auth,
+    #{accept => [mtls, signed], signers => Signers}).`;
+
+const limits = [
+  'Les pièces jointes stockées sur le backend S3 ne sont pas chiffrées, même quand la base l’est.',
+  'Il n’y a ni rotation de clé ni chiffrement sur place d’une base existante. Répliquez vers une nouvelle base sous la nouvelle clé. Une clé perdue, ce sont des données perdues.',
+  'Le modèle de menace porte sur les données au repos. Le mode CTR n’est pas authentifié, donc un attaquant qui peut écrire les fichiers est hors périmètre, et les clés en mémoire ne sont pas mises à zéro.',
+  'Un serveur sans clé `auth` est ouvert à quiconque peut l’atteindre. Une liste `accept` vide le verrouille complètement.',
+  'Sans TLS, les jetons bearer peuvent être rejoués. La signature authentifie le client et chaque requête ; elle ne masque pas le trafic et n’authentifie pas les réponses du serveur. Utilisez pour cela du HTTPS vérifié.',
+  'mTLS identifie votre CA, pas le pair : seul, il fait de chaque client muni d’un certificat un même pair de confiance. Ajoutez des requêtes signées pour l’identité. Les écoutes HTTP/3 ne vérifient pas encore les certificats clients.',
+  '`/mcp` et barrel-lite n’acceptent que des jetons bearer (serveur ou de capacité).',
+];
+---
+
+<ProductFrame
+  title="Sécurité"
+  description="Chiffrement au repos avec une clé par base, et les modèles d’authentification du serveur : bearer, jetons de capacité, requêtes signées v3 et mTLS. Ce que chacun couvre, et ce qu’il ne couvre pas."
+  heading="Une clé par base. Un identifiant à chaque requête."
+  lead="Barrel peut chiffrer au repos une base entière sous sa propre clé : documents, pièces jointes, vecteurs et fichiers d’index. Devant elle, barrel_server vérifie un bearer, un jeton de capacité, une requête signée ou un certificat client avant l’exécution de toute route."
+  sub="Les deux sont désactivés tant que vous ne les activez pas. Cette page dit ce que chacun couvre, ce qu’il ne couvre pas, et où les jetons sont appliqués."
+  ctas={[{ label: 'Chiffrement au repos', href: '/fr/docs/guides/encryption' }, { label: 'Authentification', href: '/fr/docs/security/authentication' }]}
+>
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Chiffrement au repos</h2>
+      <p class="section-intro">Vous passez une spécification <code>encryption</code> à l’ouverture d’une base. Un fournisseur de clés transforme le keyspace de la base en une clé de 32 octets ; les magasins chiffrent avec elle chaque fichier qu’ils écrivent. Une branche partage le keyspace de son parent, elle s’ouvre donc avec la même clé.</p>
+      <FlowDiagram label="D’un secret maître aux fichiers chiffrés" stages={keyStages} />
+      <div class="sc-tw">
+        <table class="sc-t">
+          <caption class="visually-hidden">Ce que couvre le chiffrement au repos</caption>
+          <thead><tr><th scope="col">Données</th><th scope="col">Au repos</th></tr></thead>
+          <tbody>{covers.map(([d, s]) => <tr><td><Rich text={d} /></td><td>{s}</td></tr>)}</tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Qui peut appeler le serveur</h2>
+      <p class="section-intro">Fixez une clé <code>auth</code> et toutes les routes sauf <code>/health</code> demandent un identifiant. Une requête est jugée sur l’identifiant qu’elle présente : d’abord une signature, sinon le jeton dans <code>Authorization</code>, sinon le certificat client.</p>
+      <div class="sc-tw">
+        <table class="sc-t">
+          <caption class="visually-hidden">Modèles d’authentification de barrel_server</caption>
+          <thead><tr><th scope="col">Modèle</th><th scope="col">S’active avec</th><th scope="col">Ce qu’il prouve</th><th scope="col">S’applique à</th></tr></thead>
+          <tbody>{auth.map((a) => <tr><th scope="row">{a.model}</th><td><Rich text={a.config} /></td><td>{a.what}</td><td>{a.where}</td></tr>)}</tbody>
+        </table>
+      </div>
+      <h3 class="pf-h3 sc-gap">Dans votre nœud, et via le serveur</h3>
+      <p class="pf-p">La couche agents est une bibliothèque. Les jetons n’ont de sens que là où quelqu’un les vérifie.</p>
+      <div class="sc-tw">
+        <table class="sc-t">
+          <caption class="visually-hidden">Où les jetons sont appliqués</caption>
+          <thead><tr><th scope="col"><span class="visually-hidden">Contrôle</span></th><th scope="col">Dans le processus (API Erlang)</th><th scope="col">Via barrel_server (REST, sync, MCP)</th></tr></thead>
+          <tbody>{enforce.map(([k, a, b]) => <tr><th scope="row">{k}</th><td><Rich text={a} /></td><td><Rich text={b} /></td></tr>)}</tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Ce qui tient, et ce qui le vérifie</h2>
+      <p class="section-intro">Chaque propriété nomme le test ou l’exécution enregistrée qui la vérifie.</p>
+      <Guarantees items={guarantees} />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap pf-narrow">
+      <h2 class="h2">L’utiliser</h2>
+
+      <h3 class="pf-h3">Chiffrer une base</h3>
+      <p class="pf-p">Le chiffrement est une configuration d’exécution : passez la même spécification à chaque ouverture.</p>
+      <CodeBlock code={enc} />
+      <CodeBlock code={encOut} output label="Lignes affichées par une exécution enregistrée qui a écrit un marqueur dans un document, un texte de vecteur et une pièce jointe, fermé la base et fouillé les fichiers" />
+
+      <h3 class="pf-h3">Chiffrer chaque base qu’un serveur ouvre</h3>
+      <CodeBlock code={serverEnc} label="sys.config" />
+
+      <h3 class="pf-h3">Verrouiller le serveur avec des jetons bearer</h3>
+      <CodeBlock code={bearer} label="sys.config" />
+
+      <h3 class="pf-h3">Signer les requêtes entre nœuds</h3>
+      <p class="pf-p">Générez la paire de clés avec <code>crypto:generate_key(eddsa, ed25519)</code>. Les clients à partir de barrel_docdb 2.1.0 n’envoient que la signature v3 : mettez d’abord les serveurs à jour vers barrel_server 1.13.0.</p>
+      <CodeBlock code={signed} />
+
+      <h3 class="pf-h3">Filtrer le transport avec mTLS</h3>
+      <CodeBlock code={mtls} />
+    </div>
+  </section>
+
+  <Related
+    limits={limits}
+    docs={['guides/encryption', 'security/authentication', 'guides/synchronization', 'guides/spaces', 'guides/rest-server']}
+    more={[{ href: '/fr/use-cases/database-per-customer', label: 'Cas d’usage : une base par client' }]}
+    libs={['crypto', 'server', 'spaces', 'att-s3']}
+  />
+</ProductFrame>
+
+<style>
+  .sc-tw { overflow-x: auto; margin-top: 40px; }
+  .sc-gap { margin-top: 48px; }
+  .sc-t { width: 100%; border-collapse: collapse; font-size: 15px; }
+  .sc-t th, .sc-t td { text-align: left; padding: 10px 14px 10px 0; border-top: 1px solid var(--rule); vertical-align: top; }
+  .sc-t thead th { font-weight: 650; border-top: 0; }
+  .sc-t tbody th { font-weight: 650; white-space: nowrap; }
+  @media (max-width: 700px) { .sc-t tbody th { white-space: normal; } }
+</style>

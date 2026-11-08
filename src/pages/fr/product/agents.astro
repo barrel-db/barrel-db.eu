@@ -1,0 +1,211 @@
+---
+// translation_of: src/pages/product/agents.astro source_hash: a2ff8dcac48d044a
+import ProductFrame from '../../../components/product/ProductFrame.astro';
+import Guarantees from '../../../components/product/Guarantees.astro';
+import FlowDiagram from '../../../components/product/FlowDiagram.astro';
+import Related from '../../../components/product/Related.astro';
+import Rich from '../../../components/product/Rich.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+import CodeTabs from '../../../components/CodeTabs.astro';
+
+const parts = [
+  { name: 'Espace', body: 'Une base barrel créée par `barrel_spaces`, avec un nom généré (`sp_` et 16 caractères) et un document de registre. Documents, recherche et timeline y fonctionnent tous.' },
+  { name: 'Jeton de capacité', body: 'Un jeton `bsp_` qui accorde `read`, `write` ou `admin` sur un espace, avec une expiration en option. Il est affiché une seule fois ; seul son hachage SHA-256 est conservé.' },
+  { name: 'Session', body: 'Un contexte de travail pour un agent dans un espace : messages dans l’ordre, données structurées, contexte épinglé. Son TTL glisse à chaque changement, ou elle n’expire jamais.' },
+  { name: 'Passation', body: 'Une tâche transmise à un autre agent sous forme de jeton. Celui qui le détient l’accepte, obtient une session dans le même espace et lit sur place le contexte de l’expéditeur.' },
+  { name: 'Point d’accès MCP', body: '39 outils sur `/mcp` dans barrel_server : documents, BQL, recherche, branches, espaces, sessions, passations et contextes, avec le jeton vérifié outil par outil.' },
+];
+
+const stages = [
+  { boxes: [{ name: 'Agent', note: 'client MCP ou HTTP' }], edge: 'Authorization: Bearer bsp_...' },
+  { boxes: [{ name: 'barrel_server', note: 'vérifie l’octroi : espace et droit' }], edge: 'autorisé : lecture, ou lecture et écriture' },
+  { boxes: [{ name: 'Space sp_...', note: 'documents, sessions, recherche', rec: true }] },
+];
+
+const handoffStages = [
+  { boxes: [{ name: 'Alice', note: 'une session dans l’espace' }], edge: 'handoff_create : un jeton, une fois' },
+  { boxes: [{ name: 'Jeton', note: 'détenu par Bob' }], edge: 'handoff_accept : le premier gagne' },
+  { boxes: [{ name: 'Bob', note: 'sa propre session, même espace', rec: true }], edge: 'handoff_complete' },
+  { boxes: [{ name: 'Terminé', note: 'jeton révoqué' }] },
+];
+
+const guarantees = [
+  { title: 'Un jeton ouvre un espace, avec un jeu de droits', body: 'Un jeton de lecture ne peut pas écrire, ne peut pas toucher un autre espace, ni créer, supprimer ou brancher des bases. Les routes non associées à un droit le refusent.', check: 'barrel_server_auth_SUITE : `t_capability_read_scope`, `t_capability_wrong_space`, `t_capability_fail_closed` ; barrel_caps_SUITE, `t_rights_ladder`.' },
+  { title: 'La révocation prend effet à la requête suivante', body: 'Un jeton révoqué ou expiré reçoit 401. Supprimer un espace révoque tous ses octrois.', check: '`t_revoked_401` dans barrel_server_spaces_SUITE, `t_revoke` et `t_drop_space_revokes` dans barrel_caps_SUITE.' },
+  { title: 'Une passation n’est acceptée qu’une fois', body: 'L’acceptation fait passer la passation de pending à accepted par un compare-and-set ; une seconde acceptation reçoit `already_accepted`. Terminer la passation révoque le jeton par défaut.', check: '`t_double_accept` et `t_complete_revokes` dans barrel_handoff_SUITE.' },
+  { title: 'Les sessions expirent d’elles-mêmes', body: 'Une session expirée est aussitôt lue comme introuvable ; le balayeur de TTL la marque supprimée et un processus de nettoyage ramasse ses messages. Une session avec `ttl => infinity` n’expire jamais.', check: 'barrel_session_SUITE : `t_sliding_ttl`, `t_janitor_orphans`, `t_no_ttl_durable`.' },
+  { title: 'Les jetons ne sont jamais en clair sur le disque', body: 'Le registre conserve un hachage de chaque jeton. Lister les octrois ne renvoie jamais les hachages.', check: '`t_hash_stored_as_hex` et `t_list_strips_hashes` dans barrel_caps_SUITE.' },
+  { title: 'Les refus MCP reviennent comme résultats d’outil', body: 'Un appel d’outil hors de l’octroi renvoie `isError: true` avec une raison que l’agent peut lire, pas une erreur de protocole.', check: '`t_capability_denies` dans barrel_server_mcp_agent_SUITE.' },
+];
+
+const spaceTabs = [
+  { label: 'Erlang', lang: 'erlang', code: `{ok, #{id := SpaceId, db := Db}} =
+    barrel_spaces:create_space(#{label => <<"joint research">>,
+                                 vectordb => none}),
+{ok, _} = barrel:put_doc(Db, #{<<"id">> => <<"notes">>,
+                               <<"text">> => <<"draft v1">>}),
+{ok, ReadTok, _Grant} = barrel_caps:grant(SpaceId,
+    #{rights => [read], subject => <<"carol">>}),
+barrel_caps:verify(ReadTok, SpaceId, write).` },
+  { label: 'REST', lang: 'bash', code: `curl -X POST localhost:8080/spaces \\
+  -H 'authorization: Bearer global-token' \\
+  -H 'content-type: application/json' -d '{"label":"team"}'
+curl -X POST localhost:8080/spaces/sp_.../grants \\
+  -H 'authorization: Bearer global-token' \\
+  -H 'content-type: application/json' \\
+  -d '{"rights":["read"],"subject":"agent-1"}'` },
+  { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":2,"method":"tools/call",
+ "params":{"name":"space_create",
+   "arguments":{"label":"team"}}}
+
+{"jsonrpc":"2.0","id":3,"method":"tools/call",
+ "params":{"name":"space_grant","arguments":{
+   "space":"sp_...","rights":["read"],
+   "subject":"agent-1"}}}` },
+];
+
+const spaceOut = `{error,forbidden}`;
+
+const sessionTabs = [
+  { label: 'Erlang', lang: 'erlang', code: `{ok, Sid} = barrel_session:create(Space,
+    #{agent => <<"alice">>, ttl => 1800}),
+{ok, _} = barrel_session:add_message(Space, Sid,
+    #{role => <<"user">>, content => <<"draft is half done">>}),
+{ok, _} = barrel_session:set_data(Space, Sid, <<"cursor">>, 42),
+{ok, _} = barrel_session:pin_context(Space, Sid,
+    #{content => <<"deadline friday">>, priority => 0}),
+{ok, Msgs} = barrel_session:get_messages(Space, Sid,
+    #{limit => 50, order => desc}).` },
+  { label: 'REST', lang: 'bash', code: `curl -X POST localhost:8080/spaces/sp_.../sessions \\
+  -H 'authorization: Bearer bsp_...' \\
+  -H 'content-type: application/json' \\
+  -d '{"agent":"alice","ttl":1800}'` },
+  { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":4,"method":"tools/call",
+ "params":{"name":"session_add_message","arguments":{
+   "space":"sp_...","session":"ses_...",
+   "role":"user","content":"draft is half done"}}}` },
+];
+
+const handoffTabs = [
+  { label: 'Erlang', lang: 'erlang', code: `{ok, #{token := HTok}} = barrel_handoff:create(Space, #{
+    task_name => <<"finish the draft">>,
+    from_agent => <<"alice">>, to_agent => <<"bob">>,
+    from_session => Sid,
+    pending => [<<"polish conclusion">>]}),
+
+%% bob, holding only the token
+{ok, #{space := BobSpace, session := BobSid}} =
+    barrel_handoff:accept(HTok, #{agent => <<"bob">>}),
+{ok, _} = barrel_handoff:complete(HTok,
+                                  #{result => <<"shipped">>}).` },
+  { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":5,"method":"tools/call",
+ "params":{"name":"handoff_create","arguments":{
+   "space":"sp_...","task_name":"finish the draft",
+   "from_agent":"alice","to_agent":"bob"}}}
+
+{"jsonrpc":"2.0","id":6,"method":"tools/call",
+ "params":{"name":"handoff_accept",
+   "arguments":{"token":"bsp_...","agent":"bob"}}}` },
+];
+
+const handoffOut = `accepted: {<<"accepted">>,<<"bob">>}
+second accept: {error,already_accepted}
+bob reads alice's messages: [<<"draft is half done">>]
+handoff token after complete: {error,revoked}`;
+
+const mcpConfig = `{barrel_server, [
+    {auth, #{tokens => [<<"server-token">>]}},
+    {mcp, #{enabled => true,
+            allowed_origins => any,
+            resources => full}}
+]}`;
+
+const limits = [
+  'Dans votre propre nœud Erlang, les jetons ne sont vérifiés que là où le code appelle `barrel_caps:verify/3`. `barrel_spaces:open_space/1` et les appels `barrel_session` ne prennent pas de jeton, donc tout code de la VM peut ouvrir n’importe quel espace. barrel_server et `/mcp` appliquent les jetons ; dans le processus, le chiffrement par espace est la frontière d’isolation.',
+  'Dans `barrel_handoff`, accept, complete et chain ne vérifient que le droit `read`, donc un jeton de passation en lecture seule peut terminer ou enchaîner.',
+  'Accorder, révoquer et créer des passations depuis Erlang ne demande aucun jeton : le droit admin n’est appliqué que par les routes du serveur.',
+  'Les espaces chiffrés ne sont accessibles que par l’API Erlang, pas en REST ni en MCP.',
+  'Le magasin de vecteurs d’un espace vit sur chaque nœud et n’est pas répliqué. Les octrois vivent dans la base de registre, donc une révocation atteint les autres nœuds au rythme de la réplication.',
+  '`/mcp` n’accepte que des jetons bearer, serveur ou de capacité ; les requêtes signées et mTLS ne s’y appliquent pas. Les réponses à `tools/call` arrivent en server-sent events.',
+  'Les contextes sur plusieurs bases demandent un LIMIT (1000 au plus) et ne fusionnent pas les scores BM25 ou hybrides entre contextes ; la fédération en direct est prévue.',
+];
+---
+
+<ProductFrame
+  title="Couche agents"
+  description="Espaces, jetons de capacité, sessions et passations dans Barrel, et le point d’accès MCP qui les expose aux agents. Ce que les jetons imposent, et où."
+  heading="Donnez un espace à chaque agent, et partagez-le par jeton."
+  lead="Un espace est une base dans laquelle un agent travaille. Vous le partagez en remettant un jeton de capacité en lecture, en écriture ou en admin ; vous le reprenez en révoquant le jeton. Les sessions gardent les messages et l’état de travail d’un agent, et une passation transmet une tâche à un autre agent avec son contexte en place."
+  sub="Les agents accèdent à tout cela en MCP ou en REST. Les mêmes opérations existent en Erlang quand vos agents tournent dans le même nœud."
+  ctas={[{ label: 'Espaces, sessions, passations', href: '/fr/docs/guides/spaces' }, { label: 'Point d’accès MCP', href: '/fr/docs/guides/mcp' }]}
+>
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Ce que c’est</h2>
+      <p class="section-intro">Cinq pièces, chacune une fine couche au-dessus d’une base barrel. Les espaces s’ouvrent par le gestionnaire de cycle de vie des bases, donc les espaces inactifs se ferment d’eux-mêmes et des centaines d’espaces éphémères restent peu coûteux.</p>
+      <dl class="ag-parts">
+        {parts.map((p) => (
+          <div>
+            <dt>{p.name}</dt>
+            <dd><Rich text={p.body} /></dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Comment un jeton est vérifié</h2>
+      <p class="section-intro">barrel_server lit le jeton à chaque requête. Un jeton de capacité ne passe que sur les routes de son propre espace et sur les routes agents, avec le droit qui lui a été accordé : la lecture couvre les GET, les requêtes, la recherche et le côté pull de la synchronisation ; l’écriture y ajoute l’écriture de documents et le côté push.</p>
+      <FlowDiagram label="Un jeton de capacité sur une requête" stages={stages} />
+      <h3 class="pf-h3 ag-gap">Comment une passation transmet une tâche</h3>
+      <FlowDiagram label="Une passation d’Alice à Bob" stages={handoffStages} caption="Rien n’est copié : Bob lit la session et les documents d’Alice dans l’espace partagé." />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Ce qui tient, et ce qui le vérifie</h2>
+      <p class="section-intro">En REST et en MCP. Dans votre propre nœud, lisez la première limite plus bas.</p>
+      <Guarantees items={guarantees} />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap pf-narrow">
+      <h2 class="h2">L’utiliser</h2>
+
+      <h3 class="pf-h3">Créer un espace et accorder un jeton de lecture</h3>
+      <CodeTabs tabs={spaceTabs} />
+      <CodeBlock code={spaceOut} output label="Sortie du dernier appel Erlang (un jeton de lecture qui demande l’écriture), enregistrée sur barrel_spaces 1.3.1" />
+
+      <h3 class="pf-h3">Tenir une session</h3>
+      <CodeTabs tabs={sessionTabs} />
+
+      <h3 class="pf-h3">Passer la tâche à un autre agent</h3>
+      <CodeTabs tabs={handoffTabs} />
+      <CodeBlock code={handoffOut} output label="Lignes affichées par le déroulé Erlang enregistré (abrégé)" />
+
+      <h3 class="pf-h3">Activer le point d’accès MCP</h3>
+      <p class="pf-p">Il est actif par défaut dans le build du serveur. Un jeton serveur a un accès complet ; un jeton de capacité est limité à son espace et à ses droits.</p>
+      <CodeBlock code={mcpConfig} label="sys.config" />
+    </div>
+  </section>
+
+  <Related
+    limits={limits}
+    docs={['guides/spaces', 'guides/mcp', 'reference/mcp-tools', 'concepts/spaces', 'guides/contexts', 'guides/audit-provenance']}
+    more={[{ href: '/fr/use-cases/database-per-agent', label: 'Cas d’usage : une base par agent' }, { href: '/fr/use-cases/agent-memory', label: 'Cas d’usage : la mémoire des agents' }]}
+    libs={['spaces', 'server', 'barrel']}
+  />
+</ProductFrame>
+
+<style>
+  .ag-parts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px 40px; margin: 0 0 48px; }
+  .ag-parts div { border-top: 1px solid var(--rule); padding-top: 14px; min-width: 0; }
+  .ag-parts dt { font-weight: 650; font-size: 19px; margin-bottom: 6px; }
+  .ag-parts dd { margin: 0; font-size: 15px; }
+  .ag-gap { margin-top: 48px; margin-bottom: 16px; }
+  @media (max-width: 900px) { .ag-parts { grid-template-columns: minmax(0, 1fr); } }
+</style>

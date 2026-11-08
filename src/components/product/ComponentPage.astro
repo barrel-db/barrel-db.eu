@@ -5,24 +5,49 @@ import CodeTabs from '../CodeTabs.astro';
 import Callout from '../Callout.astro';
 import ApiTable from '../component/ApiTable.astro';
 import FactsPanel from '../component/FactsPanel.astro';
-import { inline } from '../component/inline';
-import { components } from '../../data/site';
+import { inline as inlineIn } from '../component/inline';
+import { siteFor } from '../../data/i18n';
+import { langOf, localize, t } from '../../i18n';
 import { usedBy, optionalIn } from '../../data/components';
 import type { ComponentContent } from '../../data/components/types';
 
 interface Props { content: ComponentContent; }
 const { content: c } = Astro.props;
+const lang = langOf(Astro.url);
+const { components } = siteFor(lang);
+const inline = (s: string) => inlineIn(s, lang);
+const L = {
+  en: {
+    solves: 'What it solves', when: 'When to use it', notWhen: 'When not to', fits: 'How it fits into Barrel',
+    buildsOn: 'Builds on', noDep: 'No other Barrel library', worksWith: 'Works with, when present', usedBy: 'Used by',
+    liteOverHttp: 'over HTTP', noUser: 'No other Barrel library depends on it', optionalIn: 'Optional in',
+    other: 'Other dependencies', own: 'On its own', install: 'Install', config: 'Configuration',
+    key: 'Key', def: 'Default', does: 'What it does', mostUsed: 'The most used keys only. For every option, see the ',
+    configRef: 'configuration reference', and: ' and the ', apiRef: 'API reference', api: 'The API by task',
+    output: 'Output', limits: 'Limits to know', gap: 'Known gap', colon: ':', semi: '; ',
+  },
+  fr: {
+    solves: 'Ce qu’elle résout', when: 'Quand l’utiliser', notWhen: 'Quand ne pas l’utiliser', fits: 'Sa place dans Barrel',
+    buildsOn: 'Repose sur', noDep: 'Aucune autre bibliothèque Barrel', worksWith: 'Fonctionne avec, si présente', usedBy: 'Utilisée par',
+    liteOverHttp: 'en HTTP', noUser: 'Aucune autre bibliothèque Barrel n’en dépend', optionalIn: 'Optionnelle dans',
+    other: 'Autres dépendances', own: 'Seule', install: 'Installation', config: 'Configuration',
+    key: 'Clé', def: 'Défaut', does: 'Rôle', mostUsed: 'Seulement les clés les plus utilisées. Pour toutes les options, voyez la ',
+    configRef: 'référence de configuration', and: ' et la ', apiRef: 'référence de l’API', api: 'L’API par tâche',
+    output: 'Sortie', limits: 'Limites à connaître', gap: 'Lacune connue', colon: ' :', semi: ' ; ',
+  },
+}[lang];
+const prod = (slug: string) => localize(`/product/${slug}`, lang);
 const meta = components.find((m) => m.slug === c.slug)!;
 const nameOf = (slug: string) => components.find((m) => m.slug === slug)?.name ?? slug;
 const users = usedBy(c.slug);
 const optionalUsers = optionalIn(c.slug);
 const libLinks = (slugs: string[]) =>
-  slugs.map((s) => `<a href="/product/${s}"><code>${nameOf(s)}</code></a>`).join(', ');
+  slugs.map((s) => `<a href="${prod(s)}"><code>${nameOf(s)}</code></a>`).join(', ');
 ---
 
 <div class="wrap cp">
   <nav aria-label="Breadcrumb" class="cp-crumb small">
-    <a href="/product">Product</a> / {meta.group} / <span aria-current="page">{meta.name}</span>
+    <a href={localize('/product', lang)}>{t(lang).product}</a> / {meta.group} / <span aria-current="page">{meta.name}</span>
   </nav>
 
   <div class="cp-grid">
@@ -35,26 +60,26 @@ const libLinks = (slugs: string[]) =>
 
     <div class="cp-body">
       <section aria-labelledby="solves">
-        <h2 id="solves" class="cp-h2">What it solves</h2>
+        <h2 id="solves" class="cp-h2">{L.solves}</h2>
         <p class="cp-prose" set:html={inline(c.problem)} />
       </section>
 
       <section aria-labelledby="when">
-        <h2 id="when" class="cp-h2">When to use it</h2>
+        <h2 id="when" class="cp-h2">{L.when}</h2>
         <ul class="cp-list">{c.useWhen.map((w) => <li set:html={inline(w)} />)}</ul>
-        <h3 class="cp-h3">When not to</h3>
+        <h3 class="cp-h3">{L.notWhen}</h3>
         <ul class="cp-list muted">{c.notWhen.map((w) => <li set:html={inline(w)} />)}</ul>
       </section>
 
       <section aria-labelledby="fits">
-        <h2 id="fits" class="cp-h2">How it fits into Barrel</h2>
+        <h2 id="fits" class="cp-h2">{L.fits}</h2>
         <dl class="cp-fit">
-          <div><dt>Builds on</dt><dd set:html={c.dependsOn.length ? libLinks(c.dependsOn) : 'No other Barrel library'} /></div>
-          {c.optional && <div><dt>Works with, when present</dt><dd set:html={c.optional.map((o) => `${libLinks([o.slug])}: ${inline(o.text)}`).join('; ')} /></div>}
-          <div><dt>Used by</dt><dd set:html={users.length ? libLinks(users) : (c.slug === 'server' ? '<a href="/product/lite"><code>barrel-lite</code></a>, over HTTP' : 'No other Barrel library depends on it')} /></div>
-          {optionalUsers.length > 0 && <div><dt>Optional in</dt><dd set:html={libLinks(optionalUsers)} /></div>}
-          <div><dt>Other dependencies</dt><dd set:html={inline(c.external)} /></div>
-          <div><dt>On its own</dt><dd set:html={inline(c.standalone.text)} /></div>
+          <div><dt>{L.buildsOn}</dt><dd set:html={c.dependsOn.length ? libLinks(c.dependsOn) : L.noDep} /></div>
+          {c.optional && <div><dt>{L.worksWith}</dt><dd set:html={c.optional.map((o) => `${libLinks([o.slug])}${L.colon} ${inline(o.text)}`).join(L.semi)} /></div>}
+          <div><dt>{L.usedBy}</dt><dd set:html={users.length ? libLinks(users) : (c.slug === 'server' ? `<a href="${prod('lite')}"><code>barrel-lite</code></a>, ${L.liteOverHttp}` : L.noUser)} /></div>
+          {optionalUsers.length > 0 && <div><dt>{L.optionalIn}</dt><dd set:html={libLinks(optionalUsers)} /></div>}
+          <div><dt>{L.other}</dt><dd set:html={inline(c.external)} /></div>
+          <div><dt>{L.own}</dt><dd set:html={inline(c.standalone.text)} /></div>
         </dl>
       </section>
 
@@ -88,35 +113,35 @@ const libLinks = (slugs: string[]) =>
       )}
 
       <section aria-labelledby="install">
-        <h2 id="install" class="cp-h2">Install</h2>
+        <h2 id="install" class="cp-h2">{L.install}</h2>
         <CodeBlock code={c.install.code} lang={c.install.lang} label={c.install.label} />
         {c.install.note && <p class="cp-prose small muted" set:html={inline(c.install.note)} />}
       </section>
 
       <section aria-labelledby="config">
-        <h2 id="config" class="cp-h2">Configuration</h2>
+        <h2 id="config" class="cp-h2">{L.config}</h2>
         {c.config.map((t) => (
           <div class="cp-tbl">
             <h3 class="cp-h3">{t.title}</h3>
             <table>
-              <thead><tr><th scope="col">Key</th><th scope="col">Default</th><th scope="col">What it does</th></tr></thead>
+              <thead><tr><th scope="col">{L.key}</th><th scope="col">{L.def}</th><th scope="col">{L.does}</th></tr></thead>
               <tbody>
                 {t.rows.map((r) => (
                   <tr>
                     <th scope="row"><code>{r.key}</code></th>
-                    <td data-label="Default">{r.def ? <code>{r.def}</code> : ''}</td>
-                    <td data-label="What it does" set:html={inline(r.meaning)} />
+                    <td data-label={L.def}>{r.def ? <code>{r.def}</code> : ''}</td>
+                    <td data-label={L.does} set:html={inline(r.meaning)} />
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ))}
-        <p class="small muted">The most used keys only. For every option, see the <a href="/docs/reference/configuration">configuration reference</a>{c.apiRef && <> and the <a href={c.apiRef}>API reference</a></>}.</p>
+        <p class="small muted">{L.mostUsed}<a href={localize('/docs/reference/configuration', lang)}>{L.configRef}</a>{c.apiRef && <>{L.and}<a href={c.apiRef}>{L.apiRef}</a></>}.</p>
       </section>
 
       <section aria-labelledby="api">
-        <h2 id="api" class="cp-h2">The API by task</h2>
+        <h2 id="api" class="cp-h2">{L.api}</h2>
         {c.api.map((g) => <ApiTable group={g} />)}
       </section>
 
@@ -125,7 +150,7 @@ const libLinks = (slugs: string[]) =>
           <h2 id={`ex-${i}`} class="cp-h2">{e.title}</h2>
           <p class="cp-prose muted" set:html={inline(e.intro)} />
           <CodeBlock code={e.code} lang={e.lang ?? 'erlang'} label={e.label} />
-          {e.output && <CodeBlock code={e.output} label={e.outputLabel ?? 'Output'} output />}
+          {e.output && <CodeBlock code={e.output} label={e.outputLabel ?? L.output} output />}
         </section>
       ))}
 
@@ -138,10 +163,10 @@ const libLinks = (slugs: string[]) =>
       )}
 
       <section aria-labelledby="limits">
-        <h2 id="limits" class="cp-h2">Limits to know</h2>
+        <h2 id="limits" class="cp-h2">{L.limits}</h2>
         <ul class="cp-list">{c.limits.map((l) => <li set:html={inline(l)} />)}</ul>
         {c.gaps?.map((g) => (
-          <Callout label="Known gap" kind="limit"><p set:html={inline(g)} /></Callout>
+          <Callout label={L.gap} kind="limit"><p set:html={inline(g)} /></Callout>
         ))}
       </section>
     </div>

@@ -1,8 +1,8 @@
 ---
 // The closing section of a capability page: plain limits, then where to read on.
 import Rich from './Rich.astro';
-import { docsOrder } from '../../data/docs-nav';
-import { components } from '../../data/site';
+import { langOf, localize, t } from '../../i18n';
+import { navFor, siteFor } from '../../data/i18n';
 
 interface Props {
   title?: string;
@@ -14,16 +14,20 @@ interface Props {
   /** Other pages on the site: use cases, examples. */
   more?: { href: string; label: string }[];
 }
-const { title = 'Limits', limits, docs = [], libs = [], more = [] } = Astro.props;
+const lang = langOf(Astro.url);
+const { docsOrder } = navFor(lang);
+const { components } = siteFor(lang);
+const s = { en: { limits: 'Limits', next: 'Read next' }, fr: { limits: 'Limites', next: 'À lire ensuite' } }[lang];
+const { title = s.limits, limits, docs = [], libs = [], more = [] } = Astro.props;
 const docLinks = docs.map((slug) => {
   const item = docsOrder.find((d) => d.slug === slug);
   if (!item) throw new Error(`Related: unknown docs slug ${slug}`);
-  return { href: `/docs/${slug}`, label: item.label };
+  return { href: localize(`/docs/${slug}`, lang), label: item.label };
 });
 const libLinks = libs.map((slug) => {
   const c = components.find((x) => x.slug === slug);
   if (!c) throw new Error(`Related: unknown component ${slug}`);
-  return { href: `/product/${slug}`, name: c.name, status: c.status };
+  return { href: localize(`/product/${slug}`, lang), name: c.name, status: c.status };
 });
 ---
 
@@ -35,13 +39,13 @@ const libLinks = libs.map((slug) => {
     </ul>
     {docLinks.length + more.length > 0 && (
       <div class="rel-g">
-        <h3 class="rel-h">Read next</h3>
-        <ul class="rel-links">{[...docLinks, ...more].map((d) => <li><a href={d.href}>{d.label}</a></li>)}</ul>
+        <h3 class="rel-h">{s.next}</h3>
+        <ul class="rel-links">{[...docLinks, ...more].map((d) => <li><a href={localize(d.href, lang)}>{d.label}</a></li>)}</ul>
       </div>
     )}
     {libLinks.length > 0 && (
       <div class="rel-g">
-        <h3 class="rel-h">The libraries behind it</h3>
+        <h3 class="rel-h">{t(lang).librariesBehind}</h3>
         <ul class="rel-links">{libLinks.map((c) => <li><a href={c.href} class={`mark mark--${c.status}`}><code>{c.name}</code></a></li>)}</ul>
       </div>
     )}

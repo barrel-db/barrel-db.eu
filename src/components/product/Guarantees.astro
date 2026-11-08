@@ -1,9 +1,11 @@
 ---
 import Rich from './Rich.astro';
+import { langOf } from '../../i18n';
 
 interface Item { title: string; body: string; check?: string }
 interface Props { items: Item[] }
 const { items } = Astro.props;
+const checked = { en: 'Checked by', fr: 'Vérifié par' }[langOf(Astro.url)];
 ---
 
 <div class="gu">
@@ -11,7 +13,7 @@ const { items } = Astro.props;
     <div class="gu-i">
       <h3 class="gu-t">{g.title}</h3>
       <p class="gu-b"><Rich text={g.body} /></p>
-      {g.check && <p class="gu-c small muted">Checked by <Rich text={g.check} /></p>}
+      {g.check && <p class="gu-c small muted">{checked} <Rich text={g.check} /></p>}
     </div>
   ))}
 </div>
