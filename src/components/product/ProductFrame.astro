@@ -1,0 +1,41 @@
+---
+import Base from '../../layouts/Base.astro';
+
+interface Cta { label: string; href: string }
+interface Props {
+  title: string;
+  description: string;
+  /** The one-line promise, shown as the page heading. */
+  heading: string;
+  lead: string;
+  sub?: string;
+  ctas?: Cta[];
+}
+const { title, description, heading, lead, sub, ctas = [] } = Astro.props;
+---
+
+<Base title={title} description={description}>
+  <section class="wrap pf-hero">
+    <h1 class="display">{heading}</h1>
+    <p class="lead pf-lead">{lead}</p>
+    {sub && <p class="muted pf-sub">{sub}</p>}
+    {ctas.length > 0 && (
+      <p class="pf-cta">
+        {ctas.map((c, i) => <a class:list={['button', { 'button--primary': i === 0 }]} href={c.href}>{c.label}</a>)}
+      </p>
+    )}
+  </section>
+  <slot />
+</Base>
+
+<style>
+  .pf-hero { padding-top: 80px; padding-bottom: 48px; }
+  .pf-hero .display { margin-bottom: 24px; max-width: 14em; }
+  .pf-lead { margin: 0 0 16px; }
+  .pf-sub { max-width: 40em; margin: 0 0 32px; }
+  .pf-cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 0; }
+  @media (max-width: 820px) { .pf-hero { padding-top: 48px; } }
+  :global(.pf-narrow) { max-width: 820px; }
+  :global(.pf-h3) { font-size: var(--step-1); margin: 32px 0 4px; }
+  :global(.pf-p) { margin: 0 0 12px; color: var(--ink-2); max-width: 42em; }
+</style>

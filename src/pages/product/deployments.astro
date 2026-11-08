@@ -1,0 +1,172 @@
+---
+import ProductFrame from '../../components/product/ProductFrame.astro';
+import FlowDiagram from '../../components/product/FlowDiagram.astro';
+import Related from '../../components/product/Related.astro';
+import Rich from '../../components/product/Rich.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+
+const cols = [
+  { name: 'Embedded', href: '/docs/start/quickstart-embedded' },
+  { name: 'Server', href: '/docs/start/quickstart-server' },
+  { name: 'Browser', href: '/docs/start/quickstart-browser' },
+];
+
+const rows: [string, string, string, string][] = [
+  ['Choose it when', 'Your agents and services are Erlang or Elixir processes in one release.', 'Clients in other languages, agents over MCP, or other nodes need to reach the data.', 'A web app must keep reading and writing while offline.'],
+  ['What runs', '`barrel` as a library in your VM. No network protocol.', '`barrel_server`: REST and MCP over HTTP/1.1, HTTP/2 with TLS, or HTTP/3.', '`barrel-lite`, a TypeScript client holding a local copy.'],
+  ['You need', 'OTP 26 or later, a C compiler and CMake for the NIFs (RocksDB, the vector index, the trigram index).', 'The same, built with the `server` profile; port 8080 by default.', 'A barrel_server to sync with, with CORS on and a capability token for the browser.'],
+  ['Data lives in', 'RocksDB under the docdb `data_dir`, vectors under the store’s `db_path`.', 'The server’s `data_dir`. Databases open on first use and close when idle.', 'OPFS when the browser has it, otherwise memory. The server copy is the source of truth.'],
+  ['Search', 'Everything: vector, BM25, hybrid, BQL table functions, substring and regex.', 'Vector, BM25 and hybrid over REST and MCP; substring and regex over MCP only.', 'Local BQL on documents and brute-force vector search over synced vectors. Keyword and hybrid go to the server.'],
+  ['Replication', '`barrel_rep` and `barrel_rep_tasks` on the document database, in the VM or over HTTP.', 'Serves the sync wire at `/db/:db/_sync`, and runs tasks to other nodes.', 'Push, pull and live sync with one server, leader tab only.'],
+  ['Access control', 'Your code. Per-database encryption is the boundary between tenants.', 'Bearer, capability tokens, signed requests, mTLS. Open until you set `auth`.', 'Bearer only: a capability token scoped to one space.'],
+  ['Watch out for', 'The default vector path is relative to the current directory; set `db_path`. The vector store is linked to the process that opened it.', 'Default databases have BM25 off; set `open_opts`. Search configuration errors answer 500.', 'Unflushed writes are lost on a crash and the browser may evict the store. Not published to npm yet.'],
+];
+
+const stages = [
+  { boxes: [{ name: 'Browser tab', note: 'barrel-lite, OPFS', rec: true }], edge: '/db/:db/_sync, bearer' },
+  { boxes: [{ name: 'barrel_server', note: 'REST, MCP, sync wire', rec: true }], edge: 'barrel_rep over HTTP' },
+  { boxes: [{ name: 'Your release', note: 'barrel embedded', rec: true }] },
+];
+
+const addons = [
+  { name: 'Embeddings, local or cloud', body: 'A provider in `barrel_embed`: Ollama, a Python virtualenv for local models, or a cloud API key.' },
+  { name: 'Reranking', body: '`barrel_rerank`: Python 3 with transformers and torch, about 2 GB, model downloaded on first use.' },
+  { name: 'FAISS index', body: '`rebar3 as faiss compile` with the FAISS C++ library on the system. Linux, macOS and BSD; no Windows build.' },
+  { name: 'S3 attachments', body: '`rebar3 as s3 compile`. Tested against RustFS and Garage. Not covered by encryption at rest.' },
+];
+
+const embedded = `{deps, [{barrel, "~> 1.12"}]}.`;
+
+const embeddedRun = `{ok, _} = application:ensure_all_started(barrel),
+{ok, Db} = barrel:open(<<"kb">>, #{vectordb => #{
+    db_path => "data/kb_vec", dimensions => 768}}),
+{ok, _} = barrel:put_doc(Db, #{<<"id">> => <<"kb-142">>,
+    <<"title">> => <<"Reset a locked account">>}).`;
+
+const server = `rebar3 as server,prod release -n barrel_server
+cd _build/server+prod/rel/barrel_server
+bin/barrel_server foreground
+curl localhost:8080/health`;
+
+const serverOut = `{"status":"ok"}`;
+
+const browser = `import { Database } from "barrel-lite";
+
+const db = await Database.open("notes", {
+  remote: { url: "https://edge.example:8080",
+            db: "sp_...", token: "bsp_..." },
+  multiTab: true,
+});
+await db.put({ id: "n1", title: "hello" });
+await db.sync();   // push local writes, then pull`;
+---
+
+<ProductFrame
+  title="Deployments"
+  description="Run Barrel embedded in an Erlang release, as a REST and MCP server, or as a synced copy in the browser. Requirements and limits of each, side by side."
+  heading="Embedded, server or browser: the same database."
+  lead="Barrel runs inside your Erlang release, behind its own REST and MCP server, or as a local copy in a web page. The record and the replication protocol are the same in all three, so you can start with one and add the others."
+  sub="Most deployments mix them: agents on a server, edge nodes embedded, users in the browser, all syncing."
+  ctas={[{ label: 'Choose a deployment', href: '/docs/start/choose-deployment' }, { label: 'Install', href: '/docs/start/install' }]}
+>
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">How they connect</h2>
+      <p class="section-intro">One sync wire joins them. A browser syncs with a server; servers and embedded nodes replicate with each other in either direction.</p>
+      <FlowDiagram label="Browser, server and embedded node" stages={stages} />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Decide</h2>
+      <p class="section-intro">Read across a row to compare. Each column links to its quickstart.</p>
+      <div class="dp-tw">
+        <table class="dp-t">
+          <caption class="visually-hidden">Embedded, server and browser compared</caption>
+          <thead>
+            <tr><th scope="col"><span class="visually-hidden">Question</span></th>{cols.map((c) => <th scope="col"><a href={c.href}>{c.name}</a></th>)}</tr>
+          </thead>
+          <tbody>
+            {rows.map(([q, a, b, c]) => (
+              <tr><th scope="row">{q}</th><td><Rich text={a} /></td><td><Rich text={b} /></td><td><Rich text={c} /></td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Optional pieces, in any of them</h2>
+      <p class="section-intro">Not in the default build. Add them where you need them.</p>
+      <ul class="dp-add">
+        {addons.map((a) => (
+          <li>
+            <h3 class="mark mark--optional dp-at">{a.name}</h3>
+            <p><Rich text={a.body} /></p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap pf-narrow">
+      <h2 class="h2">Start</h2>
+
+      <h3 class="pf-h3">Embedded</h3>
+      <CodeBlock code={embedded} label="rebar.config" />
+      <CodeBlock code={embeddedRun} />
+
+      <h3 class="pf-h3">Server</h3>
+      <p class="pf-p">From the umbrella. During development, <code>rebar3 as server shell</code> then <code>application:ensure_all_started(barrel_server)</code> does the same.</p>
+      <CodeBlock code={server} lang="bash" label="Shell" />
+      <CodeBlock code={serverOut} output label="Answer from /health" />
+
+      <h3 class="pf-h3">Browser</h3>
+      <p class="pf-p">barrel-lite is not on npm yet: build it from <code>clients/barrel-lite</code> in the repository.</p>
+      <CodeBlock code={browser} lang="ts" />
+    </div>
+  </section>
+
+  <Related
+    limits={[
+      'barrel-lite 0.1.0 is not published to npm; you build it from the repository.',
+      'The embedded API does not expose replication: call `barrel_rep` on the document database.',
+      'The server has no switch to turn off its HTTP listener; to serve barrel routes from your own livery service, mount `barrel_server_api:routes/1`.',
+      'HTTP/3 listeners do not check client certificates; use HTTP/1.1 or HTTP/2 with TLS for mTLS.',
+      'In the browser, storage is a cache: sync is what makes a write durable.',
+    ]}
+    docs={['start/choose-deployment', 'start/install', 'guides/embedding', 'guides/rest-server', 'guides/embedding-barrel-server', 'guides/barrel-lite']}
+    more={[{ href: '/use-cases/offline-first', label: 'Use case: offline-first apps' }]}
+    libs={['barrel', 'server', 'lite']}
+  />
+</ProductFrame>
+
+<style>
+  .dp-tw { overflow-x: auto; }
+  .dp-t { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 15px; table-layout: fixed; }
+  .dp-t th, .dp-t td { text-align: left; padding: 12px 16px 12px 0; border-top: 1px solid var(--rule); vertical-align: top; }
+  .dp-t thead th { font-size: var(--step-1); border-top: 0; }
+  .dp-t thead th:first-child { width: 16%; }
+  .dp-t thead a { color: var(--ink); }
+  .dp-t tbody th { font-weight: 650; }
+  .dp-add { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px 32px; }
+  .dp-add li { border-top: 1px solid var(--rule); padding-top: 14px; min-width: 0; }
+  .dp-at { font-size: 17px; margin: 0 0 6px; }
+  .dp-add p { margin: 0; font-size: 15px; }
+  @media (max-width: 900px) { .dp-add { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 760px) {
+    .dp-t, .dp-t thead, .dp-t tbody, .dp-t tr, .dp-t th, .dp-t td { display: block; min-width: 0; width: auto; }
+    .dp-t thead { display: none; }
+    .dp-t tbody tr { border-top: 2px solid var(--ink); padding: 8px 0 16px; }
+    .dp-t tbody th { border-top: 0; padding-bottom: 4px; }
+    .dp-t td { border-top: 0; padding: 6px 0; }
+    .dp-t td::before { display: block; font-weight: 650; font-size: 13px; color: var(--teal); }
+    .dp-t td:nth-of-type(1)::before { content: 'Embedded'; }
+    .dp-t td:nth-of-type(2)::before { content: 'Server'; }
+    .dp-t td:nth-of-type(3)::before { content: 'Browser'; }
+  }
+</style>

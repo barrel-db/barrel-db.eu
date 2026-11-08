@@ -1,0 +1,210 @@
+---
+import ProductFrame from '../../components/product/ProductFrame.astro';
+import Guarantees from '../../components/product/Guarantees.astro';
+import FlowDiagram from '../../components/product/FlowDiagram.astro';
+import Related from '../../components/product/Related.astro';
+import Rich from '../../components/product/Rich.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import CodeTabs from '../../components/CodeTabs.astro';
+
+const parts = [
+  { name: 'Space', body: 'A barrel database created through `barrel_spaces`, with a generated name (`sp_` and 16 characters) and a registry document. Documents, search and timeline all work in it.' },
+  { name: 'Capability token', body: 'A `bsp_` token granting `read`, `write` or `admin` on one space, optionally with an expiry. It is shown once; only its SHA-256 hash is stored.' },
+  { name: 'Session', body: 'A working context for one agent inside a space: messages in order, structured data, pinned context. Its TTL slides on every change, or it never expires.' },
+  { name: 'Handoff', body: 'A task passed to another agent as a token. Whoever holds it accepts, gets a session in the same space and reads the sender’s context in place.' },
+  { name: 'MCP endpoint', body: '39 tools at `/mcp` on barrel_server: documents, BQL, search, branches, spaces, sessions, handoffs and contexts, with the token checked per tool.' },
+];
+
+const stages = [
+  { boxes: [{ name: 'Agent', note: 'MCP client or HTTP' }], edge: 'Authorization: Bearer bsp_...' },
+  { boxes: [{ name: 'barrel_server', note: 'checks the grant: space and right' }], edge: 'allowed: read, or read and write' },
+  { boxes: [{ name: 'Space sp_...', note: 'documents, sessions, search', rec: true }] },
+];
+
+const handoffStages = [
+  { boxes: [{ name: 'Alice', note: 'session in the space' }], edge: 'handoff_create: a token, once' },
+  { boxes: [{ name: 'Token', note: 'held by Bob' }], edge: 'handoff_accept: first wins' },
+  { boxes: [{ name: 'Bob', note: 'own session, same space', rec: true }], edge: 'handoff_complete' },
+  { boxes: [{ name: 'Done', note: 'token revoked' }] },
+];
+
+const guarantees = [
+  { title: 'A token opens one space, with one set of rights', body: 'A read token cannot write, cannot touch another space, and cannot create or delete databases or branch them. Unmapped routes refuse it.', check: 'barrel_server_auth_SUITE: `t_capability_read_scope`, `t_capability_wrong_space`, `t_capability_fail_closed`; barrel_caps_SUITE `t_rights_ladder`.' },
+  { title: 'Revocation takes effect on the next request', body: 'A revoked or expired token answers 401. Dropping a space revokes every grant on it.', check: '`t_revoked_401` in barrel_server_spaces_SUITE, `t_revoke` and `t_drop_space_revokes` in barrel_caps_SUITE.' },
+  { title: 'A handoff is accepted once', body: 'Accepting flips the handoff from pending to accepted with a compare-and-set; a second accept answers `already_accepted`. Completing revokes the token by default.', check: '`t_double_accept` and `t_complete_revokes` in barrel_handoff_SUITE.' },
+  { title: 'Sessions expire on their own', body: 'An expired session reads as not found at once; the TTL sweeper tombstones it and a janitor collects its messages. A session with `ttl => infinity` never expires.', check: 'barrel_session_SUITE: `t_sliding_ttl`, `t_janitor_orphans`, `t_no_ttl_durable`.' },
+  { title: 'Tokens never sit on disk in clear', body: 'The registry stores a hash of each token. Listing grants never returns hashes.', check: '`t_hash_stored_as_hex` and `t_list_strips_hashes` in barrel_caps_SUITE.' },
+  { title: 'MCP denials come back as tool results', body: 'A tool call outside the grant returns `isError: true` with a reason the agent can read, not a protocol failure.', check: '`t_capability_denies` in barrel_server_mcp_agent_SUITE.' },
+];
+
+const spaceTabs = [
+  { label: 'Erlang', lang: 'erlang', code: `{ok, #{id := SpaceId, db := Db}} =
+    barrel_spaces:create_space(#{label => <<"joint research">>,
+                                 vectordb => none}),
+{ok, _} = barrel:put_doc(Db, #{<<"id">> => <<"notes">>,
+                               <<"text">> => <<"draft v1">>}),
+{ok, ReadTok, _Grant} = barrel_caps:grant(SpaceId,
+    #{rights => [read], subject => <<"carol">>}),
+barrel_caps:verify(ReadTok, SpaceId, write).` },
+  { label: 'REST', lang: 'bash', code: `curl -X POST localhost:8080/spaces \\
+  -H 'authorization: Bearer global-token' \\
+  -H 'content-type: application/json' -d '{"label":"team"}'
+curl -X POST localhost:8080/spaces/sp_.../grants \\
+  -H 'authorization: Bearer global-token' \\
+  -H 'content-type: application/json' \\
+  -d '{"rights":["read"],"subject":"agent-1"}'` },
+  { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":2,"method":"tools/call",
+ "params":{"name":"space_create",
+   "arguments":{"label":"team"}}}
+
+{"jsonrpc":"2.0","id":3,"method":"tools/call",
+ "params":{"name":"space_grant","arguments":{
+   "space":"sp_...","rights":["read"],
+   "subject":"agent-1"}}}` },
+];
+
+const spaceOut = `{error,forbidden}`;
+
+const sessionTabs = [
+  { label: 'Erlang', lang: 'erlang', code: `{ok, Sid} = barrel_session:create(Space,
+    #{agent => <<"alice">>, ttl => 1800}),
+{ok, _} = barrel_session:add_message(Space, Sid,
+    #{role => <<"user">>, content => <<"draft is half done">>}),
+{ok, _} = barrel_session:set_data(Space, Sid, <<"cursor">>, 42),
+{ok, _} = barrel_session:pin_context(Space, Sid,
+    #{content => <<"deadline friday">>, priority => 0}),
+{ok, Msgs} = barrel_session:get_messages(Space, Sid,
+    #{limit => 50, order => desc}).` },
+  { label: 'REST', lang: 'bash', code: `curl -X POST localhost:8080/spaces/sp_.../sessions \\
+  -H 'authorization: Bearer bsp_...' \\
+  -H 'content-type: application/json' \\
+  -d '{"agent":"alice","ttl":1800}'` },
+  { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":4,"method":"tools/call",
+ "params":{"name":"session_add_message","arguments":{
+   "space":"sp_...","session":"ses_...",
+   "role":"user","content":"draft is half done"}}}` },
+];
+
+const handoffTabs = [
+  { label: 'Erlang', lang: 'erlang', code: `{ok, #{token := HTok}} = barrel_handoff:create(Space, #{
+    task_name => <<"finish the draft">>,
+    from_agent => <<"alice">>, to_agent => <<"bob">>,
+    from_session => Sid,
+    pending => [<<"polish conclusion">>]}),
+
+%% bob, holding only the token
+{ok, #{space := BobSpace, session := BobSid}} =
+    barrel_handoff:accept(HTok, #{agent => <<"bob">>}),
+{ok, _} = barrel_handoff:complete(HTok,
+                                  #{result => <<"shipped">>}).` },
+  { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":5,"method":"tools/call",
+ "params":{"name":"handoff_create","arguments":{
+   "space":"sp_...","task_name":"finish the draft",
+   "from_agent":"alice","to_agent":"bob"}}}
+
+{"jsonrpc":"2.0","id":6,"method":"tools/call",
+ "params":{"name":"handoff_accept",
+   "arguments":{"token":"bsp_...","agent":"bob"}}}` },
+];
+
+const handoffOut = `accepted: {<<"accepted">>,<<"bob">>}
+second accept: {error,already_accepted}
+bob reads alice's messages: [<<"draft is half done">>]
+handoff token after complete: {error,revoked}`;
+
+const mcpConfig = `{barrel_server, [
+    {auth, #{tokens => [<<"server-token">>]}},
+    {mcp, #{enabled => true,
+            allowed_origins => any,
+            resources => full}}
+]}`;
+
+const limits = [
+  'In your own Erlang node, tokens are checked only where code calls `barrel_caps:verify/3`. `barrel_spaces:open_space/1` and the `barrel_session` calls take no token, so any code in the VM can open any space. barrel_server and `/mcp` enforce tokens; in process, per-space encryption is the isolation boundary.',
+  'In `barrel_handoff`, accept, complete and chain check only the `read` right, so a read-only handoff token can complete or chain.',
+  'Granting, revoking and creating handoffs from Erlang take no token: the admin right is enforced by the server routes only.',
+  'Encrypted spaces are reachable from the Erlang API only, not over REST or MCP.',
+  'A space’s vector store lives on each node and does not replicate. Grants live in the registry database, so a revocation reaches other nodes at replication speed.',
+  '`/mcp` accepts bearer tokens only, server or capability; signed requests and mTLS do not apply to it. `tools/call` answers arrive as server-sent events.',
+  'Contexts across several databases need a LIMIT (1000 at most) and do not merge BM25 or hybrid scores across contexts; live federation is planned.',
+];
+---
+
+<ProductFrame
+  title="Agent layer"
+  description="Spaces, capability tokens, sessions and handoffs in Barrel, and the MCP endpoint that exposes them to agents. What tokens enforce, and where."
+  heading="Give each agent a space, and share it by token."
+  lead="A space is a database an agent works in. You share it by handing out a capability token for read, write or admin; you take it back by revoking the token. Sessions keep an agent's messages and working state, and a handoff passes a task to another agent with its context in place."
+  sub="Agents reach all of it over MCP or REST. The same operations exist in Erlang when your agents run in the same node."
+  ctas={[{ label: 'Spaces, sessions, handoffs', href: '/docs/guides/spaces' }, { label: 'MCP endpoint', href: '/docs/guides/mcp' }]}
+>
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">What it is</h2>
+      <p class="section-intro">Five pieces, each a thin layer over a barrel database. Spaces open through the database lifecycle manager, so idle spaces close themselves and hundreds of short-lived ones stay cheap.</p>
+      <dl class="ag-parts">
+        {parts.map((p) => (
+          <div>
+            <dt>{p.name}</dt>
+            <dd><Rich text={p.body} /></dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">How a token is checked</h2>
+      <p class="section-intro">barrel_server reads the token on every request. A capability token passes only on its own space’s routes and the agent routes, with the right it was granted: read covers GETs, queries, search and the pull side of sync; write adds document writes and the push side.</p>
+      <FlowDiagram label="A capability token on a request" stages={stages} />
+      <h3 class="pf-h3 ag-gap">How a handoff moves a task</h3>
+      <FlowDiagram label="A handoff from Alice to Bob" stages={handoffStages} caption="Nothing is copied: Bob reads Alice's session and documents in the shared space." />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">What holds, and what tests it</h2>
+      <p class="section-intro">Over REST and MCP. Inside your own node, read the first limit below.</p>
+      <Guarantees items={guarantees} />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap pf-narrow">
+      <h2 class="h2">Use it</h2>
+
+      <h3 class="pf-h3">Create a space and grant a read token</h3>
+      <CodeTabs tabs={spaceTabs} />
+      <CodeBlock code={spaceOut} output label="Output of the last Erlang call: a read token asking for write, recorded on barrel_spaces 1.3.1" />
+
+      <h3 class="pf-h3">Keep a session</h3>
+      <CodeTabs tabs={sessionTabs} />
+
+      <h3 class="pf-h3">Hand the task to another agent</h3>
+      <CodeTabs tabs={handoffTabs} />
+      <CodeBlock code={handoffOut} output label="Lines printed by the recorded Erlang flow (abridged)" />
+
+      <h3 class="pf-h3">Turn on the MCP endpoint</h3>
+      <p class="pf-p">It is on by default in the server build. A server token gets full access; a capability token is scoped to its space and rights.</p>
+      <CodeBlock code={mcpConfig} label="sys.config" />
+    </div>
+  </section>
+
+  <Related
+    limits={limits}
+    docs={['guides/spaces', 'guides/mcp', 'reference/mcp-tools', 'concepts/spaces', 'guides/contexts', 'guides/audit-provenance']}
+    more={[{ href: '/use-cases/database-per-agent', label: 'Use case: a database per agent' }, { href: '/use-cases/agent-memory', label: 'Use case: memory for agents' }]}
+    libs={['spaces', 'server', 'barrel']}
+  />
+</ProductFrame>
+
+<style>
+  .ag-parts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px 40px; margin: 0 0 48px; }
+  .ag-parts div { border-top: 1px solid var(--rule); padding-top: 14px; min-width: 0; }
+  .ag-parts dt { font-weight: 650; font-size: 19px; margin-bottom: 6px; }
+  .ag-parts dd { margin: 0; font-size: 15px; }
+  .ag-gap { margin-top: 48px; margin-bottom: 16px; }
+  @media (max-width: 900px) { .ag-parts { grid-template-columns: minmax(0, 1fr); } }
+</style>

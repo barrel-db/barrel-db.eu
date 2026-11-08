@@ -1,0 +1,6 @@
+---
+// Plain text where `backticks` become inline code. Keeps page data as strings.
+interface Props { text: string }
+const parts = Astro.props.text.split('`');
+---
+{parts.map((p, i) => (i % 2 ? <code>{p}</code> : p))}

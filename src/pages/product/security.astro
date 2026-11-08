@@ -1,0 +1,197 @@
+---
+import ProductFrame from '../../components/product/ProductFrame.astro';
+import Guarantees from '../../components/product/Guarantees.astro';
+import FlowDiagram from '../../components/product/FlowDiagram.astro';
+import Related from '../../components/product/Related.astro';
+import Rich from '../../components/product/Rich.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+
+const keyStages = [
+  { boxes: [{ name: 'Master secret', note: 'BARREL_ENCRYPTION_KEY' }, { name: 'Your key provider', note: 'KMS, vault, per tenant' }], edge: 'HKDF-SHA256 with the database keyspace' },
+  { boxes: [{ name: 'One key per database', note: '32 bytes, never written to disk', rec: true }], edge: 'AES-256-CTR, per file and per sector' },
+  { boxes: [{ name: 'Encrypted', note: 'documents, WAL, blob attachments, vector store, disk BM25 and DiskANN files' }, { name: 'Not encrypted', note: 'attachments on the S3 backend', dashed: true }] },
+];
+
+const covers = [
+  ['Document store (RocksDB files, WAL)', 'Encrypted'],
+  ['Attachments in the default blob store', 'Encrypted'],
+  ['Attachments on the S3 backend (`barrel_att_s3`)', 'Not encrypted: stored in clear in the bucket'],
+  ['Vector store, HNSW and FAISS state', 'Encrypted'],
+  ['Disk BM25 and DiskANN index files', 'Encrypted, per 4096-byte sector'],
+  ['Timeline branches', 'Encrypted under the parent’s key'],
+  ['Key-check file in the database directory', 'In clear by design: it lets a wrong key fail at open'],
+];
+
+const auth = [
+  { model: 'Open', config: 'no `auth` key', what: 'Nothing. Every route answers.', where: 'REST, sync, MCP' },
+  { model: 'Bearer', config: '`#{tokens => [...]}`', what: 'A shared secret, compared in constant time. A list lets you rotate.', where: 'REST, sync, MCP' },
+  { model: 'Capability token', config: 'issued per space (`bsp_...`)', what: 'One space, with read, write or admin. Lifecycle, timeline and unmapped routes refuse it.', where: 'REST, sync, MCP' },
+  { model: 'Signed request (v3)', config: '`accept => [signed]`, `signers`', what: 'An Ed25519 key per client. Covers method, path, query, body hash and the headers that change a write; replays are refused.', where: 'REST, sync' },
+  { model: 'mTLS', config: '`accept => [mtls]`, `verify_peer`', what: 'That the client holds a certificate from your CA, not which client it is.', where: 'REST, sync over HTTP/1.1 or HTTP/2 with TLS' },
+];
+
+const enforce = [
+  ['Capability tokens', 'Advisory: checked only where your code calls `barrel_caps:verify/3`. `open_space/1` and session calls take no token.', 'Checked on every request and every MCP tool call.'],
+  ['Admin right (grant, revoke, handoffs)', 'Not checked: the Erlang calls take no token.', 'Required by the routes.'],
+  ['Per-database encryption', 'The isolation boundary: no key, no data.', 'Applied to every database through `open_opts`; keys never travel over HTTP.'],
+];
+
+const guarantees = [
+  { title: 'Nothing readable on disk', body: 'With encryption on, a search of every file for a marker written into a document, a vector text and an attachment finds nothing; the same write without encryption finds it.', check: 'a recorded end-to-end run (below), barrel_encryption_SUITE, barrel_encryption_facade_SUITE and barrel_vectordb_crypto_tests.' },
+  { title: 'A wrong key fails at open', body: 'A wrong key answers `wrong_encryption_key`, a plaintext open of an encrypted database `db_is_encrypted`, never corrupted reads.', check: 'the recorded run and barrel_encryption_SUITE.' },
+  { title: 'A failing signature is never rescued', body: 'A request that presents a signature is judged by it alone, even if a bearer or a client certificate would let it in.', check: '`t_bearer_with_bad_signature_rejected` in barrel_server_signed_SUITE, `t_bad_signature_rejected` in barrel_server_mtls_SUITE.' },
+  { title: 'Signed bodies and headers cannot be swapped', body: 'The body hash is checked before the handler runs, on every route; changing a signed header answers 401.', check: 'barrel_server_signed_SUITE: `t_tampered_body_rejected`, `t_rest_doc_body_swap_rejected`, `t_att_put_digest_tamper_rejected`, `t_replay_rejected`.' },
+  { title: 'Capability tokens fail closed', body: 'A route not mapped to a right refuses a capability token with 403; a dead token gets 401.', check: '`t_capability_fail_closed` and `t_capability_dead_tokens` in barrel_server_auth_SUITE.' },
+  { title: 'mTLS refuses a client with no certificate', body: 'At the TLS handshake, before any route runs.', check: '`t_certless_refused` in barrel_server_mtls_SUITE.' },
+];
+
+const enc = `%% export BARREL_ENCRYPTION_KEY="a long passphrase"
+{ok, Db} = barrel:open(secret, #{encryption => default,
+    vectordb => #{dimension => 3, bm25_backend => disk,
+                  db_path => "data/secret_vec"}}),
+
+%% or your own provider: key_for_db(Keyspace) -> {ok, <<_:256>>}
+{ok, Db2} = barrel:open(tenant_a,
+    #{encryption => #{provider => my_kms_provider}}).`;
+
+const encOut = `read back: <<"TOPSECRETMARKER">>
+bm25 hits: 1
+files containing plaintext marker:        0
+plaintext open: {error,db_is_encrypted}
+wrong key open: {error,wrong_encryption_key}
+reopened with right key: <<"TOPSECRETMARKER">>
+encrypt existing plaintext db: {error,cannot_encrypt_existing_db}`;
+
+const serverEnc = `{barrel_server, [
+    {open_opts, #{encryption => default}}
+]}`;
+
+const bearer = `{barrel_server, [
+    {auth, #{tokens => [<<"new-token">>, <<"old-token">>]}}
+]}`;
+
+const signed = `%% server: know each peer's public key
+application:set_env(barrel_server, auth,
+    #{accept  => [bearer, signed],
+      signers => #{<<"node1">> => PubKey32},
+      skew_ms => 300000}),
+
+%% client: sign with the private key, kept out of task configs
+application:set_env(barrel_docdb, sync_signing,
+    #{<<"https://edge-1.example.com:8443">> =>
+          #{key_id => <<"node1">>, priv_key => Priv32}}).`;
+
+const mtls = `application:set_env(barrel_server, listeners,
+    #{http => #{port => 8443, tls => true}}),
+application:set_env(barrel_server, tls,
+    #{certfile => "server.pem", keyfile => "server.key",
+      cacertfile => "ca.pem", verify => verify_peer}),
+application:set_env(barrel_server, auth,
+    #{accept => [mtls, signed], signers => Signers}).`;
+
+const limits = [
+  'Attachments stored on the S3 backend are not encrypted, even when the database is.',
+  'There is no key rotation and no in-place encryption of an existing database. Replicate into a new database under the new key. A lost key means lost data.',
+  'The threat model is data at rest. CTR mode is not authenticated, so an attacker who can write the files is out of scope, and keys in memory are not zeroized.',
+  'A server with no `auth` key is open to anyone who can reach it. An empty `accept` list locks it completely.',
+  'Bearer tokens can be replayed without TLS. Signing authenticates the client and each request; it does not hide traffic or authenticate the server’s responses. Use verified HTTPS for that.',
+  'mTLS identifies your CA, not the peer: on its own every client with a certificate is one trusted peer. Add signed requests for identity. HTTP/3 listeners do not check client certificates yet.',
+  '`/mcp` and barrel-lite accept bearer tokens only (server or capability).',
+];
+---
+
+<ProductFrame
+  title="Security"
+  description="Encryption at rest with one key per database, and the server's auth models: bearer, capability tokens, signed requests v3 and mTLS. What each covers, and what it does not."
+  heading="One key per database. A credential on every request."
+  lead="Barrel can encrypt a whole database at rest under its own key: documents, attachments, vectors and index files. In front of it, barrel_server checks a bearer, a capability token, a signed request or a client certificate before any route runs."
+  sub="Both are off until you turn them on. This page says what each one covers, what it does not, and where tokens are enforced."
+  ctas={[{ label: 'Encryption at rest', href: '/docs/guides/encryption' }, { label: 'Authentication', href: '/docs/security/authentication' }]}
+>
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Encryption at rest</h2>
+      <p class="section-intro">You pass an <code>encryption</code> spec when you open a database. A key provider turns the database keyspace into a 32-byte key; the stores encrypt every file they write with it. A branch shares its parent’s keyspace, so it opens with the same key.</p>
+      <FlowDiagram label="From a master secret to encrypted files" stages={keyStages} />
+      <div class="sc-tw">
+        <table class="sc-t">
+          <caption class="visually-hidden">What encryption at rest covers</caption>
+          <thead><tr><th scope="col">Data</th><th scope="col">At rest</th></tr></thead>
+          <tbody>{covers.map(([d, s]) => <tr><td><Rich text={d} /></td><td>{s}</td></tr>)}</tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Who may call the server</h2>
+      <p class="section-intro">Set an <code>auth</code> key and every route except <code>/health</code> needs a credential. A request is judged by the credential it presents: a signature first, else the token in <code>Authorization</code>, else the client certificate.</p>
+      <div class="sc-tw">
+        <table class="sc-t">
+          <caption class="visually-hidden">Auth models in barrel_server</caption>
+          <thead><tr><th scope="col">Model</th><th scope="col">Turn it on with</th><th scope="col">What it proves</th><th scope="col">Applies to</th></tr></thead>
+          <tbody>{auth.map((a) => <tr><th scope="row">{a.model}</th><td><Rich text={a.config} /></td><td>{a.what}</td><td>{a.where}</td></tr>)}</tbody>
+        </table>
+      </div>
+      <h3 class="pf-h3 sc-gap">In your node, and over the server</h3>
+      <p class="pf-p">The agent layer is a library. Tokens mean something only where someone checks them.</p>
+      <div class="sc-tw">
+        <table class="sc-t">
+          <caption class="visually-hidden">Where tokens are enforced</caption>
+          <thead><tr><th scope="col"><span class="visually-hidden">Control</span></th><th scope="col">In process (Erlang API)</th><th scope="col">Over barrel_server (REST, sync, MCP)</th></tr></thead>
+          <tbody>{enforce.map(([k, a, b]) => <tr><th scope="row">{k}</th><td><Rich text={a} /></td><td><Rich text={b} /></td></tr>)}</tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">What holds, and what tests it</h2>
+      <p class="section-intro">Each property names the test or recorded run that checks it.</p>
+      <Guarantees items={guarantees} />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap pf-narrow">
+      <h2 class="h2">Use it</h2>
+
+      <h3 class="pf-h3">Encrypt a database</h3>
+      <p class="pf-p">Encryption is runtime configuration: pass the same spec on every open.</p>
+      <CodeBlock code={enc} />
+      <CodeBlock code={encOut} output label="Lines printed by a recorded run that wrote a marker into a document, a vector text and an attachment, closed the database and searched the files" />
+
+      <h3 class="pf-h3">Encrypt every database a server opens</h3>
+      <CodeBlock code={serverEnc} label="sys.config" />
+
+      <h3 class="pf-h3">Lock the server with bearer tokens</h3>
+      <CodeBlock code={bearer} label="sys.config" />
+
+      <h3 class="pf-h3">Sign requests between nodes</h3>
+      <p class="pf-p">Generate the key pair with <code>crypto:generate_key(eddsa, ed25519)</code>. Clients from barrel_docdb 2.1.0 send signature v3 only, so upgrade servers to barrel_server 1.13.0 first.</p>
+      <CodeBlock code={signed} />
+
+      <h3 class="pf-h3">Gate the transport with mTLS</h3>
+      <CodeBlock code={mtls} />
+    </div>
+  </section>
+
+  <Related
+    limits={limits}
+    docs={['guides/encryption', 'security/authentication', 'guides/synchronization', 'guides/spaces', 'guides/rest-server']}
+    more={[{ href: '/use-cases/database-per-customer', label: 'Use case: a database per customer' }]}
+    libs={['crypto', 'server', 'spaces', 'att-s3']}
+  />
+</ProductFrame>
+
+<style>
+  .sc-tw { overflow-x: auto; margin-top: 40px; }
+  .sc-gap { margin-top: 48px; }
+  .sc-t { width: 100%; border-collapse: collapse; font-size: 15px; }
+  .sc-t th, .sc-t td { text-align: left; padding: 10px 14px 10px 0; border-top: 1px solid var(--rule); vertical-align: top; }
+  .sc-t thead th { font-weight: 650; border-top: 0; }
+  .sc-t tbody th { font-weight: 650; white-space: nowrap; }
+  @media (max-width: 700px) { .sc-t tbody th { white-space: normal; } }
+</style>

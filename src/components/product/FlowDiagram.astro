@@ -1,0 +1,54 @@
+---
+// A mechanism drawn as boxes: stages left to right (top to bottom on a phone),
+// each holding one or more boxes, joined by a labeled edge to the next stage.
+interface Box { name: string; note?: string; rec?: boolean; dashed?: boolean }
+interface Stage { boxes: Box[]; edge?: string }
+interface Props { stages: Stage[]; label: string; caption?: string }
+const { stages, label, caption } = Astro.props;
+---
+
+<figure class="fd">
+  <ol class="fd-row" aria-label={label}>
+    {stages.map((s, i) => (
+      <li class="fd-stage">
+        <div class="fd-boxes">
+          {s.boxes.map((b) => (
+            <div class:list={['fd-box', { 'is-rec': b.rec, 'is-dashed': b.dashed }]}>
+              <strong>{b.name}</strong>
+              {b.note && <span>{b.note}</span>}
+            </div>
+          ))}
+        </div>
+        {s.edge && i < stages.length - 1 && <p class="fd-edge"><span>{s.edge}</span></p>}
+      </li>
+    ))}
+  </ol>
+  {caption && <figcaption class="small muted">{caption}</figcaption>}
+</figure>
+
+<style>
+  .fd { margin: 0; }
+  .fd-row { list-style: none; margin: 0; padding: 0; display: flex; align-items: stretch; }
+  .fd-stage { display: flex; align-items: center; flex: 1 1 0; min-width: 0; }
+  .fd-stage:last-child { flex: 0.8 1 0; }
+  .fd-boxes { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 0; }
+  .fd-box { padding: 12px 14px; border: 1.5px solid var(--ink); border-radius: 6px; background: var(--card); display: flex; flex-direction: column; min-width: 0; }
+  .fd-box strong { font-weight: 650; overflow-wrap: anywhere; }
+  .fd-box span { font-size: 13px; color: var(--ink-2); }
+  .fd-box.is-rec { background: var(--coral); border-color: var(--coral); color: var(--on-coral); }
+  .fd-box.is-rec span { color: var(--on-coral); opacity: 0.9; }
+  .fd-box.is-dashed { border-style: dashed; background: transparent; }
+  .fd-edge { flex: 0 0 112px; margin: 0; padding: 0 8px; position: relative; text-align: center; font-size: 13px; line-height: 1.3; color: var(--teal); }
+  .fd-edge::before { content: ''; position: absolute; left: 6px; right: 10px; top: 50%; border-top: 1.5px solid var(--teal); }
+  .fd-edge::after { content: ''; position: absolute; right: 4px; top: calc(50% - 4.5px); border-left: 7px solid var(--teal); border-top: 4.5px solid transparent; border-bottom: 4.5px solid transparent; }
+  .fd-edge span { position: relative; display: inline-block; background: var(--paper); padding: 2px 4px; transform: translateY(-14px); }
+  figcaption { margin-top: 14px; max-width: 46em; }
+  @media (max-width: 900px) {
+    .fd-row, .fd-stage { flex-direction: column; align-items: stretch; }
+    .fd-boxes { flex: none; }
+    .fd-edge { flex: none; margin: 0 0 0 16px; padding: 8px 0 8px 14px; text-align: left; border-left: 1.5px solid var(--teal); }
+    .fd-edge::before { display: none; }
+    .fd-edge::after { left: -5px; right: auto; top: auto; bottom: -1px; border-top: 7px solid var(--teal); border-left: 4.5px solid transparent; border-right: 4.5px solid transparent; border-bottom: 0; }
+    .fd-edge span { transform: none; padding: 0; background: none; }
+  }
+</style>
