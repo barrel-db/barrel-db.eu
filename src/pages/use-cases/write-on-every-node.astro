@@ -1,0 +1,113 @@
+---
+import UseCasePage from '../../components/usecase/UseCasePage.astro';
+import TwoSiteDemo from '../../components/demos/TwoSiteDemo.astro';
+import type { ArchColumn, Step } from '../../components/usecase/types';
+
+const arch: ArchColumn[] = [
+  { who: 'Site A (your Erlang release)', boxes: [
+    { name: 'Your application', note: 'reads and writes locally' },
+    { name: 'inventory', note: 'barrel_docdb, on local disk', rec: true } ] },
+  { who: 'Hub (barrel_server)', boxes: [
+    { name: '/db/inventory/_sync', note: 'the replication wire' },
+    { name: 'inventory', note: 'the central copy', rec: true } ] },
+  { who: 'Site B and others', boxes: [
+    { name: 'Your application', note: 'reads and writes locally' },
+    { name: 'inventory', note: 'its own copy', rec: true } ] },
+];
+
+const steps: Step[] = [
+  { title: 'Run a hub',
+    body: 'One barrel_server with a token the nodes share. Replication does not create databases, so create it first.',
+    tabs: [
+      { label: 'Erlang', lang: 'erlang', code: `%% sys.config of the hub
+[{barrel_server, [
+   {http_port, 8080},
+   {auth, #{tokens => [<<"sync-token">>]}}
+ ]}].` },
+      { label: 'REST', lang: 'bash', code: `curl -X PUT hub.example:8080/db/inventory \\
+  -H 'authorization: Bearer sync-token'` } ] },
+  { title: 'Embed Barrel on each node',
+    body: 'Create the same database locally. Give the token by origin in the app env, so task configs stay free of secrets.',
+    label: 'Erlang, on each node', lang: 'erlang',
+    code: `{ok, _} = application:ensure_all_started(barrel_docdb),
+{ok, _} = barrel_docdb:create_db(<<"inventory">>),
+application:set_env(barrel_docdb, sync_auth,
+    #{<<"http://hub.example:8080">> => <<"sync-token">>}).` },
+  { title: 'Start a continuous task in both directions',
+    body: 'Tasks persist across restarts. A local source wakes the task on each change; the remote side is polled, 500 ms after data and backing off to 15 s when idle.',
+    label: 'Erlang, on each node', lang: 'erlang',
+    code: `{ok, TaskId} = barrel_rep_tasks:start_task(#{
+    source    => <<"inventory">>,
+    target    => <<"http://hub.example:8080/db/inventory">>,
+    mode      => continuous,
+    direction => both}).` },
+  { title: 'Write locally, linked or not',
+    body: 'Writes never wait for the hub. When the link drops, the task backs off from 1 s to 60 s, records `last_error` and stays `running`; it catches up from its checkpoint when the link returns.',
+    label: 'Erlang', lang: 'erlang',
+    code: `{ok, _} = barrel_docdb:put_doc(<<"inventory">>,
+    #{<<"id">> => <<"sku:42">>, <<"qty">> => 7}),
+{ok, #{status := running}} =
+    barrel_rep_tasks:get_task(TaskId).` },
+  { title: 'Resolve the conflicts you care about',
+    body: 'Two sites that edit the same document while apart both keep their edit: every copy picks the same winner and keeps the other as a conflict. Resolve it by writing a version that replaces the versions you observed. A `conflict_resolver` given at `create_db` can do this for you.',
+    label: 'Erlang', lang: 'erlang',
+    code: `{ok, #{<<"_observed">> := Seen}} =
+    barrel_docdb:get_doc(<<"inventory">>, <<"sku:42">>,
+                         #{conflicts => true}),
+{ok, _} = barrel_docdb:resolve_conflict(<<"inventory">>,
+    <<"sku:42">>, Seen, {merge, #{<<"qty">> => 5}}).`,
+    outLabel: 'Result shape, from a recorded run (other names)',
+    out: `{ok,#{id => <<"task:1">>,
+      rev => <<"000001a1b879d59500000000@w7bcb971434496877">>,
+      conflicts_resolved => 1}}` },
+];
+---
+
+<UseCasePage
+  title="Write on every node"
+  lead="Run a copy of the database on every site, device or region. Each copy takes writes while its link is down, and replication brings every copy back to the same state without losing an edit."
+  sub="Active-active: no leader, no primary. Built from barrel_docdb replication tasks and the `_sync` wire served by barrel_server."
+  problem="Sites, devices and regions each need their data locally, plus a central copy, over links that come and go. A primary database makes every site wait on the network, and last-write-wins sync quietly drops one side of every concurrent edit."
+  arch={arch}
+  edges={['continuous task, both ways', 'continuous task, both ways']}
+  archNote="Every copy accepts writes. Each node runs one task against the hub; the hub passes changes on to the other nodes. Filters and channels decide which documents a node receives."
+  stepsIntro="Five steps: a hub, then the same few calls on every node."
+  steps={steps}
+  barrel={[
+    'Orders writes with a hybrid logical clock and version vectors',
+    'Picks the same winner on every copy, and keeps concurrent edits as conflicts',
+    'Checkpoints each batch and resumes after a failure',
+    'Moves attachments with their documents, content-addressed',
+    'Filters at the source by path, query or channel',
+  ]}
+  app={[
+    'Chooses the topology: one hub, several, or a mesh',
+    'Decides which data goes where, with filters or channels',
+    'Hands each node its token through `sync_auth`',
+    'Resolves conflicts, or sets a `conflict_resolver`',
+    'Watches task status and `last_error`',
+  ]}
+  limits={[
+    'Vector indexes do not replicate. In record mode the documents travel and each node rebuilds its index.',
+    'Provenance (actor, session, source) stays on the node that took the write; arrivals are marked replicated.',
+    'A document that leaves a channel stays on replicas that already have it.',
+    'The `barrel` facade does not expose replication: call `barrel_rep_tasks` on the docdb name.',
+    'A peer whose clock is too far ahead is refused with `clock_skew`. HTTP/3 listeners do not check client certificates yet.',
+  ]}
+  links={[
+    { label: 'How replication works and how it is tested', href: '/product/replication' },
+    { label: 'Synchronization guide', href: '/docs/guides/synchronization' },
+    { label: 'Conflicts', href: '/docs/replicate/conflicts' },
+    { label: 'Versions, conflicts, convergence', href: '/docs/concepts/versions' },
+    { label: 'Authentication', href: '/docs/security/authentication' },
+    { label: 'barrel_docdb', href: '/product/docdb' },
+    { label: 'Example: embedded in an Erlang app', href: '/examples/embedded-erlang' },
+    { label: 'Use case: offline-first apps', href: '/use-cases/offline-first' },
+  ]}
+>
+  <div slot="after-arch" class="demo-wrap"><TwoSiteDemo /></div>
+</UseCasePage>
+
+<style>
+  .demo-wrap { margin-top: 32px; }
+</style>

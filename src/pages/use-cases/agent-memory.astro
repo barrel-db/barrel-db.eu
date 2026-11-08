@@ -1,0 +1,136 @@
+---
+import UseCasePage from '../../components/usecase/UseCasePage.astro';
+import type { ArchColumn, Step } from '../../components/usecase/types';
+
+const arch: ArchColumn[] = [
+  { who: 'Your agent', boxes: [
+    { name: 'Each turn', note: 'appends messages, updates state' },
+    { name: 'Prompt builder', note: 'pins, recent turns, recalled facts' } ] },
+  { who: 'Space sp_support', boxes: [
+    { name: 'Session ses_…', note: 'messages, data, pins; sliding TTL', rec: true },
+    { name: 'Fact documents', note: 'record mode: embedded on write', rec: true } ] },
+  { who: 'On the same node', boxes: [
+    { name: 'Embedder', note: 'a barrel_embed provider, Ollama here' },
+    { name: 'TTL sweeper', note: 'tombstones expired sessions' } ] },
+];
+
+const steps: Step[] = [
+  { title: 'Create a space with a memory policy',
+    body: 'The `embedding` policy turns the space into a record-mode database: documents with a `fact` field get a vector, kept in step with every update and delete. Session messages carry no `fact` field, so they are not embedded.',
+    status: 'optional',
+    label: 'Erlang', lang: 'erlang',
+    code: `{ok, _} = application:ensure_all_started(barrel_spaces),
+Embedder = {ollama, #{model => <<"nomic-embed-text">>}},
+{ok, #{id := SpaceId, db := Db} = Space} =
+    barrel_spaces:create_space(#{
+        label => <<"support memory">>,
+        embedding => #{fields => [<<"fact">>],
+                       mode => sync,
+                       embedder => Embedder}}).` },
+  { title: 'Open a session for the conversation',
+    body: 'A session is a document with a sliding expiry: every change pushes it back by `ttl` seconds.',
+    tabs: [
+      { label: 'Erlang', lang: 'erlang', code: `{ok, Sid} = barrel_session:create(Space,
+    #{agent => <<"support">>, ttl => 3600}).` },
+      { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":5,"method":"tools/call",
+ "params":{"name":"session_create",
+  "arguments":{"space":"sp_…","agent":"support",
+               "ttl":3600}}}` } ] },
+  { title: 'Append each turn',
+    body: 'Messages are separate documents whose ids sort by time, so reading the last twenty is a short range scan.',
+    tabs: [
+      { label: 'Erlang', lang: 'erlang', code: `{ok, _} = barrel_session:add_message(Space, Sid,
+    #{role => <<"user">>,
+      content => <<"I am locked out">>}).` },
+      { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":6,"method":"tools/call",
+ "params":{"name":"session_add_message",
+  "arguments":{"space":"sp_…","session":"ses_…",
+               "role":"user",
+               "content":"I am locked out"}}}` } ] },
+  { title: 'Keep working state and pinned context',
+    body: '`set_data` holds structured state under a key. Pins are notes that stay in front of every prompt, ordered by priority.',
+    tabs: [
+      { label: 'Erlang', lang: 'erlang', code: `{ok, _} = barrel_session:set_data(Space, Sid,
+    <<"ticket">>, <<"T-311">>),
+{ok, _PinId} = barrel_session:pin_context(Space, Sid,
+    #{content => <<"enterprise plan">>, priority => 0}),
+{ok, Pinned} = barrel_session:list_pinned(Space, Sid).` },
+      { label: 'REST', lang: 'bash', code: `curl -X PUT \\
+  localhost:8080/spaces/sp_…/sessions/ses_…/data/ticket \\
+  -H 'authorization: Bearer bsp_…' \\
+  -H 'content-type: application/json' \\
+  -d '{"value":"T-311"}'` } ] },
+  { title: 'Read the recent turns back',
+    body: 'Newest first with `order => desc`; `since` and `before` take unix milliseconds.',
+    tabs: [
+      { label: 'Erlang', lang: 'erlang', code: `{ok, Recent} = barrel_session:get_messages(Space, Sid,
+    #{limit => 20, order => desc}).` },
+      { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":7,"method":"tools/call",
+ "params":{"name":"session_get_messages",
+  "arguments":{"space":"sp_…","session":"ses_…",
+               "limit":20,"order":"desc"}}}` } ] },
+  { title: 'Store facts and recall them by meaning',
+    body: 'When your agent decides something is worth keeping beyond the session, write it as a document. It is embedded on write and found later by meaning, keyword or both.',
+    label: 'Erlang', lang: 'erlang',
+    code: `{ok, _} = barrel:put_doc(Db, #{
+    <<"id">> => <<"fact:acme-sso">>,
+    <<"customer">> => <<"acme">>,
+    <<"fact">> => <<"Acme signs in through Okta SSO">>}),
+{ok, Hits} = barrel:search_hybrid(Db,
+    <<"how does acme log in">>, #{k => 5}).` },
+  { title: 'Let sessions expire, or keep one for good',
+    body: 'An expired session reads as not found at once and is swept later with its messages. `ttl => infinity` makes a durable session that never expires.',
+    label: 'Erlang', lang: 'erlang',
+    code: `{ok, Tmp} = barrel_session:create(Space, #{ttl => 1}),
+timer:sleep(1500),
+{error, not_found} = barrel_session:get(Space, Tmp),
+{ok, Rec} = barrel_session:create(Space,
+    #{agent => <<"support">>, ttl => infinity}),
+{ok, 0} = barrel_session:touch(Space, Rec).`,
+    outLabel: 'From a recorded run',
+    out: `ttl => 1 session read 1.5 s later: {error,not_found}
+touch on a ttl => infinity session: {ok,0}` },
+];
+---
+
+<UseCasePage
+  title="Memory for agents"
+  lead="Keep what an agent needs between turns and between runs: the conversation, its working state, the notes that must stay in front, and facts it can find again by meaning."
+  sub="Built from barrel_spaces sessions and a record-mode space. Sessions are also reachable over REST and MCP."
+  problem="An agent forgets between turns unless something keeps the conversation, its notes and what matters. Keeping that in a cache loses it on restart; keeping it in a plain table leaves you to expire it, order it and search it yourself."
+  arch={arch}
+  edges={['session calls, put_doc', 'embed facts, sweep']}
+  archNote="Short-term memory is the session: messages, `data` and pins, gone when the TTL runs out. Long-term memory is ordinary documents in the same space, embedded by the space’s policy and searched with `search`, `search_hybrid` or BQL."
+  stepsIntro="Seven steps. Step 1 needs an embedding provider; this page uses Ollama with `nomic-embed-text`. Steps 2 to 7 work the same on a space without a policy, minus the search."
+  steps={steps}
+  barrel={[
+    'Stores messages as documents in time order, per session',
+    'Slides the session TTL on every change and sweeps expired sessions and their messages',
+    'Keeps structured data and pins per session',
+    'Embeds fact documents on write and searches them by meaning and keyword',
+    'Keeps spaces, grants and durable sessions across restarts',
+  ]}
+  app={[
+    'Decides what is a fact worth keeping, often with a model call',
+    'Builds the prompt from pins, recent turns and recalled facts',
+    'Calls the model',
+    'Chooses TTLs and when a session becomes durable',
+  ]}
+  limits={[
+    'Pins have no REST route or MCP tool yet; `set_data` and `get_data` are on REST only. Use the Erlang API for pins.',
+    'Over REST and MCP, `ttl` must be a positive number of seconds; durable sessions are Erlang only.',
+    'The vector store is per node and does not replicate. Every node that opens the space needs the same embedder configured, or the open fails with `embedder_required` or `embedder_mismatch`.',
+    'Changing the policy later applies to new writes only; existing documents are not re-embedded.',
+    'Calls inside your Erlang node take no token. Tokens apply on REST and MCP.',
+  ]}
+  links={[
+    { label: 'Example: persistent agent memory', href: '/examples/agent-memory' },
+    { label: 'Example: an MCP session', href: '/examples/mcp-session' },
+    { label: 'Spaces, sessions, handoffs', href: '/docs/guides/spaces' },
+    { label: 'Record mode', href: '/docs/guides/record-mode' },
+    { label: 'Choose an embedding provider', href: '/docs/search/embedding-providers' },
+    { label: 'barrel_spaces', href: '/product/spaces' },
+    { label: 'barrel_embed', href: '/product/embed' },
+    { label: 'Use case: private knowledge search', href: '/use-cases/private-rag' },
+  ]}
+/>

@@ -1,0 +1,122 @@
+---
+import UseCasePage from '../../components/usecase/UseCasePage.astro';
+import type { ArchColumn, Step } from '../../components/usecase/types';
+
+const arch: ArchColumn[] = [
+  { who: 'Coding agent (MCP client)', boxes: [
+    { name: 'ngram_search', note: 'exact substring or regex' },
+    { name: 'search', note: 'by meaning, keyword or both' } ] },
+  { who: 'barrel_server', boxes: [
+    { name: '/mcp', note: 'checks the token, runs the tool' },
+    { name: 'Your indexer', note: 'writes chunks over REST or Erlang' } ] },
+  { who: 'Database code', boxes: [
+    { name: 'One document per chunk', note: 'path, lang, symbol, text', rec: true },
+    { name: 'Trigram index', note: 'barrel_ngram, fed by the changes feed' } ] },
+];
+
+const steps: Step[] = [
+  { title: 'Store one document per chunk',
+    body: 'A chunk is a function, a class or a span of lines. Give it a stable id from its path and lines, so re-indexing replaces it. Record mode embeds the `text` field for search by meaning.',
+    status: 'optional',
+    label: 'Erlang', lang: 'erlang',
+    code: `{ok, Db} = barrel:open(code, #{
+    embedding => #{fields => [<<"text">>], mode => sync,
+                   embedder => {local, #{}},
+                   dimensions => 768,
+                   metadata_fields => [<<"path">>,
+                                       <<"lang">>]},
+    vectordb => #{db_path => "data/code_vec"}}),
+{ok, _} = barrel:put_doc(Db, #{
+    <<"id">> => <<"src/auth.py#40-88">>,
+    <<"path">> => <<"src/auth.py">>,
+    <<"lang">> => <<"python">>,
+    <<"text">> => Body}).` },
+  { title: 'Find exact strings and patterns',
+    body: 'barrel_ngram keeps a trigram index over the fields you pick and confirms every candidate against the real text, so there are no false positives. Each hit carries its byte spans. This run used three runbook documents.',
+    label: 'Erlang', lang: 'erlang',
+    code: `ok = barrel_ngram:open(<<"rb_idx">>,
+    #{db => <<"runbooks">>,
+      fields => [<<"title">>, <<"body">>]}),
+barrel_ngram:search(<<"rb_idx">>, <<"ERR_CONN_TIMEOUT">>),
+barrel_ngram:regex(<<"rb_idx">>,
+                   <<"pg-(primary|replica)-\\\\d+">>),
+barrel_ngram:regex(<<"rb_idx">>, <<"\\\\w+_timeout">>).`,
+    outLabel: 'From a recorded run',
+    out: `{ok,[#{id => <<"rb:db">>,spans => [{11,16}]}]}
+{ok,[#{id => <<"rb:db">>,spans => [{35,13},{58,13}]}]}
+{ok,[#{id => <<"rb:api">>,spans => [{15,15},{35,12}]}]}` },
+  { title: 'Give the agent exact search over MCP',
+    body: 'The `ngram_search` tool opens a trigram index for the database the first time it is asked, catches it up, then searches. `mode` is `literal` (the default) or `regex`; `limit` defaults to 50.',
+    label: 'MCP request, POST /mcp', lang: 'json',
+    code: `{"jsonrpc":"2.0","id":11,"method":"tools/call",
+ "params":{"name":"ngram_search",
+  "arguments":{"db":"mcpdemo","query":"over MCP"}}}`,
+    outLabel: 'From a recorded run (wrapped)',
+    out: `data: {"id":11,"jsonrpc":"2.0","result":{"content":[
+  {"text":"{\\"count\\":1,\\"hits\\":[{\\"id\\":\\"note-1\\",
+  \\"spans\\":[[7,8]]}]}","type":"text"}]}}` },
+  { title: 'Search by meaning in the same database',
+    body: 'Hybrid search fuses vector and keyword rankings and is the one an agent should reach for when it asks for intent rather than a string. It needs the embedder from step 1.',
+    tabs: [
+      { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":12,"method":"tools/call",
+ "params":{"name":"search",
+  "arguments":{"db":"code","mode":"hybrid","k":10,
+   "query":"retry a failed request with backoff"}}}` },
+      { label: 'Erlang', lang: 'erlang', code: `{ok, Rows, _} = barrel:query(Db,
+    <<"SELECT id, path, h._score "
+      "FROM hybrid_top_k($q, k => 10) AS h "
+      "WHERE h.lang = 'python'">>,
+    #{params => #{<<"q">> => <<"validate the token">>}}).` } ] },
+  { title: 'Keep the index fresh',
+    body: 'The trigram index follows the database’s changes feed. `refresh/1` is the point where it is fully caught up; the MCP tool calls it before each search. After an edit, the old string is gone.',
+    label: 'Erlang', lang: 'erlang',
+    code: `{ok, _} = barrel_docdb:put_doc(<<"runbooks">>,
+    D#{<<"body">> => <<"Check upstream keepalive_timeout "
+                        "in nginx.conf">>}),
+barrel_ngram:refresh(<<"rb_idx">>),
+barrel_ngram:search(<<"rb_idx">>, <<"connect_timeout">>).`,
+    outLabel: 'From a recorded run (watermark shortened)',
+    out: `{ok,#{segments => 2,watermark => <<...>>}}
+{ok,[]}` },
+];
+---
+
+<UseCasePage
+  title="Code search for coding agents"
+  lead="Give a coding agent exact matches (an error code, a symbol, a pattern) and answers by meaning, from one database, as MCP tools."
+  sub="Built from barrel_ngram for substring and regex, record mode for hybrid search, and barrel_server for the MCP tools `ngram_search` and `search`."
+  problem="A coding agent needs exact matches as much as answers by meaning. Semantic search misses identifiers like `ERR_CONN_TIMEOUT`; grep misses intent; running both usually means two systems kept in sync with the repository."
+  arch={arch}
+  edges={['tools/call', 'reads and searches']}
+  archNote="Your indexer writes one document per chunk. The trigram index and the vector index both follow those documents, so the agent searches the same chunks either way and gets back ids it can open with `doc_get`."
+  stepsIntro="Five steps. Step 1 needs an embedding provider for search by meaning; exact search works without one."
+  steps={steps}
+  barrel={[
+    'Keeps a trigram index in step with the documents through the changes feed',
+    'Answers substring, case-insensitive and regex queries with match spans',
+    'Embeds chunks and answers vector, BM25 and hybrid queries',
+    'Serves both as MCP tools, checked against the caller’s token',
+  ]}
+  app={[
+    'Splits files into chunks, by function or class',
+    'Derives stable ids and re-indexes changed files',
+    'Deletes the chunks of removed or rewritten code',
+    'Lets the agent choose between exact and hybrid search',
+  ]}
+  limits={[
+    'The trigram index is about 34 times the size of the text it covers.',
+    'Fields are fixed for the life of an index; changing them means `delete_corpus` and a rebuild. The MCP tool indexes every field of the database.',
+    'Spans are byte offsets into the indexed fields joined in sorted field order, not line numbers.',
+    'The `barrel` facade and BQL do not expose the trigram index; use `barrel_ngram` or the MCP tool.',
+    'An index written by barrel_ngram 0.10 or older needs `on_legacy => reindex` (the MCP tool sets it).',
+  ]}
+  links={[
+    { label: 'Index a codebase', href: '/docs/guides/code-indexing' },
+    { label: 'Substring and regex', href: '/docs/search/substring-regex' },
+    { label: 'Vector, keyword and hybrid', href: '/docs/search/hybrid' },
+    { label: 'MCP tools', href: '/docs/reference/mcp-tools' },
+    { label: 'barrel_ngram', href: '/product/ngram' },
+    { label: 'Search', href: '/product/search' },
+    { label: 'Example: an MCP session', href: '/examples/mcp-session' },
+  ]}
+/>
