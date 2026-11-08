@@ -1,0 +1,256 @@
+---
+// translation_of: src/pages/product/search.astro source_hash: 242077736424603b
+import ProductFrame from '../../../components/product/ProductFrame.astro';
+import Guarantees from '../../../components/product/Guarantees.astro';
+import FlowDiagram from '../../../components/product/FlowDiagram.astro';
+import Related from '../../../components/product/Related.astro';
+import Rich from '../../../components/product/Rich.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+import CodeTabs from '../../../components/CodeTabs.astro';
+
+const kinds = [
+  { name: 'Vectorielle', mark: 'today', body: 'Les plus proches voisins par le sens. HNSW par défaut, DiskANN, ou FAISS via `barrel_faiss`. Les requêtes en texte demandent un embedder ; vous pouvez aussi passer vous-même le vecteur de la requête.' },
+  { name: 'Par mots-clés (BM25)', mark: 'optional', body: 'Recherche par mots-clés classée. Désactivée sur une base simple tant que vous ne fixez pas `bm25_backend` à `memory` ou `disk` ; le mode enregistrement l’active avec `disk`.' },
+  { name: 'Hybride', mark: 'optional', body: 'Vecteurs et BM25 fusionnés en un seul classement : fusion par rang réciproque par défaut (`rrf_k` 60), ou un mélange linéaire avec `bm25_weight` et `vector_weight`. Demande que BM25 soit activé.' },
+  { name: 'Sous-chaîne et expression régulière', mark: 'optional', body: 'Chaînes exactes et motifs PCRE sur les documents avec `barrel_ngram`, un index de trigrammes alimenté par le flux des changements. Chaque résultat est confirmé sur le texte et porte ses plages d’octets.' },
+  { name: 'Reclassement', mark: 'optional', body: 'Une seconde passe avec un cross-encoder dans `barrel_rerank` : vous lui donnez la requête et les textes de vos meilleurs résultats, il les renvoie réordonnés, chacun avec un score.' },
+  { name: 'Fonctions de table BQL', mark: 'today', body: '`vector_top_k`, `bm25_top_k` et `hybrid_top_k` comme FROM d’une requête : les résultats sont joints à leurs documents, puis WHERE, ORDER BY et les projections s’appliquent.' },
+];
+
+const defaults = [
+  ['`barrel:search/3`, `search_vector/3`', 'k 5'],
+  ['`barrel:search_bm25/3`, `search_hybrid/3`', 'k 10'],
+  ['BQL `vector_top_k`, `bm25_top_k`, `hybrid_top_k`', 'k 10'],
+  ['REST `/db/:db/search/*` et l’outil MCP `search`', 'k 10 (REST le plafonne à 10000)'],
+  ['MCP `ngram_search`', 'limit 50 (plafond 1000)'],
+];
+
+const searchStages = [
+  { boxes: [{ name: 'Texte de la requête', note: 'ou un vecteur de requête' }], edge: 'embedding par le fournisseur du magasin' },
+  { boxes: [{ name: 'Index vectoriel', note: 'HNSW, DiskANN ou FAISS' }, { name: 'Index BM25', note: 'mémoire ou disque', dashed: true }], edge: 'fusion des rangs (RRF, k 60)' },
+  { boxes: [{ name: 'Résultats hybrides', note: 'id, score, texte, métadonnées' }], edge: 'BQL : jointure aux documents, puis WHERE' },
+  { boxes: [{ name: 'Lignes', note: 'champs, _score', rec: true }] },
+];
+
+const ngramStages = [
+  { boxes: [{ name: 'barrel_docdb', note: 'documents' }], edge: 'flux des changements' },
+  { boxes: [{ name: 'Segments de trigrammes', note: 'immuables, avec somme de contrôle' }], edge: 'candidats tirés des listes' },
+  { boxes: [{ name: 'Confirmation sur le texte', note: 'écarte les faux positifs' }], edge: 'résultats' },
+  { boxes: [{ name: 'id et plages', note: 'décalage en octets, longueur', rec: true }] },
+];
+
+const guarantees = [
+  { title: 'Exact veut dire exact', body: 'La recherche par sous-chaîne et par expression régulière confirme chaque candidat sur le texte stocké : les collisions de trigrammes n’apparaissent jamais comme résultats.', check: '`oracle_equivalence` dans barrel_ngram_SUITE, qui compare chaque réponse à un parcours exhaustif.' },
+  { title: 'Le vecteur suit le document', body: 'En mode enregistrement, une modification recalcule l’embedding, une suppression retire le vecteur, et le marqueur destiné à l’indexeur est écrit dans le même lot que le document.', check: 'barrel_record_SUITE : `indexer_update_reembeds`, `indexer_delete_removes_vector`, `indexer_crash_restart`.' },
+  { title: 'Lire votre écriture, quand vous le demandez', body: 'Le mode enregistrement avec `mode => sync` calcule l’embedding avant que l’écriture ne rende la main. Si l’embedder échoue, l’écriture échoue et rien n’est stocké.', check: 'barrel_record_SUITE : `sync_put_immediate_search`, `sync_embed_failure_fails_put`.' },
+  { title: 'Un index BM25 sur disque survit à un kill', body: 'Les écritures acquittées sont toujours dans l’index après que le processus a été tué et le magasin rouvert. Un index en mémoire se reconstruit à l’ouverture à partir du texte stocké.', check: 'barrel_vectordb_bm25_persistence_tests (`disk: kill then reopen loses no acked write`).' },
+  { title: 'Les documents répliqués sont indexés', body: 'Les documents arrivés par réplication reçoivent leur embedding sur la copie qui les reçoit ; la version qui a perdu un conflit, non.', check: 'barrel_record_SUITE : `replicated_docs_embedded`, `replicated_loser_not_reembedded`.' },
+  { title: 'Le même modèle, ou pas d’ouverture', body: 'Chaque magasin enregistre l’empreinte de son embedder : fournisseur, modèle, dimensions, distance. Un espace en mode enregistrement ouvert avec un autre modèle est refusé.', check: '`embedder_fingerprint` dans barrel_record_SUITE.' },
+];
+
+const openPlain = `{ok, Db} = barrel:open(<<"research">>, #{vectordb => #{
+    db_path      => "data/research_vec",
+    dimensions   => 64,
+    embedder     => {kb_embed, #{}},
+    bm25_backend => memory}}),
+{ok, #{inserted := 4}} = barrel:vector_add_batch(Db, Notes).`;
+
+const searchTabs = [
+  { label: 'Erlang', lang: 'erlang', code: `barrel:search(Db, <<"leader election">>, #{k => 2}),
+barrel:search_bm25(Db, <<"keyword search">>, #{k => 2}),
+barrel:search_hybrid(Db, <<"nearest neighbor search">>,
+                     #{k => 2}).` },
+  { label: 'REST', lang: 'bash', code: `curl -X POST localhost:8080/db/research/search/bm25 \\
+  -H 'content-type: application/json' \\
+  -d '{"query":"keyword search","k":2}'
+curl -X POST localhost:8080/db/research/search/hybrid \\
+  -H 'content-type: application/json' \\
+  -d '{"query":"nearest neighbor search","k":2}'` },
+  { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":3,"method":"tools/call",
+ "params":{"name":"search","arguments":{
+   "db":"research","mode":"hybrid",
+   "query":"nearest neighbor search","k":2}}}` },
+];
+
+const bm25Out = `{ok,[{<<"paper:bm25">>,1.9587592623731485},
+     {<<"paper:hnsw">>,0.6586049622596158}]}`;
+
+const bqlTabs = [
+  { label: 'Erlang', lang: 'erlang', code: `barrel:query(Db,
+    <<"SELECT h.id, h._score, topic "
+      "FROM hybrid_top_k($q, k => 3) AS h "
+      "ORDER BY h._score DESC">>,
+    #{params => #{<<"q">> => <<"replicated consensus">>}}).` },
+  { label: 'REST', lang: 'bash', code: `curl -X POST localhost:8080/db/research/query \\
+  -H 'content-type: text/plain' \\
+  --data-binary "SELECT b.id, b._score
+    FROM bm25_top_k('search', k => 3) AS b
+    WHERE b.year > 2000"` },
+  { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":4,"method":"tools/call",
+ "params":{"name":"query","arguments":{
+   "db":"research",
+   "query":"SELECT v.id FROM vector_top_k($q) AS v",
+   "params":{"q":"consensus"}}}}` },
+];
+
+const bqlOut = `{ok,[#{<<"_score">> => 0.01639344262295082,
+       <<"id">> => <<"paper:raft">>,
+       <<"topic">> => <<"distributed-systems">>},
+     #{<<"_score">> => 0.016001024065540194,
+       <<"id">> => <<"paper:crdt">>, ...},
+     #{<<"_score">> => 0.008536214242239805,
+       <<"id">> => <<"paper:bm25">>, ...}], ...}`;
+
+const record = `Embedder = {ollama, #{model => <<"nomic-embed-text">>}},
+Policy = #{fields => [<<"title">>, <<"body">>],
+           mode => sync, embedder => Embedder,
+           dimensions => 768},
+{ok, Db} = barrel:open(<<"notes">>, #{embedding => Policy,
+    vectordb => #{db_path => "data/notes_vec"}}),
+{ok, _} = barrel:put_doc(Db, #{<<"id">> => <<"n1">>,
+    <<"title">> => <<"Raft">>,
+    <<"body">> => <<"Leader election and log replication">>}),
+barrel:search(Db, <<"how do replicas agree?">>, #{k => 1}).`;
+
+const ngramTabs = [
+  { label: 'Erlang', lang: 'erlang', code: `ok = barrel_ngram:open(<<"rb_idx">>, #{db => <<"runbooks">>,
+    fields => [<<"title">>, <<"body">>]}),
+barrel_ngram:search(<<"rb_idx">>, <<"ERR_CONN_TIMEOUT">>),
+barrel_ngram:search(<<"rb_idx">>, <<"redis">>,
+                    #{case_sensitive => false}),
+barrel_ngram:regex(<<"rb_idx">>,
+                   <<"pg-(primary|replica)-\\\\d+">>).` },
+  { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":5,"method":"tools/call",
+ "params":{"name":"ngram_search","arguments":{
+   "db":"runbooks","mode":"regex",
+   "query":"pg-(primary|replica)-\\\\d+"}}}` },
+];
+
+const ngramOut = `{ok,[#{id => <<"rb:db">>,spans => [{11,16}]}]}
+{ok,[#{id => <<"rb:cache">>,spans => [{68,5}]}]}
+{ok,[#{id => <<"rb:db">>,spans => [{35,13},{58,13}]}]}`;
+
+const rerank = `{ok, Hits} = barrel:search(Db, Q, #{k => 20}),
+Texts = [maps:get(text, H) || H <- Hits],
+{ok, R} = barrel_rerank:rerank(Ranker, Q, Texts,
+                               #{top_k => 5}),
+%% R vaut [{Index, Score}], le meilleur d’abord ; Index part de 0
+Top = [lists:nth(I + 1, Hits) || {I, _Score} <- R].`;
+
+const rerankOut = `{ok,[{0,9.581769943237305},
+     {2,-5.255744457244873},
+     {1,-9.625640869140625}]}`;
+
+const limits = [
+  'BM25 est désactivé sur une base simple, y compris les bases qu’ouvre un barrel_server par défaut (un magasin cosinus de 768 dimensions, BM25 désactivé). BM25 et l’hybride répondent alors `bm25_not_enabled` ou `embedder_not_configured`, en REST sous forme d’une erreur 500.',
+  'Il n’y a pas d’embedder hors ligne intégré. Apportez vos propres vecteurs, lancez Ollama en local, utilisez le fournisseur Python local, ou écrivez un module fournisseur.',
+  'Le filtre de métadonnées (`filter => fun`) s’applique après l’étape des plus proches voisins : un filtre strict peut renvoyer moins de `k` résultats.',
+  'La recherche par sous-chaîne et par expression régulière n’est ni dans l’API `barrel` ni dans BQL : appelez `barrel_ngram` ou l’outil MCP `ngram_search`. L’index occupe environ 34 fois la taille du texte, et ses champs sont fixés à sa création.',
+  'Le reclassement demande Python 3 avec transformers et torch, et télécharge son modèle à la première utilisation. Les scores sont les logits bruts du cross-encoder, pas des valeurs entre 0 et 1.',
+  'En mode simple, le document et son vecteur sont deux écritures que rien ne lie ; le mode enregistrement est la voie qui les garde ensemble.',
+  'Dans le navigateur, barrel-lite classe localement les vecteurs synchronisés par un cosinus exhaustif ; les requêtes par mots-clés et hybrides vont au serveur.',
+];
+---
+
+<ProductFrame
+  title="Recherche"
+  description="Recherche vectorielle, BM25, hybride, par sous-chaîne et par expression régulière dans Barrel, avec reclassement et fonctions de table BQL. Valeurs par défaut, garanties et limites."
+  heading="Trouvez par le sens, par le mot, ou par la chaîne exacte."
+  lead="Barrel garde un document et son vecteur sous un même identifiant : une seule requête peut classer par le sens, par mots-clés, ou les deux, et renvoyer des lignes avec les champs du document. Pour les identifiants et les messages d’erreur que le sens manque, un index de trigrammes trouve le texte exact."
+  sub="La recherche s’exécute là où tourne la base : dans votre nœud Erlang, derrière le serveur REST et MCP, ou sur des vecteurs synchronisés dans un navigateur."
+  ctas={[{ label: 'Vectorielle, par mots-clés et hybride', href: '/fr/docs/search/hybrid' }, { label: 'Sous-chaîne et expression régulière', href: '/fr/docs/search/substring-regex' }]}
+>
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Six façons de trouver un enregistrement</h2>
+      <p class="section-intro">Chacune est un index ou une étape distincte que vous activez. La marque indique si elle fonctionne sans installation.</p>
+      <ul class="sr-kinds">
+        {kinds.map((k) => (
+          <li>
+            <h3 class={`mark mark--${k.mark} sr-kt`}>{k.name}</h3>
+            <p><Rich text={k.body} /></p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Comment s’exécute une requête hybride</h2>
+      <p class="section-intro">Les deux index répondent au même texte ; leurs rangs sont fusionnés, et une fonction de table BQL joint chaque résultat à son document avant que WHERE ne s’applique. Les fonctions de table récupèrent 3 fois k (1000 au plus) pour qu’un WHERE ait encore des lignes à garder.</p>
+      <FlowDiagram label="Recherche hybride, de la requête aux lignes" stages={searchStages} caption="La boîte BM25 est en pointillés : elle n’existe que si bm25_backend est fixé, ou en mode enregistrement." />
+      <h3 class="pf-h3 sr-gap">Comment s’exécute la recherche par sous-chaîne et par expression régulière</h3>
+      <FlowDiagram label="Recherche par trigrammes, des documents aux résultats" stages={ngramStages} />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Ce qui tient, et ce qui le teste</h2>
+      <p class="section-intro">Des propriétés sur lesquelles vous pouvez compter, avec le test du dépôt qui vérifie chacune.</p>
+      <Guarantees items={guarantees} />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap pf-narrow">
+      <h2 class="h2">L’utiliser</h2>
+
+      <h3 class="pf-h3">Ouvrir une base avec un magasin de vecteurs et BM25</h3>
+      <p class="pf-p">L’exécution enregistrée ci-dessous utilisait <code>kb_embed</code>, un fournisseur à hachage de caractéristiques en 64 dimensions écrit pour le test : il rapproche les mots communs, il n’est pas sémantique.</p>
+      <CodeBlock code={openPlain} />
+
+      <h3 class="pf-h3">Vectorielle, par mots-clés et hybride</h3>
+      <CodeTabs tabs={searchTabs} />
+      <CodeBlock code={bm25Out} output label="Sortie de search_bm25, enregistrée sur barrel 1.12.0" />
+
+      <h3 class="pf-h3">Chercher dans une requête</h3>
+      <p class="pf-p"><code>_score</code> vaut 1 moins la distance pour les vecteurs, le score BM25 brut, ou la valeur fusionnée pour l’hybride. Il peut être sélectionné et trié, pas filtré.</p>
+      <CodeTabs tabs={bqlTabs} />
+      <CodeBlock code={bqlOut} output label="Sortie de la requête Erlang hybrid_top_k, enregistrée (abrégée)" />
+
+      <h3 class="pf-h3">Mode enregistrement : la politique calcule les embeddings pour vous</h3>
+      <p class="pf-p">Nommez les champs à transformer en embeddings. Avec <code>mode =&gt; sync</code>, l’écriture rend la main une fois le vecteur indexé ; le défaut, <code>async</code>, indexe en arrière-plan et se rétablit après une panne.</p>
+      <CodeBlock code={record} />
+
+      <h3 class="pf-h3">Sous-chaînes exactes et expressions régulières</h3>
+      <p class="pf-p">L’outil MCP ouvre l’index de la base à la première utilisation et le rafraîchit avant chaque recherche. Il n’y a pas de route REST.</p>
+      <CodeTabs tabs={ngramTabs} />
+      <CodeBlock code={ngramOut} output label="Sortie des trois appels Erlang, enregistrée sur barrel_ngram 0.11.4" />
+
+      <h3 class="pf-h3">Reclasser les meilleurs résultats <span class="mark mark--optional">optionnel</span></h3>
+      <p class="pf-p"><code>Ranker</code> est un serveur <code>barrel_rerank:start_link(#{})</code> (modèle par défaut <code>cross-encoder/ms-marco-MiniLM-L-6-v2</code>).</p>
+      <CodeBlock code={rerank} />
+      <CodeBlock code={rerankOut} output label="Sortie de rerank/3 sur trois textes courts, enregistrée sur barrel_rerank 1.0.2" />
+
+      <h3 class="pf-h3">Valeurs par défaut selon le point d’entrée</h3>
+      <div class="sr-tw">
+        <table class="sr-t">
+          <thead><tr><th scope="col">Point d’entrée</th><th scope="col">Résultats si vous ne passez rien</th></tr></thead>
+          <tbody>{defaults.map(([e, d]) => <tr><td><Rich text={e} /></td><td>{d}</td></tr>)}</tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <Related
+    limits={limits}
+    docs={['search/hybrid', 'search/substring-regex', 'search/reranking', 'search/embedding-providers', 'guides/record-mode', 'guides/query-bql']}
+    more={[{ href: '/fr/use-cases/private-rag', label: 'Cas d’usage : recherche privée dans vos connaissances' }, { href: '/fr/use-cases/code-search', label: 'Cas d’usage : recherche de code' }]}
+    libs={['barrel', 'vectordb', 'ngram', 'embed', 'rerank', 'faiss']}
+  />
+</ProductFrame>
+
+<style>
+  .sr-kinds { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px 40px; }
+  .sr-kinds li { border-top: 1px solid var(--rule); padding-top: 14px; min-width: 0; }
+  .sr-kt { font-size: 19px; margin: 0 0 6px; }
+  .sr-kinds p { margin: 0; font-size: 15px; }
+  .sr-gap { margin-top: 48px; margin-bottom: 16px; }
+  .sr-tw { overflow-x: auto; }
+  .sr-t { width: 100%; border-collapse: collapse; font-size: 15px; }
+  .sr-t th, .sr-t td { text-align: left; padding: 10px 12px 10px 0; border-top: 1px solid var(--rule); vertical-align: top; }
+  .sr-t th { font-weight: 650; }
+  @media (max-width: 900px) { .sr-kinds { grid-template-columns: minmax(0, 1fr); } }
+</style>

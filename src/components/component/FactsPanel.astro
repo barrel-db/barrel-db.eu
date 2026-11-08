@@ -1,32 +1,50 @@
 ---
 // Side panel of a library page: status, version, install, builds on, standalone, links.
 import { inline } from './inline';
-import { GITHUB, components, statusLabel, type Component } from '../../data/site';
+import { GITHUB, type Component } from '../../data/site';
+import { siteFor } from '../../data/i18n';
+import { langOf, localize } from '../../i18n';
 import type { ComponentContent } from '../../data/components/types';
 
 interface Props { content: ComponentContent; meta: Component; }
 const { content: c, meta } = Astro.props;
+const lang = langOf(Astro.url);
+const { components, statusLabel } = siteFor(lang);
+const L = {
+  en: {
+    glance: (n: string) => `${n} at a glance`, status: 'Status', version: 'Version', install: 'Install',
+    fromRepo: 'From the repository, not npm.', howBuild: 'How to build it', buildsOn: 'Builds on',
+    liteDep: 'barrel_server, over HTTP', noDep: 'No other Barrel library', standalone: 'Used standalone',
+    reached: 'Reached through', apiRef: 'API reference', source: 'Source on GitHub',
+  },
+  fr: {
+    glance: (n: string) => `${n} en bref`, status: 'État', version: 'Version', install: 'Installation',
+    fromRepo: 'Depuis le dépôt, pas npm.', howBuild: 'Comment la construire', buildsOn: 'Repose sur',
+    liteDep: 'barrel_server, en HTTP', noDep: 'Aucune autre bibliothèque Barrel', standalone: 'Utilisable seule',
+    reached: 'Accessible par', apiRef: 'Référence de l’API', source: 'Code source sur GitHub',
+  },
+}[lang];
 const nameOf = (slug: string) => components.find((m) => m.slug === slug)?.name ?? slug;
 const oneLine = !c.install.code.includes('\n');
 ---
 
-<aside class="fp" aria-label={`${meta.name} at a glance`}>
+<aside class="fp" aria-label={L.glance(meta.name)}>
   <dl>
-    <div><dt>Status</dt><dd><span class={`mark mark--${meta.status}`}>{statusLabel[meta.status]}</span></dd></div>
-    <div><dt>Version</dt><dd class="fp-strong">{meta.version}</dd></div>
-    <div><dt>Install</dt><dd>{oneLine ? <code>{c.install.code}</code> : <span>From the repository, not npm. <a href="#install">How to build it</a></span>}</dd></div>
-    <div><dt>Builds on</dt><dd>
+    <div><dt>{L.status}</dt><dd><span class={`mark mark--${meta.status}`}>{statusLabel[meta.status]}</span></dd></div>
+    <div><dt>{L.version}</dt><dd class="fp-strong">{meta.version}</dd></div>
+    <div><dt>{L.install}</dt><dd>{oneLine ? <code>{c.install.code}</code> : <span>{L.fromRepo} <a href="#install">{L.howBuild}</a></span>}</dd></div>
+    <div><dt>{L.buildsOn}</dt><dd>
       {c.dependsOn.length
-        ? c.dependsOn.map((s, i) => <>{i > 0 && ', '}<a href={`/product/${s}`}>{nameOf(s)}</a></>)
-        : <span set:html={c.slug === 'lite' ? 'barrel_server, over HTTP' : 'No other Barrel library'} />}
+        ? c.dependsOn.map((s, i) => <>{i > 0 && ', '}<a href={localize(`/product/${s}`, lang)}>{nameOf(s)}</a></>)
+        : <span>{c.slug === 'lite' ? L.liteDep : L.noDep}</span>}
     </dd></div>
-    <div><dt>Used standalone</dt><dd>{c.standalone.short}</dd></div>
-    <div><dt>Reached through</dt><dd><ul>{c.reachedThrough.map((r) => <li set:html={inline(r)} />)}</ul></dd></div>
+    <div><dt>{L.standalone}</dt><dd>{c.standalone.short}</dd></div>
+    <div><dt>{L.reached}</dt><dd><ul>{c.reachedThrough.map((r) => <li set:html={inline(r, lang)} />)}</ul></dd></div>
   </dl>
   <ul class="fp-links">
-    {c.guides.map((g) => <li><a href={g.href}>{g.label}</a></li>)}
-    {c.apiRef && <li><a href={c.apiRef}>API reference</a></li>}
-    <li><a href={`${GITHUB}/tree/main/${meta.app}`}>Source on GitHub</a></li>
+    {c.guides.map((g) => <li><a href={localize(g.href, lang)}>{g.label}</a></li>)}
+    {c.apiRef && <li><a href={c.apiRef}>{L.apiRef}</a></li>}
+    <li><a href={`${GITHUB}/tree/main/${meta.app}`}>{L.source}</a></li>
   </ul>
 </aside>
 

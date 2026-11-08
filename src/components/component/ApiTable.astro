@@ -1,24 +1,27 @@
 ---
 // Task, call, returns: one table per group of the API.
 import { inline } from './inline';
+import { langOf } from '../../i18n';
 import type { ApiGroup } from '../../data/components/types';
 
 interface Props { group: ApiGroup; }
 const { group } = Astro.props;
+const lang = langOf(Astro.url);
+const L = { en: { task: 'Task', call: 'Call', returns: 'Returns' }, fr: { task: 'Tâche', call: 'Appel', returns: 'Renvoie' } }[lang];
 // A call that already carries backticks or prose is rendered as inline markup.
-const callHtml = (s: string) => (s.includes('`') || s.startsWith('option ') || s.startsWith('behaviour ') || s.startsWith('callback ')) ? inline(s) : `<code>${inline(s)}</code>`;
+const callHtml = (s: string) => (s.includes('`') || s.startsWith('option ') || s.startsWith('behaviour ') || s.startsWith('callback ')) ? inline(s, lang) : `<code>${inline(s, lang)}</code>`;
 ---
 
 <div class="api">
   <h3>{group.title}</h3>
   <table>
-    <thead><tr><th scope="col">Task</th><th scope="col">Call</th><th scope="col">Returns</th></tr></thead>
+    <thead><tr><th scope="col">{L.task}</th><th scope="col">{L.call}</th><th scope="col">{L.returns}</th></tr></thead>
     <tbody>
       {group.rows.map((r) => (
         <tr>
           <th scope="row">{r.task}</th>
-          <td data-label="Call" set:html={callHtml(r.call)} />
-          <td data-label="Returns" set:html={inline(r.returns)} />
+          <td data-label={L.call} set:html={callHtml(r.call)} />
+          <td data-label={L.returns} set:html={inline(r.returns, lang)} />
         </tr>
       ))}
     </tbody>

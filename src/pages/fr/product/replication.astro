@@ -1,0 +1,199 @@
+---
+// translation_of: src/pages/product/replication.astro source_hash: 633519e048b3a315
+import ProductFrame from '../../../components/product/ProductFrame.astro';
+import Guarantees from '../../../components/product/Guarantees.astro';
+import Related from '../../../components/product/Related.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+import CodeTabs from '../../../components/CodeTabs.astro';
+import TwoSiteDemo from '../../../components/demos/TwoSiteDemo.astro';
+import MeshDemo from '../../../components/demos/MeshDemo.astro';
+
+const guarantees = [
+  { title: 'Toutes les copies sont d’accord', body: 'Les copies convergent vers le même gagnant, le même corps et le même état de suppression pour chaque document, quel que soit l’ordre d’arrivée des écritures.', check: 'un modèle TLA+ de trois répliques avec pannes, des preuves Lean des lois de fusion, et le script active-active à trois pairs.' },
+  { title: 'Aucune écriture n’est perdue', body: 'Une écriture ne remplace que les versions qu’elle a lues. Les modifications concurrentes restent côte à côte, en conflit, jusqu’à ce que quelqu’un les résolve.', check: 'une preuve Ivy pour un nombre quelconque de répliques et d’écrivains, et le script active-active (neuf modifications sur le gagnant, l’écriture perdante reste).' },
+  { title: 'Sans risque à rejouer', body: 'La livraison est idempotente : un lot envoyé deux fois ne change rien. Un point de reprise après chaque lot permet à une exécution de reprendre là où elle s’est arrêtée.', check: 'le script de panne, qui tue la cible au milieu d’un lot, puis le pair qui exécute la tâche.' },
+  { title: 'Résiste aux coupures de courant', body: 'Les écritures faites avec `sync => true` survivent à une coupure de courant. Une copie qui perd un lot qu’elle avait acquitté le reçoit de nouveau à l’exécution suivante.', check: 'le script de coupure de courant sur LazyFS, qui jette toute écriture non vidée sur disque.' },
+  { title: 'Les fichiers voyagent avec les documents', body: 'Les pièces jointes se répliquent dans leur propre phase, envoyées par morceaux, et le point de reprise n’avance qu’au-delà de ce que la cible a confirmé avoir stocké.', check: 'le script de réplication, y compris une pièce jointe ajoutée sans changement du document.' },
+  { title: 'Mises à jour progressives', body: 'Un pair resté sur la version précédente continue de répliquer avec les pairs mis à jour, dans les deux sens. Ses modifications apparaissent comme des conflits, jamais comme des écritures perdues.', check: 'le script multiversion contre barrel_server 1.11.1.' },
+];
+
+type Chip = { label: string; x: string; y: string; rec?: boolean };
+const topos: { title: string; body: string; edge: string; nodes: Chip[] }[] = [
+  { title: 'Deux sites, dans les deux sens', body: 'Les deux acceptent des écritures ; une tâche dans chaque sens les garde proches.', edge: 'push et pull', nodes: [{ label: 'Paris', x: '28%', y: '45%', rec: true }, { label: 'Lyon', x: '72%', y: '45%', rec: true }] },
+  { title: 'Un hub et des nœuds en périphérie', body: 'Les nœuds poussent vers un hub et récupèrent ce que les autres ont écrit.', edge: 'tâches continues', nodes: [{ label: 'hub', x: '50%', y: '28%' }, { label: 'nœud 1', x: '20%', y: '68%', rec: true }, { label: 'nœud 2', x: '50%', y: '68%', rec: true }, { label: 'nœud 3', x: '80%', y: '68%', rec: true }] },
+  { title: 'Un sous-ensemble par appareil', body: 'Un canal ou un filtre de requête décide de ce que reçoit chaque copie.', edge: 'filtre à la source', nodes: [{ label: 'central', x: '50%', y: '28%' }, { label: 'canal mobile', x: '50%', y: '68%', rec: true }] },
+  { title: 'Navigateurs', body: 'barrel-lite garde une copie dans le navigateur et se synchronise par le même protocole.', edge: '/db/:db/_sync', nodes: [{ label: 'barrel_server', x: '50%', y: '28%' }, { label: 'onglet A', x: '28%', y: '68%', rec: true }, { label: 'onglet B', x: '72%', y: '68%', rec: true }] },
+];
+
+const run = [
+  { body: 'Lire le point de reprise pour trouver le dernier changement envoyé.' },
+  { body: 'Récupérer les changements depuis, filtrés à la source.' },
+  { body: 'Demander à la cible les versions qui lui manquent, en un seul aller-retour.' },
+  { body: 'Envoyer les états de documents manquants ; en appliquer un deux fois est sans effet.', key: true },
+  { body: 'Enregistrer le point de reprise du lot, puis envoyer les pièces jointes.' },
+];
+
+const local = `{ok, Result} = barrel_rep:replicate(<<"paris">>, <<"lyon">>),
+#{docs_written := N} = Result.`;
+
+const http = `Lyon = barrel_rep_transport_http:endpoint(
+    <<"http://lyon.example:8080/db/tasks">>),
+
+%% push, puis pull
+{ok, _} = barrel_rep:replicate(<<"tasks">>, Lyon,
+    #{target_transport => barrel_rep_transport_http}),
+{ok, _} = barrel_rep:replicate(Lyon, <<"tasks">>,
+    #{source_transport => barrel_rep_transport_http}).`;
+
+const task = [
+  { label: 'Erlang', lang: 'erlang', code: `{ok, TaskId} = barrel_rep_tasks:start_task(#{
+    source    => <<"tasks">>,
+    target    => <<"http://lyon.example:8080/db/tasks">>,
+    mode      => continuous,
+    direction => both}).` },
+  { label: 'TypeScript', lang: 'ts', code: `import { Database } from "barrel-lite";
+
+const db = await Database.open("tasks", {
+  remote: { url: "https://lyon.example:8080",
+            db: "sp_...", token: "bsp_..." },
+});
+const live = db.liveSync();   // push et pull, adaptatif
+// live.stop();` },
+];
+
+const conflict = `barrel_docdb:get_conflicts(<<"edge_a">>, <<"task:1">>).
+
+{ok, #{<<"_observed">> := Seen}} =
+    barrel_docdb:get_doc(<<"edge_a">>, <<"task:1">>,
+                         #{conflicts => true}).
+
+barrel_docdb:resolve_conflict(<<"edge_a">>, <<"task:1">>,
+    Seen, {merge, Merged}).`;
+
+const conflictOut = `{ok,[<<"000001a1b879d59100000000@w7bcb971434496877">>]}
+
+{ok,#{id => <<"task:1">>, conflicts_resolved => 1,
+      rev => <<"000001a1b879d59500000000@w7bcb971434496877">>}}`;
+
+const limits = [
+  'Les index vectoriels. En mode enregistrement, le texte et les métadonnées se répliquent et chaque copie reconstruit son index ; un client peut récupérer les vecteurs stockés avec les documents.',
+  'La provenance. L’auteur d’un document reste dans l’historique de l’origine ; sur les autres copies, l’arrivée est enregistrée comme répliquée, depuis cette origine.',
+  'L’API barrel. La réplication fonctionne sur la couche documents : appelez `barrel_rep` et `barrel_rep_tasks` avec le nom de la base.',
+  'Les certificats client en HTTP/3. Utilisez HTTP/1.1 ou HTTP/2 avec TLS si vous avez besoin de mTLS entre les nœuds.',
+  'Les canaux ne suppriment pas, des répliques qui les détiennent déjà, les documents qui quittent un canal.',
+];
+---
+
+<ProductFrame
+  title="Réplication"
+  description="La réplication active-active dans Barrel : chaque copie accepte les écritures, choisit le même gagnant, garde les modifications concurrentes comme conflits et reprend après une panne."
+  heading="Écrivez sur chaque copie."
+  lead="Chaque base Barrel accepte les écritures : sur un serveur, sur un nœud en périphérie, dans un navigateur. La réplication garde les copies d’accord. Elles choisissent partout le même gagnant, gardent chaque modification concurrente jusqu’à ce que vous la résolviez, et reprennent là où elles s’étaient arrêtées après une panne."
+  sub="Pas de leader, pas de primaire, pas de quorum à attendre. Chaque copie travaille seule et se met à jour dès qu’elle peut joindre les autres."
+  ctas={[{ label: 'Mettre en place la réplication', href: '/fr/docs/guides/synchronization' }, { label: 'Lire les preuves', href: '/fr/docs/architecture/replication-proofs' }]}
+>
+  <section class="wrap rp-demo">
+    <TwoSiteDemo />
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Ce qu’elle garantit, et comment nous le vérifions</h2>
+      <p class="section-intro">Chaque propriété indique ce qui la teste. Les preuves et les scripts de bout en bout sont dans le dépôt ; vous pouvez les exécuter vous-même.</p>
+      <Guarantees items={guarantees} />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Un maillage, et un navigateur qui passe hors ligne</h2>
+      <p class="section-intro">Coupez le lien entre Paris et Berlin, leurs modifications se rejoignent quand même, relayées par Lyon. Mettez le navigateur hors ligne : il continue de lire et d’écrire, compte ce qu’il n’a pas encore poussé, et se met à jour en une synchronisation.</p>
+      <MeshDemo />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Topologies</h2>
+      <p class="section-intro">Un seul protocole, dans la même VM ou en HTTP. Disposez les copies comme l’est votre réseau.</p>
+      <ul class="rp-topo">
+        {topos.map((t) => (
+          <li>
+            <div class="rp-tbox" role="img" aria-label={`${t.title}: ${t.nodes.map((n) => n.label).join(', ')}; ${t.edge}`}>
+              {t.nodes.map((n) => <span class:list={['rp-chip', { 'is-rec': n.rec }]} style={`left:${n.x};top:${n.y}`}>{n.label}</span>)}
+              <span class="rp-tedge">{t.edge}</span>
+            </div>
+            <h3 class="rp-tt">{t.title}</h3>
+            <p class="small muted rp-tb">{t.body}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Une exécution, étape par étape</h2>
+      <p class="section-intro">Une exécution ponctuelle et une tâche continue font la même chose ; une tâche continue simplement de le faire.</p>
+      <ol class="rp-run">
+        {run.map((r, i) => (
+          <li class:list={{ 'is-key': r.key }}>
+            <span class="rp-n">{i + 1}</span>
+            <p>{r.body}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap pf-narrow">
+      <h2 class="h2">La mettre en place</h2>
+
+      <h3 class="pf-h3">Entre deux bases sur un même nœud</h3>
+      <p class="pf-p">Relancez-la plus tard pour récupérer les nouveaux changements ; elle reprend depuis son point de reprise.</p>
+      <CodeBlock code={local} />
+
+      <h3 class="pf-h3">Vers un autre nœud, en HTTP</h3>
+      <p class="pf-p">L’autre côté est une base servie par un barrel_server en marche.</p>
+      <CodeBlock code={http} />
+
+      <h3 class="pf-h3">La garder en marche</h3>
+      <p class="pf-p">Une tâche survit aux redémarrages et rattrape son retard après une interruption. Dans le navigateur, barrel-lite se synchronise par le même protocole.</p>
+      <CodeTabs tabs={task} />
+      <p class="small muted">Les identifiants viennent de la configuration du serveur, jamais de la tâche elle-même.</p>
+
+      <h3 class="pf-h3">Un conflit, d’après une exécution enregistrée</h3>
+      <p class="pf-p">Les deux sites ont modifié task:1 pendant qu’ils étaient séparés, puis ont répliqué dans les deux sens.</p>
+      <CodeBlock code={conflict} />
+      <CodeBlock code={conflictOut} output label="Sortie de get_conflicts et resolve_conflict, enregistrée sur barrel_docdb 2.1.0" />
+      <p class="small muted">Après une réplication de plus, edge_b détient la version résolue et plus aucun conflit.</p>
+    </div>
+  </section>
+
+  <Related
+    title="Ce qui ne se réplique pas encore"
+    limits={limits}
+    docs={['guides/synchronization', 'replicate/conflicts', 'architecture/replication-proofs', 'contribute/end-to-end-tests', 'guides/barrel-lite']}
+    more={[{ href: '/fr/use-cases/write-on-every-node', label: 'Cas d’usage : écrire sur chaque nœud' }]}
+    libs={['docdb', 'server', 'lite']}
+  />
+</ProductFrame>
+
+<style>
+  .rp-demo { padding-bottom: 72px; }
+  .rp-topo { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; }
+  .rp-tbox { height: 180px; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--card); position: relative; margin-bottom: 14px; }
+  .rp-chip { position: absolute; transform: translate(-50%, -50%); padding: 6px 10px; border-radius: 6px; font-size: 13px; font-weight: 600; white-space: nowrap; border: 1.5px solid var(--ink); background: var(--card); }
+  .rp-chip.is-rec { background: var(--coral); border-color: var(--coral); color: var(--on-coral); }
+  .rp-tedge { position: absolute; left: 12px; bottom: 10px; font-size: 12px; color: var(--teal); font-family: var(--mono); }
+  .rp-tt { margin: 0 0 4px; font-size: 19px; }
+  .rp-tb { margin: 0; }
+  .rp-run { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; }
+  .rp-run li { border-top: 3px solid var(--ink); padding-top: 12px; min-width: 0; }
+  .rp-run li.is-key { border-top-color: var(--coral); }
+  .rp-n { font-stretch: 112%; font-weight: 620; font-size: 24px; color: var(--teal); }
+  .rp-run p { margin: 4px 0 0; font-size: 15px; }
+  @media (max-width: 980px) { .rp-topo, .rp-run { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 820px) { .rp-topo, .rp-run { grid-template-columns: minmax(0, 1fr); } }
+</style>
