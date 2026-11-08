@@ -12,7 +12,8 @@
     "check": "astro check",
     "check:site": "node scripts/check-site.mjs",
     "verify:examples": "bash scripts/verify-examples.sh",
-    "astro": "astro"
+    "astro": "astro",
+    "test": "node --experimental-strip-types --test tests/"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.3.13",
@@ -28,5 +29,8 @@
     "linkinator": "^8.1.0",
     "pagefind": "^1.5.2",
     "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=22.6"
   }
 }

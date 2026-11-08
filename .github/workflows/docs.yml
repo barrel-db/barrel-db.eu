@@ -26,10 +26,14 @@ jobs:
           token: ${{ secrets.DOCS_TOKEN }}
 
       - name: Install build tools
-        # barrel_vectordb builds a NIF through CMake; the Astro site needs Node.
+        # barrel_vectordb builds a NIF through CMake.
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends cmake nodejs npm
+          apt-get install -y --no-install-recommends cmake
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - name: Install dependencies
         run: npm ci
@@ -40,6 +44,9 @@ jobs:
 
       - name: Type check
         run: npm run check
+
+      - name: Unit tests (demo logic)
+        run: npm test
 
       # Every nav entry has a page, versions match the umbrella, internal links
       # resolve, house style holds.
@@ -72,7 +79,11 @@ jobs:
       - name: Install build tools
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends cmake nodejs npm curl
+          apt-get install -y --no-install-recommends cmake curl
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - name: Run the examples
         run: BARREL_DIR="$GITHUB_WORKSPACE/repos/barrel" npm run verify:examples
