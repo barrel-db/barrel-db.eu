@@ -37,6 +37,8 @@ export default defineConfig({
   // uses plain CSS from src/styles/site.css.
   integrations: [mdx(), sitemap({ filter: (p) => !p.includes('/fr/') })],
   markdown: {
+    // Keep text as written: smart dashes turn "--" in prose and flags into em dashes.
+    smartypants: false,
     // Highlight for both themes at build time. defaultColor: false emits
     // --shiki-light and --shiki-dark custom properties instead of baking one
     // palette in, and site.css picks between them from data-theme.
