@@ -90,7 +90,7 @@ export const useCaseDetails: UseCaseDetail[] = [
         "record": false
       }
     ],
-    "code": "{ok, #{id := Acme}} = barrel_spaces:create_space(#{\n    label      => <<\"acme\">>,\n    encryption => #{provider => tenant_keys}}),\n\n%% offboarding: the data and every grant go\nok = barrel_spaces:drop_space(Acme).",
+    "code": "Enc = #{provider => tenant_keys},\n{ok, #{id := Acme}} = barrel_spaces:create_space(#{\n    label      => <<\"acme\">>,\n    encryption => Enc}),\n\n%% offboarding: the data and every grant go\nok = barrel_spaces:drop_space(Acme, #{encryption => Enc}).",
     "lang": "erlang",
     "example": "Encryption at rest guide",
     "uses": "barrel_spaces, barrel_crypto"
