@@ -1,0 +1,23 @@
+opened tasks
+put task:1 rev 000001a1ba494ab900000000@w76a5b31a6f8fceb7
+put task:2 rev 000001a1ba494ac200000000@w76a5b31a6f8fceb7
+put task:3 rev 000001a1ba494ac200000001@w76a5b31a6f8fceb7
+get task:2 -> Fix login
+rows: 2
+  #{<<"id">> => <<"task:2">>,<<"priority">> => 3,
+    <<"title">> => <<"Fix login">>}
+  #{<<"id">> => <<"task:1">>,<<"priority">> => 2,
+    <<"title">> => <<"Write notes">>}
+update task:2 -> done
+stale write -> {error,conflict}
+rows: 1
+  #{<<"id">> => <<"task:2">>,<<"title">> => <<"Fix login">>}
+rows: 4
+  #{<<"id">> => <<"task:2">>,<<"tag">> => <<"auth">>}
+  #{<<"id">> => <<"task:2">>,<<"tag">> => <<"bug">>}
+  #{<<"id">> => <<"task:1">>,<<"tag">> => <<"docs">>}
+  #{<<"id">> => <<"task:3">>,<<"tag">> => <<"release">>}
+after reopen: [#{<<"id">> => <<"task:1">>,<<"status">> => <<"open">>},
+               #{<<"id">> => <<"task:2">>,<<"status">> => <<"done">>},
+               #{<<"id">> => <<"task:3">>,<<"status">> => <<"done">>}]
+closed

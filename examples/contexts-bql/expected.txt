@@ -1,0 +1,52 @@
+== eu and us
+execution: succeeded, merge: ordered
+rows:
+  support/eu   t:2    95  SSO loop on Safari
+  support/us   t:7    61  Password reset email late
+  support/eu   t:1    42  Invoice PDF missing
+sources:
+  support/eu   ok, 3 rows, limit_reached
+  support/us   ok, 2 rows, exhausted
+coverage: requested 2, answered 2, failed 0, skipped 0
+summary:
+  All 2 contexts answered (support/eu, support/us). 3 rows are
+  merged across contexts in ORDER BY order. support/eu filled
+  the LIMIT or k; more matches may exist.
+
+== eu, us and apac (apac is down)
+execution: partial, merge: ordered
+rows:
+  support/eu   t:2    95  SSO loop on Safari
+  support/us   t:7    61  Password reset email late
+  support/eu   t:1    42  Invoice PDF missing
+sources:
+  support/eu   ok, 3 rows, limit_reached
+  support/us   ok, 2 rows, exhausted
+  support/apac unreachable: econnrefused
+coverage: requested 3, answered 2, failed 1, skipped 0
+summary:
+  2 of 3 contexts answered; rows from the others are not
+  included. support/apac: the server did not accept the
+  connection (econnrefused). 3 rows are merged across contexts
+  in ORDER BY order. support/eu filled the LIMIT or k; more
+  matches may exist.
+
+== the same, offline
+execution: partial, merge: ordered
+rows:
+  support/eu   t:2    95  SSO loop on Safari
+  support/us   t:7    61  Password reset email late
+  support/eu   t:1    42  Invoice PDF missing
+sources:
+  support/eu   ok, 3 rows, limit_reached
+  support/us   ok, 2 rows, exhausted
+  support/apac skipped_offline: no_local_copy
+coverage: requested 3, answered 2, failed 0, skipped 1
+summary:
+  2 of 3 contexts answered; rows from the others are not
+  included. support/apac: skipped: offline and no local copy. 3
+  rows are merged across contexts in ORDER BY order. support/eu
+  filled the LIMIT or k; more matches may exist.
+
+== a row query without LIMIT
+{error,{limit_required,#{max_limit => 1000}}}

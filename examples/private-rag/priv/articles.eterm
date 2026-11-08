@@ -1,0 +1,52 @@
+%% Support articles for a fictional invoicing app.
+%% {Id, Area, Title, Body}.
+{<<"kb:refund">>, <<"billing">>,
+ <<"Refund a payment">>,
+ <<"Open the invoice, choose Payments, then Refund next to the "
+   "payment. A full or partial refund goes back to the card used. "
+   "Card refunds take 5 to 10 business days to appear.">>}.
+{<<"kb:double-charge">>, <<"billing">>,
+ <<"A customer was charged twice">>,
+ <<"A double charge usually comes from a retried checkout. Check "
+   "Payments on the invoice: if two payments share the same "
+   "amount and day, refund the second one. Pending duplicates "
+   "drop off within 3 days without a refund.">>}.
+{<<"kb:export">>, <<"billing">>,
+ <<"Export invoices as CSV">>,
+ <<"Admins can export invoices from Reports, Export. Pick a date "
+   "range and the CSV format. Exports over 10000 rows are sent "
+   "by email.">>}.
+{<<"kb:tax">>, <<"billing">>,
+ <<"Set tax rates per country">>,
+ <<"Go to Settings, Taxes and add a rate per country or region. "
+   "A rate applies to new invoices only; existing invoices keep "
+   "the rate they were issued with.">>}.
+{<<"kb:password">>, <<"account">>,
+ <<"Reset a forgotten password">>,
+ <<"On the sign-in page choose Forgot password. The reset link "
+   "is valid for 30 minutes. Admins can also send a reset link "
+   "from Users.">>}.
+{<<"kb:sso">>, <<"account">>,
+ <<"Configure single sign-on">>,
+ <<"SSO needs the Team plan. Upload your identity provider "
+   "metadata in Settings, Security, then map the email "
+   "attribute. Keep one admin with a password as a fallback.">>}.
+{<<"kb:two-factor">>, <<"account">>,
+ <<"Turn on two-factor authentication">>,
+ <<"In Profile, Security, scan the QR code with an authenticator "
+   "app and save the recovery codes. Admins can require "
+   "two-factor for every user.">>}.
+{<<"kb:webhooks">>, <<"integrations">>,
+ <<"Receive payment webhooks">>,
+ <<"Add an HTTPS endpoint in Settings, Webhooks. Each event is "
+   "signed; verify the signature header. Failed deliveries are "
+   "retried 5 times over 24 hours.">>}.
+{<<"kb:api-keys">>, <<"integrations">>,
+ <<"Rotate API keys">>,
+ <<"Create the new key first, deploy it, then revoke the old key "
+   "in Settings, API. A revoked key stops working at once.">>}.
+{<<"kb:plans">>, <<"account">>,
+ <<"Change your plan">>,
+ <<"Upgrades apply at once and are prorated. Downgrades apply at "
+   "the end of the billing period. SSO and audit logs need the "
+   "Team plan.">>}.

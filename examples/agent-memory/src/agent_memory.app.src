@@ -1,0 +1,7 @@
+{application, agent_memory, [
+    {description, "An agent's memory in a Barrel space"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {applications, [kernel, stdlib, barrel, barrel_spaces]},
+    {env, []}
+]}.

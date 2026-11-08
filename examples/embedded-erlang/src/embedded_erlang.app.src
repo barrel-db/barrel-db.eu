@@ -1,0 +1,7 @@
+{application, embedded_erlang, [
+    {description, "Barrel embedded in an Erlang application"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {applications, [kernel, stdlib, barrel]},
+    {env, []}
+]}.
