@@ -23,9 +23,8 @@
 # Env: BARREL_DIR (default ../barrel), VERIFY_PORT (default 18480),
 #      KEEP_WORK=1 to keep the temporary directory.
 #
-# The first build of rocksdb downloads CPM.cmake from GitHub; set
-# CPM_SOURCE_CACHE to a directory holding cpm/CPM_<version>.cmake to
-# build without that download.
+# Needs a barrel checkout on rocksdb 3.2.0 or later: earlier versions download
+# CPM.cmake from GitHub while building, which fails when GitHub does not answer.
 
 set -uo pipefail
 
