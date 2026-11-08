@@ -1,0 +1,13 @@
+phone local get: [ 'milk' ]
+phone sync: pushed 1
+laptop pull: applied 1
+laptop get: [ 'milk' ]
+phone sync while offline: network
+phone local docs: [ 'list', 'note' ]
+phone sync back online: pushed 2 applied 1
+phone list: [ 'milk', 'bread' ]
+phone conflicts: [ [ 'milk', 'eggs' ] ]
+laptop list: [ 'bread', 'eggs', 'milk' ]
+laptop conflicts: 0
+laptop query: [ { id: 'note', text: 'store closes at 20:00' } ]
+server list: [ 'bread', 'eggs', 'milk' ]

@@ -1,0 +1,41 @@
+---
+import Base from '../../layouts/Base.astro';
+import { examples } from '../../components/example/examples';
+---
+
+<Base title="Examples" description="Runnable Barrel projects: embedded Erlang, agent memory, private search, handoffs between agents, branches, local-first TypeScript, contexts and MCP. Each one is run and its output checked.">
+  <section class="wrap exi-top">
+    <h1 class="display exi-h1">Examples</h1>
+    <p class="lead">Complete projects you can download and run. Each folder has a README, the source and the output of a real run in <code>expected.txt</code>. <code>scripts/verify-examples.sh</code> runs every one against the Barrel source and fails on any difference.</p>
+  </section>
+
+  <section class="wrap exi-list" aria-label="Examples">
+    {examples.map((e) => (
+      <a href={`/examples/${e.slug}`} class="exi-card">
+        <span class="exi-t">{e.title}</span>
+        <span class="exi-s">{e.summary}</span>
+        <span class="small muted">{e.runs}</span>
+      </a>
+    ))}
+  </section>
+
+  <section class="wrap exi-run">
+    <h2 class="h3">Run them all</h2>
+    <p class="muted">From a checkout of the site repository, next to a checkout of the barrel repository. You need Erlang/OTP 26 or later, rebar3, a C compiler and CMake for the native dependencies, Node 22.6 or later, curl and jq.</p>
+    <pre>BARREL_DIR=../barrel scripts/verify-examples.sh</pre>
+  </section>
+</Base>
+
+<style>
+  .exi-top { padding-top: 64px; padding-bottom: 32px; }
+  .exi-h1 { font-size: clamp(2.5rem, 5vw, 3.5rem); margin-bottom: 16px; }
+  .exi-top .lead { max-width: 720px; }
+  .exi-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 16px; padding-bottom: 48px; }
+  .exi-card { display: flex; flex-direction: column; gap: 8px; padding: 20px 22px; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--card); color: var(--ink); text-decoration: none; }
+  .exi-card:hover { border-color: var(--ink); }
+  .exi-card:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+  .exi-t { font-weight: 650; font-size: 1.15rem; }
+  .exi-s { color: var(--ink-2); flex: 1; }
+  .exi-run { padding-bottom: 80px; }
+  .exi-run p { max-width: 720px; }
+</style>
