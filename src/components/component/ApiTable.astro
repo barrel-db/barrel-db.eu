@@ -1,0 +1,45 @@
+---
+// Task, call, returns: one table per group of the API.
+import { inline } from './inline';
+import type { ApiGroup } from '../../data/components/types';
+
+interface Props { group: ApiGroup; }
+const { group } = Astro.props;
+// A call that already carries backticks or prose is rendered as inline markup.
+const callHtml = (s: string) => (s.includes('`') || s.startsWith('option ') || s.startsWith('behaviour ') || s.startsWith('callback ')) ? inline(s) : `<code>${inline(s)}</code>`;
+---
+
+<div class="api">
+  <h3>{group.title}</h3>
+  <table>
+    <thead><tr><th scope="col">Task</th><th scope="col">Call</th><th scope="col">Returns</th></tr></thead>
+    <tbody>
+      {group.rows.map((r) => (
+        <tr>
+          <th scope="row">{r.task}</th>
+          <td data-label="Call" set:html={callHtml(r.call)} />
+          <td data-label="Returns" set:html={inline(r.returns)} />
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+
+<style>
+  .api { margin-bottom: 24px; }
+  h3 { margin: 20px 0 8px; font-size: var(--step-0); }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; border: 1px solid var(--rule); border-radius: var(--radius); }
+  th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-top: 1px solid var(--rule); }
+  thead th { background: var(--paper-2); font-weight: 600; border-top: 0; }
+  tbody th { font-weight: 600; width: 24%; }
+  td:nth-child(2) { width: 40%; }
+  td :global(code) { overflow-wrap: anywhere; }
+  @media (max-width: 640px) {
+    table, tbody, tr, th, td { display: block; width: auto !important; }
+    thead { display: none; }
+    tr { border-top: 1px solid var(--rule); padding: 8px 0; }
+    tr:first-child { border-top: 0; }
+    th, td { border: 0; padding: 2px 14px; }
+    td[data-label]::before { content: attr(data-label) ': '; color: var(--ink-2); }
+  }
+</style>
