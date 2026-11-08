@@ -1,0 +1,137 @@
+---
+// translation_of: src/pages/use-cases/agent-memory.astro source_hash: c73887363aa95e5a
+import UseCasePage from '../../../components/usecase/UseCasePage.astro';
+import type { ArchColumn, Step } from '../../../components/usecase/types';
+
+const arch: ArchColumn[] = [
+  { who: 'Votre agent', boxes: [
+    { name: 'À chaque tour', note: 'ajoute des messages, met à jour l’état' },
+    { name: 'Construction du prompt', note: 'épingles, derniers tours, faits rappelés' } ] },
+  { who: 'Espace sp_support', boxes: [
+    { name: 'Session ses_…', note: 'messages, données, épingles ; TTL glissant', rec: true },
+    { name: 'Documents de faits', note: 'mode enregistrement : vectorisés à l’écriture', rec: true } ] },
+  { who: 'Sur le même nœud', boxes: [
+    { name: 'Embedder', note: 'un fournisseur barrel_embed, ici Ollama' },
+    { name: 'Balayage TTL', note: 'marque les sessions expirées comme supprimées' } ] },
+];
+
+const steps: Step[] = [
+  { title: 'Créer un espace avec une politique de mémoire',
+    body: 'La politique `embedding` fait de l’espace une base en mode enregistrement : les documents qui ont un champ `fact` reçoivent un vecteur, tenu à jour à chaque modification et suppression. Les messages de session n’ont pas de champ `fact`, ils ne sont donc pas vectorisés.',
+    status: 'optional',
+    label: 'Erlang', lang: 'erlang',
+    code: `{ok, _} = application:ensure_all_started(barrel_spaces),
+Embedder = {ollama, #{model => <<"nomic-embed-text">>}},
+{ok, #{id := SpaceId, db := Db} = Space} =
+    barrel_spaces:create_space(#{
+        label => <<"support memory">>,
+        embedding => #{fields => [<<"fact">>],
+                       mode => sync,
+                       embedder => Embedder}}).` },
+  { title: 'Ouvrir une session pour la conversation',
+    body: 'Une session est un document à expiration glissante : chaque modification la repousse de `ttl` secondes.',
+    tabs: [
+      { label: 'Erlang', lang: 'erlang', code: `{ok, Sid} = barrel_session:create(Space,
+    #{agent => <<"support">>, ttl => 3600}).` },
+      { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":5,"method":"tools/call",
+ "params":{"name":"session_create",
+  "arguments":{"space":"sp_…","agent":"support",
+               "ttl":3600}}}` } ] },
+  { title: 'Ajouter chaque tour',
+    body: 'Les messages sont des documents distincts dont les identifiants se trient par date : lire les vingt derniers revient à un court parcours de plage.',
+    tabs: [
+      { label: 'Erlang', lang: 'erlang', code: `{ok, _} = barrel_session:add_message(Space, Sid,
+    #{role => <<"user">>,
+      content => <<"I am locked out">>}).` },
+      { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":6,"method":"tools/call",
+ "params":{"name":"session_add_message",
+  "arguments":{"space":"sp_…","session":"ses_…",
+               "role":"user",
+               "content":"I am locked out"}}}` } ] },
+  { title: 'Garder l’état de travail et le contexte épinglé',
+    body: '`set_data` garde un état structuré sous une clé. Les épingles sont des notes qui restent en tête de chaque prompt, dans l’ordre de priorité.',
+    tabs: [
+      { label: 'Erlang', lang: 'erlang', code: `{ok, _} = barrel_session:set_data(Space, Sid,
+    <<"ticket">>, <<"T-311">>),
+{ok, _PinId} = barrel_session:pin_context(Space, Sid,
+    #{content => <<"enterprise plan">>, priority => 0}),
+{ok, Pinned} = barrel_session:list_pinned(Space, Sid).` },
+      { label: 'REST', lang: 'bash', code: `curl -X PUT \\
+  localhost:8080/spaces/sp_…/sessions/ses_…/data/ticket \\
+  -H 'authorization: Bearer bsp_…' \\
+  -H 'content-type: application/json' \\
+  -d '{"value":"T-311"}'` } ] },
+  { title: 'Relire les derniers tours',
+    body: 'Les plus récents d’abord avec `order => desc` ; `since` et `before` prennent des millisecondes Unix.',
+    tabs: [
+      { label: 'Erlang', lang: 'erlang', code: `{ok, Recent} = barrel_session:get_messages(Space, Sid,
+    #{limit => 20, order => desc}).` },
+      { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":7,"method":"tools/call",
+ "params":{"name":"session_get_messages",
+  "arguments":{"space":"sp_…","session":"ses_…",
+               "limit":20,"order":"desc"}}}` } ] },
+  { title: 'Stocker des faits et les retrouver par le sens',
+    body: 'Quand votre agent juge qu’une information mérite d’être gardée au-delà de la session, écrivez-la comme un document. Elle est vectorisée à l’écriture et retrouvée plus tard par le sens, par mots-clés ou les deux.',
+    label: 'Erlang', lang: 'erlang',
+    code: `{ok, _} = barrel:put_doc(Db, #{
+    <<"id">> => <<"fact:acme-sso">>,
+    <<"customer">> => <<"acme">>,
+    <<"fact">> => <<"Acme signs in through Okta SSO">>}),
+{ok, Hits} = barrel:search_hybrid(Db,
+    <<"how does acme log in">>, #{k => 5}).` },
+  { title: 'Laisser les sessions expirer, ou en garder une pour de bon',
+    body: 'Une session expirée est aussitôt lue comme introuvable, puis balayée plus tard avec ses messages. `ttl => infinity` crée une session durable qui n’expire jamais.',
+    label: 'Erlang', lang: 'erlang',
+    code: `{ok, Tmp} = barrel_session:create(Space, #{ttl => 1}),
+timer:sleep(1500),
+{error, not_found} = barrel_session:get(Space, Tmp),
+{ok, Rec} = barrel_session:create(Space,
+    #{agent => <<"support">>, ttl => infinity}),
+{ok, 0} = barrel_session:touch(Space, Rec).`,
+    outLabel: 'D’après une exécution enregistrée',
+    out: `ttl => 1 session read 1.5 s later: {error,not_found}
+touch on a ttl => infinity session: {ok,0}` },
+];
+---
+
+<UseCasePage
+  title="La mémoire des agents"
+  lead="Gardez ce dont un agent a besoin entre deux tours et entre deux exécutions : la conversation, son état de travail, les notes qui doivent rester en tête, et des faits qu’il peut retrouver par le sens."
+  sub="Construit avec les sessions de barrel_spaces et un espace en mode enregistrement. Les sessions sont aussi accessibles en REST et en MCP."
+  problem="Un agent oublie d’un tour à l’autre si rien ne garde la conversation, ses notes et ce qui compte. Dans un cache, tout est perdu au redémarrage ; dans une simple table, c’est à vous de gérer l’expiration, l’ordre et la recherche."
+  arch={arch}
+  edges={['appels de session, put_doc', 'vectorise les faits, balaie']}
+  archNote="La mémoire à court terme, c’est la session : messages, `data` et épingles, qui disparaissent quand le TTL expire. La mémoire à long terme, ce sont des documents ordinaires dans le même espace, vectorisés selon la politique de l’espace et cherchés avec `search`, `search_hybrid` ou BQL."
+  stepsIntro="Sept étapes. L’étape 1 demande un fournisseur d’embeddings ; cette page utilise Ollama avec `nomic-embed-text`. Les étapes 2 à 7 fonctionnent de la même façon sur un espace sans politique, sauf la recherche."
+  steps={steps}
+  barrel={[
+    'Stocke les messages comme documents dans l’ordre chronologique, par session',
+    'Fait glisser le TTL de la session à chaque modification et balaie les sessions expirées et leurs messages',
+    'Garde des données structurées et des épingles par session',
+    'Vectorise les documents de faits à l’écriture et les cherche par le sens et par mots-clés',
+    'Conserve espaces, autorisations et sessions durables d’un redémarrage à l’autre',
+  ]}
+  app={[
+    'Décide de ce qui est un fait à garder, souvent avec un appel au modèle',
+    'Construit le prompt à partir des épingles, des derniers tours et des faits rappelés',
+    'Appelle le modèle',
+    'Choisit les TTL et le moment où une session devient durable',
+  ]}
+  limits={[
+    'Les épingles n’ont pas encore de route REST ni d’outil MCP ; `set_data` et `get_data` existent en REST seulement. Utilisez l’API Erlang pour les épingles.',
+    'En REST et en MCP, `ttl` doit être un nombre positif de secondes ; les sessions durables sont réservées à Erlang.',
+    'Le stockage vectoriel est propre à chaque nœud et n’est pas répliqué. Chaque nœud qui ouvre l’espace doit avoir le même embedder configuré, sinon l’ouverture échoue avec `embedder_required` ou `embedder_mismatch`.',
+    'Changer la politique plus tard ne s’applique qu’aux nouvelles écritures ; les documents existants ne sont pas revectorisés.',
+    'Les appels à l’intérieur de votre nœud Erlang ne prennent pas de jeton. Les jetons s’appliquent en REST et en MCP.',
+  ]}
+  links={[
+    { label: 'Exemple : mémoire d’agent persistante', href: '/examples/agent-memory' },
+    { label: 'Exemple : une session MCP', href: '/examples/mcp-session' },
+    { label: 'Espaces, sessions, passations', href: '/docs/guides/spaces' },
+    { label: 'Mode enregistrement', href: '/docs/guides/record-mode' },
+    { label: 'Choisir un fournisseur d’embeddings', href: '/docs/search/embedding-providers' },
+    { label: 'barrel_spaces', href: '/product/spaces' },
+    { label: 'barrel_embed', href: '/product/embed' },
+    { label: 'Cas d’usage : recherche privée dans vos connaissances', href: '/use-cases/private-rag' },
+  ]}
+/>
