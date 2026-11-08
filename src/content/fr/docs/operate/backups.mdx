@@ -1,0 +1,122 @@
+---
+translation_of: src/content/docs/operate/backups.mdx
+source_hash: "20bcb7e7c916b2ca"
+title: Sauvegarde et restauration
+description: Comment garder une copie de vos données Barrel et la récupérer, ce que couvre chaque méthode, et ce qui n’est pas encore pris en charge.
+---
+import Callout from '../../../../components/Callout.astro';
+
+Cette page montre comment garder une copie de vos données et la récupérer. Barrel n’a pas encore de commande de sauvegarde : vous combinez la réplication, les branches, l’export et la copie de fichiers. Lisez-la avant de passer en production, pour savoir ce que chaque méthode couvre et ce qu’elle ne couvre pas.
+
+## Choisir une méthode
+
+| Votre besoin | Méthode | Couvre | Ne couvre pas |
+|---|---|---|---|
+| Une copie sur une autre machine, tenue à jour | Réplication vers un nœud de secours | Documents et pièces jointes, en continu | Vecteurs (reconstruits sur le nœud de secours), provenance |
+| Un point sûr avant une modification risquée | Une branche | Documents et pièces jointes, instantanément, sur le même nœud | Une autre machine ; les vecteurs sur une branche simple |
+| Les données d’hier | Une branche à un instant passé | Les documents tels qu’ils étaient, dans la fenêtre de rétention | Les pièces jointes telles qu’elles étaient à cet instant ; tout ce qui dépasse la rétention |
+| Une copie de fichiers à expédier ailleurs | Export | Documents, pièces jointes et vecteurs, vérifiés par un manifeste | Une restauration modifiable : les imports s’ouvrent en lecture seule |
+| Réparer une réplique endommagée | `reconcile` | Corps erronés ou vides et pièces jointes manquantes | Les écritures qu’aucune copie ne possède |
+
+## Garder un nœud de secours
+
+Lancez une tâche de push continue depuis le nœud qui reçoit les écritures. La base cible doit exister sur le nœud de secours ; la réplication n’en crée jamais.
+
+```erlang
+{ok, TaskId} = barrel_rep_tasks:start_task(#{
+    source    => <<"kb">>,
+    target    => <<"http://standby.example:8080/db/kb">>,
+    mode      => continuous,
+    direction => push}).
+```
+
+Placez les identifiants du nœud de secours dans l’environnement applicatif `sync_auth`, `sync_signing` ou `sync_ssl` de barrel_docdb, pas dans la tâche. En mode enregistrement, le nœud de secours recalcule les embeddings de ce qu’il reçoit : donnez-lui la même politique d’embedding. Surveillez la tâche comme indiqué dans [Supervision](/fr/docs/operate/monitoring#surveiller-les-tâches-de-réplication).
+
+## Prendre un point sûr
+
+```erlang
+{ok, _} = barrel_docdb:branch_db(<<"kb">>,
+    <<"kb_before_migration">>, #{}).
+```
+
+La branche est un checkpoint RocksDB des documents et des pièces jointes, fait de liens physiques dans `<data_dir>/kb_before_migration/` : elle ne coûte aucune copie. Si la modification tourne mal, lisez les anciens documents depuis la branche et réécrivez-les. Si elle réussit, supprimez la branche avec `barrel_docdb:delete_db/1`.
+
+Une branche vit sur le même nœud et garde l’espace de clés de son parent : c’est un fork, pas une sauvegarde portable. Via le module `barrel`, `barrel:branch/3` donne à une branche simple un nouveau magasin de vecteurs vide ; une branche en mode enregistrement remplit ses vecteurs à partir des embeddings stockés.
+
+## Récupérer un état passé
+
+Créez une branche à un instant situé dans la fenêtre de rétention. En REST, `at_time` prend une date RFC 3339 et `at` un curseur du flux de changements :
+
+```shell
+curl -X POST localhost:8080/db/kb/_timeline/branch \
+  -H 'content-type: application/json' \
+  -d '{"name":"kb_yesterday",
+       "at_time":"2026-11-07T09:00:00Z"}'
+```
+
+En Erlang, passez l’HLC dans `at` :
+
+```erlang
+{ok, _} = barrel_docdb:branch_db(<<"kb">>,
+    <<"kb_yesterday">>, #{at => Hlc}).
+```
+
+Copiez ensuite les documents dont vous avez besoin, ou fusionnez les modifications propres à la branche dans le parent avec `barrel_docdb:merge_branch/2`. Les versions rembobinées sont antérieures au fork et ne sont pas refusionnées.
+
+<Callout label="Limite" kind="limit">
+L’historique plus ancien que `retention_period` (30 jours par défaut) est purgé et ne peut pas être récupéré ; le demander renvoie `pitr_window_exceeded`. Les pièces jointes d’une branche rembobinée sont celles du moment où vous créez la branche, pas celles de l’instant demandé.
+</Callout>
+
+## Exporter une copie
+
+`barrel_ctx_export:export/3` maintient la base fermée, copie dans un dossier son magasin de documents, ses pièces jointes blob, ses fichiers `CRYPTO` et `TIMELINE` et son magasin de vecteurs, puis écrit un manifeste avec un sha256 par fichier.
+
+```erlang
+{ok, Manifest} = barrel_ctx_export:export(
+    <<"kb">>, "/backups/kb_g1", #{generation => 1}).
+```
+
+- Une base ouverte avec `vectordb => none` est refusée avec `{error, no_vector_store}`.
+- Les pièces jointes stockées dans S3 ne sont pas copiées.
+- Une base chiffrée est exportée sous forme chiffrée.
+- `barrel_ctx_export:import/2` ouvre la copie en lecture seule, comme instantané pour les contextes. Aucun appel ne la transforme en base modifiable.
+
+## Réparer une réplique
+
+Quand une réplique contient des corps erronés ou vides, ou qu’il lui manque des pièces jointes, parcourez une fois le flux complet d’une copie saine :
+
+```erlang
+Replica = barrel_rep_transport_http:endpoint(
+    <<"http://replica.example:8080/db/kb">>),
+{ok, Report} = barrel_rep:reconcile(<<"kb">>, Replica,
+    #{target_transport => barrel_rep_transport_http}).
+```
+
+Pour une réplique sur le même nœud, passez son nom et aucune option.
+
+Le rapport liste `docs_checked`, `bodies_repaired`, `atts_resent`, `doc_failures` et `att_failures` ; le parcours continue malgré les échecs. Une cible distante demande un token avec accès en écriture ou une clé de signature.
+
+## Copier les fichiers
+
+Fermez d’abord la base. Copiez ensuite chaque emplacement qu’elle utilise ; le répertoire de données seul ne suffit pas.
+
+- Le dossier de la base sous le `data_dir` de barrel_docdb (par défaut `data/barrel_docdb` sous le répertoire de travail) : documents, pièces jointes, et les fichiers `CRYPTO` et `TIMELINE`.
+- Le dossier du magasin de vecteurs : son `db_path`, ou `./priv/barrel_vectordb_<name>` sous le répertoire de travail si aucun n’a été défini. C’est vrai même sous barrel_server avec un `data_dir`.
+- Pour les espaces, le magasin de vecteurs de l’espace dans `<data_dir>/<id>_vec` et la base de registre `_barrel_spaces`.
+- Si vous les utilisez, les bases `_barrel_catalog` et `_barrel_worksets` et le `data_dir` de barrel_ngram (par défaut `data/barrel_ngram`).
+
+Une base copiée reçoit un nouvel identifiant d’écrivain à l’ouverture : une copie restaurée n’écrit donc pas sous l’identifiant de l’original.
+
+<Callout label="Bases chiffrées">
+Les copies restent chiffrées ; la clé n’est jamais sur le disque. La restauration demande le même fournisseur de clé et le même nom de base.
+</Callout>
+
+## Pas encore pris en charge
+
+- Une commande, une route ou un outil MCP de sauvegarde ou de restauration.
+- Une copie cohérente à chaud vers un autre chemin ou un autre hôte, en dehors d’une branche ou d’un export.
+- Les sauvegardes incrémentales.
+- La sauvegarde des pièces jointes stockées dans S3 : elles vivent dans votre bucket.
+- La promotion d’un export importé en base modifiable.
+- La restauration à un instant donné des pièces jointes, d’une branche, ou au-delà de la fenêtre de rétention.
+- La rotation des clés.

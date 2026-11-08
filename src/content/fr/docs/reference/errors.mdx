@@ -1,0 +1,245 @@
+---
+translation_of: src/content/docs/reference/errors.mdx
+source_hash: "fd9f2395f03dc53c"
+title: Codes d’erreur
+description: Les erreurs que Barrel renvoie en REST, en MCP et par l’API Erlang, ce que chacune signifie et quoi faire.
+---
+import Callout from '../../../../components/Callout.astro';
+
+Cette page liste les erreurs que vous pouvez recevoir, leur signification et quoi faire. Les erreurs REST sont des corps JSON `{"error": "<code>"}` avec un statut HTTP ; l’API Erlang renvoie `{error, Reason}`. Utilisez-la quand un appel échoue et que vous cherchez la correction, pas la cause ; [Dépannage](/fr/docs/operate/troubleshooting) part au contraire du symptôme.
+
+## La forme des erreurs REST
+
+```json
+{"error": "conflict"}
+```
+
+Certains codes ajoutent des champs : `reason` (un corps `/find` invalide, des `att_opts` invalides), `message`, `line` et `column` (une erreur de syntaxe BQL), `current` (un conflit de pièce jointe), `tokens` (`missing_bodies`).
+
+<Callout label="Remarque">
+Une erreur que le serveur ne traduit pas devient un 500 avec le terme Erlang imprimé dans la chaîne `error`, par exemple `{"error":"{dimension_mismatch,768,2}"}`. C’est pourquoi certains problèmes de configuration répondent 500 plutôt que 4xx.
+</Callout>
+
+## Authentification
+
+| Statut | error | Signification et correction |
+|---|---|---|
+| 401 | `unauthorized` | Pas de token, un token faux, inconnu ou révoqué, ou une signature invalide ou rejouée. La réponse porte `www-authenticate: Bearer`. Envoyez `Authorization: Bearer` avec un token valide, ou signez à nouveau. |
+| 401 | `signature_v3_required` | Une signature v1 ou v2 sur une requête qui porte un en-tête d’écriture ou écrit une pièce jointe. Signez en v3. |
+| 401 | `content_hash_mismatch` | Le corps ne correspond pas à son hash signé dans `x-barrel-content-sha256`. Calculez le hash des octets exacts que vous envoyez. |
+| 400 | `bad_body` | Le corps d’une requête signée n’a pas pu être lu. Réessayez. |
+| 403 | `forbidden` | Le jeton de capacité n’a pas le droit, est pour un autre espace, ou la route n’accepte qu’un token serveur. |
+| 413 | `too_large` | Un corps signé au-delà de `max_body` (1 Gio par défaut). |
+
+## Bases et documents
+
+| Statut | error | Signification et correction |
+|---|---|---|
+| 400 | `invalid_name` | Le nom contient d’autres caractères que des lettres, des chiffres, `_` et `-`. |
+| 500 | `invalid_db_name` | Le nom contient des majuscules. Utilisez des minuscules, en commençant par une lettre ou un chiffre, 63 octets au plus. |
+| 400 | `bad_att_opts` + `reason` | Des `att_opts` invalides dans le corps de `PUT /db/:db`. |
+| 404 | `not_found` | Le document, la version ou la pièce jointe n’existe pas. La base elle-même est créée par la requête. |
+| 409 | `conflict` | Le `_rev` envoyé n’est pas le courant. Relisez et réessayez avec le nouveau `_rev`. |
+| 400 | `bad_json` | Le corps n’est pas du JSON. |
+| 400 | `invalid_provenance` | Un en-tête `x-barrel-actor`, `x-barrel-session` ou `x-barrel-source` est trop long (256 octets chacun, 1 Kio ensemble). |
+| 400 | `bad_since`, `bad_until`, `bad_limit` | Un paramètre de requête invalide sur `GET /db/:db/_history`. |
+
+`GET /db/:db/changes` avec un `since` invalide n’échoue pas : il repart du premier changement.
+
+## Requêtes
+
+| Statut | error | Signification et correction |
+|---|---|---|
+| 400 | `invalid_query` + `message`, `line`, `column` | Erreur de syntaxe BQL. BQL n’a ni `COUNT` ni `GROUP BY`. |
+| 400 | `invalid_query` + `reason` | Une clé inconnue dans un corps `/find`, `continuation` compris. Paginez avec `offset`. |
+| 400 | `missing_query` | Un corps JSON sans `query`. |
+| 400 | `invalid_max_rows`, `invalid_deadline_ms` | Pas un entier positif (1000 lignes au plus, 300000 ms). |
+| 400 | `subscribe_requires_sse` | Une instruction `SUBSCRIBE` sans `Accept: text/event-stream` ni `?feed=sse`. |
+| dans le flux | `deadline` | L’échéance est passée après l’envoi de quelques lignes ; la dernière ligne NDJSON est `{"error":"deadline"}`. |
+
+## Recherche
+
+Ce sont des problèmes de configuration, mais ils répondent 500.
+
+| Statut | error | Signification et correction |
+|---|---|---|
+| 500 | `bm25_not_enabled` | La recherche par mots-clés est désactivée sur cette base. Ouvrez-la avec `vectordb => #{bm25_backend => disk}`, ou utilisez le mode enregistrement. |
+| 500 | `embedder_not_configured` | Aucun embedder pour transformer votre texte en vecteur. Configurez-en un, ou envoyez un vecteur. |
+| 500 | `{dimension_mismatch,768,N}` | Votre vecteur a N dimensions ; le magasin en attend 768. |
+
+## Pièces jointes
+
+| Statut | error | Signification et correction |
+|---|---|---|
+| 409 | `conflict` + `current` | Une condition `If-Match` ou `If-None-Match: *` a échoué. |
+| 400 | `bad_if_none_match` | Seul `*` est accepté dans `If-None-Match`. |
+| 501 | `attachments_disabled` | La base a été créée avec `att_opts => #{backend => none}`. |
+| 501 | `conditional_writes_unsupported` | Le backend S3 ne sait pas faire d’écritures conditionnelles (Garage). |
+| 503 | `att_sync_pending` | Une nouvelle branche adossée à S3 est encore en cours de copie. Réessayez un peu plus tard. |
+
+## Branches
+
+| Statut | error | Signification et correction |
+|---|---|---|
+| 400 | `invalid_name` | Un nom de branche invalide. |
+| 400 | `bad_at` | `at` n’est pas un curseur du flux de changements, ou `at_time` n’est pas en RFC 3339. |
+| 400 | `pitr_window_exceeded` | L’instant est plus ancien que l’historique conservé. |
+| 409 | `already_exists` | Une branche de ce nom existe. |
+| 409 | `cannot_branch_a_branch` | Créez plutôt la branche depuis le parent. |
+| 409 | `not_a_branch` | La fusion a été appelée sur une base qui n’est pas une branche. |
+| 404 | `parent_not_found` | Le parent de la branche n’est pas ouvert. |
+
+## Protocole de réplication
+
+| Statut | error | Signification et correction |
+|---|---|---|
+| 404 | `not_found` | La base n’existe pas ; la réplication n’en crée jamais. |
+| 409 | `clock_skew` | L’horloge de l’émetteur est trop en avance. |
+| 400 | `bad_hlc`, `bad_state`, `bad_bodies`, `missing_bodies` + `tokens`, `bad_json`, `bad_filter`, `bad_since`, `bad_touch`, `bad_origin` | Une requête de synchronisation mal formée. |
+| 403 | `read_only` | Une réparation envoyée à une base en lecture seule. |
+| 412 | `bytes_needed` | Un envoi de pièce jointe sans ses octets. |
+| 422 | `digest_mismatch` | Les octets de la pièce jointe ne correspondent pas à `x-barrel-digest`. |
+| 413 | `too_large` | La pièce jointe est trop grande. |
+| 501 | `att_flush_unsupported`, `att_sync_unsupported`, `attachments_disabled` | Le backend de pièces jointes de ce serveur n’a pas la fonctionnalité. |
+| 406 | `not_acceptable` | La requête demande un format que la route ne sert pas. |
+
+## Espaces et passations
+
+| Statut | error | Signification et correction |
+|---|---|---|
+| 401 | `unauthorized` | Le token est invalide, révoqué ou expiré. |
+| 403 | `forbidden` | Le token est pour un autre espace, ou n’a pas le droit. |
+| 404 | `space_dropped` | L’espace a été supprimé. |
+| 409 | `already_accepted`, `already_completed` | Le token de passation a déjà été utilisé. |
+| 400 | `task_name_required`, `missing_space`, `missing_token`, `invalid_message`, `invalid_rights`, `invalid_expires_at`, `bad_range` | Un champ manquant ou invalide. Des `rights` vides donnent aussi `invalid_rights`. |
+
+## Contextes
+
+Les routes de contextes et d’ensembles de travail répondent `{"error", "message", "hint", "details"}`. Les codes viennent de `barrel_ctx_error:codes/0` :
+
+| Statut | error |
+|---|---|
+| 400 | `invalid_argument`, `invalid_query`, `limit_required`, `limit_too_large`, `too_many_contexts`, `duplicate_context`, `unsupported_federated_query`, `merge_not_allowed`, `merge_not_supported`, `scores_not_comparable`, `invalid_card`, `no_location`, `invalid_snapshot` |
+| 403 | `forbidden` |
+| 404 | `unknown_context`, `unknown_working_set`, `not_attached` |
+| 409 | `ambiguous_context`, `already_attached`, `already_exists`, `offline` |
+| 413 | `over_budget` |
+| 502 | `source_unavailable` |
+| 500 | `internal` |
+
+Un membre en échec est signalé dans `sources[]` de la réponse, pas comme une erreur de requête.
+
+## MCP
+
+Une requête sans token sur un serveur verrouillé reçoit un HTTP 401. Les erreurs d’outil reviennent comme résultat d’outil avec `isError: true` et le même corps JSON, par exemple `{"error":"not_found"}` ou `{"error":"forbidden","db":"kb"}`.
+
+## API Erlang
+
+### Cycle de vie et documents
+
+| Retour | Signification et correction |
+|---|---|
+| `{error, already_exists}` | `create_db` sur une base ouverte. Utilisez `open_db/1`. |
+| `{error, invalid_db_name}` | Lettres minuscules, chiffres, `_` et `-` ; premier caractère une lettre ou un chiffre ; de 1 à 63 octets. |
+| `{error, not_found}` | Un document absent, ou une base qui ne tourne pas. |
+| `{error, {db_failed, Reason}}` | L’écrivain de la base a planté 3 fois en 60 secondes. Corrigez `Reason`, puis `reopen_db/1`. |
+| `{error, conflict}` | Un `_rev` périmé. |
+| `{error, read_only}` | Une écriture sur une base ouverte avec `read_only => true`. |
+| `{error, clock_skew}` | L’horloge est en retard sur l’écriture la plus récente de la base, ou un HLC distant a été refusé. Corrigez l’horloge. |
+| `{error, {invalid_expires_at, V}}` | `expires_at` doit être un temps unix positif ou nul en millisecondes. |
+| `{error, {invalid_provenance, _}}` | Champs de provenance trop longs. |
+| `{error, {invalid_condition, C}}` | Une condition `find` invalide. |
+| `{error, db_restarted}` | Un flux ou un envoi de pièce jointe a survécu à un redémarrage de la base. Rouvrez-le ; l’envoi n’a rien publié. |
+| `{error, upload_expired}` | Un envoi laissé ouvert plus longtemps que `att_upload_timeout` (3600 s). |
+| `{error, {read_only_upgrade_needed, _}}` | Des magasins qui demandent une mise à niveau, ouverts en lecture seule. Ouvrez une fois en écriture. |
+
+### BQL
+
+| Retour | Signification et correction |
+|---|---|
+| `{error, {parse_error, {Line, Col}, Msg}}` | Une erreur de syntaxe, depuis `barrel_docdb:query/2,3`. |
+| `{error, {invalid_query, {Line, Col}, Code}}` | Une instruction que la grammaire accepte mais que le compilateur refuse. Voir [BQL](/fr/docs/reference/bql#instructions-refusées). |
+| `{error, {table_fn_requires_barrel, Fn}}` | Les fonctions de table de recherche ne s’exécutent que via `barrel:query/2,3`. |
+| `{error, {unsupported, subscribe}}` | `SUBSCRIBE` via `query` ; utilisez `subscribe_query/2,3`. |
+| `{error, {limit_required, #{max_limit := 1000}}}` | Une requête de contexte sans `LIMIT`. |
+
+### Module barrel
+
+| Retour | Signification et correction |
+|---|---|
+| `{error, no_vector_store}` | Un appel vectoriel, ou un export, sur une base ouverte avec `vectordb => none`. |
+| `{error, record_mode}` | `vector_add` sur une base en mode enregistrement ; écrivez plutôt le document. |
+| `{error, mixed_batch}` | Une liste `vector_add_batch/2` qui mélange des entrées avec et sans vecteurs. |
+| `{error, {invalid_option, vectordb}}` | `embedding` avec `vectordb => none`. |
+| `{error, no_stored_policy}` | `embedding => stored` sur une base qui n’a jamais tourné en mode enregistrement. |
+| `{error, barrel_app_not_started}` | Le mode enregistrement demande que l’application `barrel` soit démarrée. |
+| `{error, {unknown_options, Keys}}` | Des clés inconnues dans une politique d’embedding. |
+| `{error, {dimension_mismatch, Want, Got}}` | Un vecteur de mauvaise longueur. |
+| `{error, {index_init_failed, faiss_not_available}}` | `backend => faiss` sans le NIF barrel_faiss. |
+
+### Chiffrement
+
+| Retour | Signification et correction |
+|---|---|
+| `{error, db_is_encrypted}` | Passez la spécification de chiffrement à l’ouverture. |
+| `{error, wrong_encryption_key}` | La clé ne correspond pas à cette base. |
+| `{error, cannot_encrypt_existing_db}` | Pas de chiffrement sur place. Créez une base chiffrée et répliquez-y les données. |
+| `{error, {key_provider_error, barrel_keyprovider_env, no_encryption_key}}` | `BARREL_ENCRYPTION_KEY` n’est pas défini. |
+
+### Timeline
+
+| Retour | Signification et correction |
+|---|---|
+| `{error, not_a_branch}`, `{error, parent_not_found}` | Fusion sur une base qui n’est pas une branche, ou dont le parent n’est pas ouvert. |
+| `{error, already_exists}`, `{error, branch_dir_exists}` | Le nom de branche ou son dossier est déjà pris. |
+| `{error, cannot_branch_a_branch}` | Créez la branche depuis le parent. |
+| `{error, pitr_window_exceeded}`, `{error, {pitr_window_exceeded, DocId}}` | L’instant, ou l’historique de ce document, est plus ancien que la rétention. |
+| `{error, {bad_at, future}}`, `{error, {bad_at, _}}` | L’instant est dans le futur, ou n’est pas un HLC valide. |
+
+### Réplication
+
+| Retour | Signification et correction |
+|---|---|
+| `{error, {checkpoint_failed, target, not_found}}` | La base cible locale n’existe pas. Créez-la d’abord. |
+| `{error, not_found}` | La base distante n’existe pas (HTTP 404). |
+| `{error, unauthorized}` | Le serveur distant a répondu 401. |
+| `{error, clock_skew}` | Le serveur distant a répondu 409. Tout 409 est signalé ainsi. |
+| `{error, too_large}`, `{error, {http, Status, Body}}` | Le serveur distant a répondu 413, ou un autre statut. |
+| `{error, {inline_credentials, Keys}}` | Déplacez les identifiants de la tâche vers `sync_auth`, `sync_signing` ou `sync_ssl`. |
+| `{error, att_flush_unsupported}` | La cible ne sait pas rendre durables les écritures de pièces jointes ; mettez-la à jour ou passez `att_durability => best_effort`. |
+| `{error, {att_flush_failed, R}}`, `{error, {att_sync_failed, R}}` | La phase des pièces jointes a échoué ; le checkpoint reste avant elle. |
+| `{error, att_filter_unsupported}` | Le serveur source ne sait pas filtrer les pièces jointes. |
+| `{error, too_many_failed_docs}` | Plus de 1000 documents ont échoué en une exécution ; le checkpoint n’a pas avancé. |
+| `{error, not_running}` | `get_task_pid/1` sur une tâche qui ne tourne pas. |
+
+### Embedding et reclassement
+
+| Retour | Signification et correction |
+|---|---|
+| `{error, embedder_not_configured}` | Pas d’`embedder` dans la configuration. |
+| `{error, no_providers_available}` | Aucun fournisseur de la chaîne n’a pu démarrer. |
+| `{error, all_providers_failed}` | Tous les fournisseurs ont échoué sur cet appel. |
+| `{error, venv_not_found}` | Le venv Python géré est absent. |
+| `{error, {port_open_failed, enoent}}` | barrel_rerank n’a pas pu lancer Python ; passez un `python` absolu. |
+
+### Espaces et capacités
+
+| Retour | Signification et correction |
+|---|---|
+| `{error, invalid_token}` | Token inconnu ou altéré. |
+| `{error, revoked}` | Révoqué, ou token de passation après `complete`. |
+| `{error, expired}` | `expires_at` est dépassé. |
+| `{error, wrong_space}` | Un token pour un autre espace (403 en REST). |
+| `{error, forbidden}` | Le droit n’est pas accordé (read, puis write, puis admin). |
+| `{error, space_dropped}` | L’espace a été supprimé. |
+| `{error, already_accepted}`, `{error, already_completed}` | La passation a déjà été utilisée. |
+| `{error, {embedder_mismatch, _}}`, `{error, {embedder_required, _}}` | `open_space` avec un embedder différent de celui de l’espace, ou sans embedder alors que l’espace en demande un. |
+
+### Pièces jointes S3
+
+| Retour | Signification et correction |
+|---|---|
+| `{error, {att_store_open_failed, missing_bucket}}` | `att_opts` sans `bucket`. Le bucket doit exister. |
+| `{error, {conflict, Info}}` | Une écriture `create_only` ou `expected_etag` a perdu. |
+| `{error, conditional_writes_unsupported}` | Le magasin ne sait pas faire d’écritures conditionnelles. |
+| `{error, {att_sync_pending, _}}` | Une nouvelle branche copie encore ses pièces jointes. |

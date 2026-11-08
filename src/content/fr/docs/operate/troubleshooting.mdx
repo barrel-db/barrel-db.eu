@@ -1,0 +1,81 @@
+---
+translation_of: src/content/docs/operate/troubleshooting.mdx
+source_hash: "f3f3e8111b518e71"
+title: Dépannage
+description: Les symptômes que vous pouvez rencontrer avec Barrel, leur cause et leur correction, regroupés par domaine.
+---
+import Callout from '../../../../components/Callout.astro';
+
+Cette page liste les symptômes que vous pouvez rencontrer, leur cause et leur correction. Cherchez votre erreur avec le champ de recherche, ou parcourez le domaine dont elle vient. Pour la signification de chaque code d’erreur pris isolément, voir [Codes d’erreur](/fr/docs/reference/errors).
+
+## Horloges
+
+| Symptôme | Cause | Correction |
+|---|---|---|
+| Les écritures échouent avec `{error, clock_skew}` après un redémarrage | L’horloge du nœud est revenue en dessous de l’écriture la plus récente faite par la base. Les données sont conservées et l’écrivain reste actif. | Corrigez l’horloge (NTP). Les écritures reprennent dès qu’elle dépasse ce point. |
+| La réplication depuis un pair échoue avec `clock_skew` | L’horloge du pair est en avance de plus de `hlc_max_offset` millisecondes. En HTTP, toute réponse 409 du pair est signalée comme `clock_skew`. | Synchronisez les horloges. Si elles concordent, lisez la vraie réponse du pair. |
+
+`hlc_max_offset` vaut 0 par défaut, ce qui désactive la vérification du décalage. Définissez-le dans l’environnement applicatif de `barrel_docdb` uniquement si vous voulez refuser les pairs dont l’horloge dérive.
+
+## Réplication
+
+| Symptôme | Cause | Correction |
+|---|---|---|
+| `replicate` renvoie `{error, not_found}` contre un serveur | La base distante n’existe pas. La réplication n’en crée jamais. | Faites d’abord `PUT /db/:db` sur le serveur distant. |
+| `{error, {checkpoint_failed, target, not_found}}` sur un seul nœud | La base cible locale n’a pas été créée. | Appelez d’abord `barrel_docdb:create_db(Target)`. |
+| `{error, att_flush_unsupported}` | La cible ne peut pas confirmer que les pièces jointes sont sur le disque, et la durabilité est exigée par défaut. | Mettez la cible à jour, ou passez `att_durability => best_effort` en acceptant le risque en cas de coupure de courant. |
+| `{error, att_filter_unsupported}` sur une exécution filtrée | Le serveur source ne sait pas filtrer les pièces jointes. | Mettez la source à jour. |
+| `start_task` renvoie `{error, {inline_credentials, Keys}}` | Les tâches refusent les identifiants dans leur configuration. | Définissez `sync_auth`, `sync_signing` ou `sync_ssl` dans l’environnement applicatif de `barrel_docdb`. |
+| Une tâche continue affiche `running` mais rien n’arrive | Elle réessaie ; l’erreur est stockée dans `last_error`. | Lisez `barrel_rep_tasks:get_task(Id)` et corrigez `last_error`. |
+| Une tâche est `paused` avec `db_closed` | Sa base locale n’est pas ouverte. | Ouvrez la base, ou définissez `task_db_opener` pour que les tâches restaurées l’ouvrent. |
+| `{error, too_many_failed_docs}` | Plus de 1000 documents ont échoué en une exécution ; le checkpoint n’a pas avancé. | Cherchez les documents en échec dans le log et corrigez-les, puis relancez. |
+| Après une mise à jour depuis docdb 2.0, une réplique manque de documents ou contient des corps vides | Bugs de la 2.0.0. La mise à jour arrête les nouveaux dégâts mais ne répare rien. | Lancez `barrel_rep:reconcile(Healthy, Replica, #{})` une fois par réplique. |
+
+```erlang
+{ok, Report} = barrel_rep:reconcile(<<"kb">>,
+    <<"kb_replica">>, #{}),
+maps:with([docs_checked, bodies_repaired,
+           atts_resent], Report).
+```
+
+## Recherche
+
+| Symptôme | Cause | Correction |
+|---|---|---|
+| `500 bm25_not_enabled` | La recherche par mots-clés est désactivée sur une base simple. | Ouvrez avec `vectordb => #{bm25_backend => disk}`, ou utilisez le mode enregistrement, qui l’active. |
+| `500 embedder_not_configured` | Recherche texte ou hybride sans embedder. | Configurez un embedder, ou envoyez un vecteur. |
+| `500 {dimension_mismatch,768,N}` | Le magasin attend 768 dimensions par défaut. | Envoyez des vecteurs à la taille du magasin, ou ouvrez-le avec les `dimensions` du modèle. |
+| Les vecteurs n’ont pas la bonne longueur | `dimensions` n’est pas défini et vaut 768 par défaut. | Réglez `dimensions` sur la taille du modèle (384 pour bge-small). |
+| Le premier embedding local est lent ou échoue hors ligne | Les fournisseurs Python installent des paquets et téléchargent le modèle à la première utilisation. | Faites un premier passage en ligne, puis exécutez avec `HF_HUB_OFFLINE=1` et `TRANSFORMERS_OFFLINE=1`. |
+| `barrel_vectordb:update/4` a fait disparaître une entrée | Bug connu : sans embedder, ou avec un fournisseur indisponible, l’entrée est supprimée avant que le nouveau texte soit transformé en embedding. | N’appelez pas `update/4` sur un magasin sans embedder fonctionnel. |
+
+## Bases et serveur
+
+| Symptôme | Cause | Correction |
+|---|---|---|
+| `open_db` renvoie `{error, {db_failed, Reason}}` | L’écrivain a planté 3 fois en 60 secondes. Cette base reste arrêtée ; les autres ne sont pas touchées. | Cherchez `Reason` dans le log, corrigez, puis `barrel_docdb:reopen_db(Name)`. |
+| `{error, db_is_encrypted}` | Ouverte sans ses paramètres de chiffrement. | Passez la même spécification `encryption` à chaque ouverture. |
+| Une faute de frappe dans un chemin REST a créé une base vide | Chaque route `/db/:db` sauf `_sync` crée la base. | Vérifiez les noms dans votre client ; `DELETE /db/:db?purge=true` la supprime. |
+| `PUT /db/MyDb` répond `500 invalid_db_name` | Les noms de base sont en minuscules. | Utilisez des lettres minuscules, des chiffres, `_` et `-`, en commençant par une lettre ou un chiffre. |
+| Des fichiers de vecteurs apparaissent dans `./priv` | Sans `db_path`, le magasin de vecteurs va sous le répertoire de travail, même quand le serveur a un `data_dir`. | Définissez toujours `vectordb => #{db_path => ...}`. |
+| Un jeton de capacité reçoit 403 | Il est pour un autre espace, ou n’a pas le droit nécessaire. | Utilisez un jeton pour cet espace avec le droit requis. |
+| Prometheus ne trouve rien sur `/metrics` | Cette route n’existe pas. | Poussez avec l’exporter OTLP, voir [Supervision](/fr/docs/operate/monitoring). |
+| `barrel_db_documents_total` reste à 0 | Cette gauge n’est jamais renseignée. | Utilisez `barrel:info/1`, `barrel:vector_stats/1` ou `barrel_docdb:stub_stats/1`. |
+
+## Branches
+
+| Symptôme | Cause | Correction |
+|---|---|---|
+| `400 pitr_window_exceeded` | L’instant est plus ancien que l’historique conservé (30 jours par défaut). | Choisissez un instant plus récent, ou augmentez `retention_period`. |
+| `409 cannot_branch_a_branch` | La lignée n’a qu’un niveau. | Créez la branche depuis le parent. |
+
+## Utilitaires Python
+
+| Symptôme | Cause | Correction |
+|---|---|---|
+| barrel_rerank crée un venv dans un dossier nommé `undefined` | L’application règle `venv_path` sur `undefined` et le code l’utilise comme chemin. | Appelez `application:load(barrel_rerank)`, puis `application:set_env(barrel_rerank, venv_path, AbsPath)` avant de la démarrer. |
+| `barrel_rerank:start_link/1` renvoie `{error, {port_open_failed, enoent}}` | `python` n’est pas un chemin absolu et l’installation du venv a échoué. | Passez un `python` absolu, ou un `venv_path` fonctionnel. |
+
+<Callout label="Remarque">
+Si votre symptôme n’est pas ici, cherchez l’erreur dans [Codes d’erreur](/fr/docs/reference/errors), puis consultez le log du nœud pour le terme de la raison.
+</Callout>

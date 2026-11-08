@@ -1,0 +1,211 @@
+---
+translation_of: src/content/docs/reference/rest-api.mdx
+source_hash: "96b46fbffd90be02"
+title: API REST
+description: Chaque route HTTP de barrel_server avec sa méthode, son chemin, sa classe d’authentification, sa requête, sa réponse et ses erreurs, vérifiées contre la table des routes et un serveur en marche.
+---
+import Callout from '../../../../components/Callout.astro';
+
+Voici la liste de toutes les routes que sert barrel_server, avec qui peut les appeler, quoi envoyer et ce qui revient. Utilisez-la quand vous écrivez un client à la main ou vérifiez ce que fait une route ; le [guide du serveur](/fr/docs/guides/rest-server) montre les mêmes routes dans une session complète. Elle est construite à partir de la table des routes de `barrel_server_api.erl` (barrel_server 1.13.0), et les réponses d’exemple ont été capturées sur un serveur en marche.
+
+<Callout label="Pas à jour" kind="limit">
+<p>Le fichier OpenAPI [/openapi.yaml](/openapi.yaml) (version de spécification 0.2.0) s’est écarté du serveur. Ne générez pas de client à partir de lui sans vérifier cette page.</p>
+<p>Écarts connus : il n’a aucune des 16 routes de contextes et d’ensembles de travail ; il dit que `GET /` est public, mais la route demande une authentification quand `auth` est configuré ; il renvoie `{id, _rev}` depuis `PUT /db/:db/doc/:id`, le serveur renvoie `{id, ok, rev}` ; il type les éléments `where` de `/find` comme des objets, ce sont des tableaux comme `["path",["kind"],"note"]`, et il autorise des clés supplémentaires que le serveur refuse ; il omet `max_rows`, `deadline_ms`, `?conflicts=true`, les en-têtes d’écriture, et les erreurs 501, 503 et 500 sur les pièces jointes et la recherche.</p>
+</Callout>
+
+## Conventions
+
+- Les corps sont en JSON sauf mention contraire de la route. Les erreurs sont `{"error": "<code>"}` ; voir [Codes d’erreur](/fr/docs/reference/errors).
+- Chaque route `/db/:db/...` crée la base si elle n’existe pas, sauf les routes `_sync`. Les noms doivent respecter `[A-Za-z0-9_-]`, et docdb les veut aussi en minuscules.
+- Les révisions ressemblent à `000001a1b876972d00000000@w78160d59891ba7d7`. Envoyez la révision courante dans `_rev` pour mettre à jour.
+- Les écritures acceptent les en-têtes `x-barrel-actor`, `x-barrel-session` et `x-barrel-source`, enregistrés comme provenance (256 octets chacun).
+- Les curseurs du flux de changements sont des HLC en base64 sûr pour les URL, comme `AAABobh2tYwAAAAB`.
+
+### Classes d’authentification
+
+| Classe | Qui passe |
+|---|---|
+| public | Tout le monde, même quand l’authentification est configurée |
+| server | Un token bearer serveur, une requête signée ou mTLS |
+| read, write | Un identifiant serveur, ou un jeton de capacité avec ce droit quand `:db` est son espace |
+| agent | Un jeton de capacité valide ; le handler vérifie ensuite ses droits |
+| server only | Un identifiant serveur ; les jetons de capacité reçoivent 403 |
+
+Un serveur sans `auth` configuré saute toutes les vérifications. Voir [Authentification](/fr/docs/security/authentication).
+
+## Méta
+
+| Route | Auth | Requête | Réponse | Erreurs |
+|---|---|---|---|---|
+| `GET /` | server | aucune | 200 texte `barrel edge database` | 401 |
+| `GET /health` | public | aucune | 200 `{"status":"ok"}` ; ne vérifie aucune base | aucune |
+
+## Bases
+
+| Route | Auth | Requête | Réponse | Erreurs |
+|---|---|---|---|---|
+| `PUT /db/:db` | server only | facultatif `{"att_opts":{"backend":"blob"\|"s3","s3":{...}}}` | 201 `{"ok":true,"db":"demo"}` | 400 `invalid_name`, `bad_att_opts` ; 500 `invalid_db_name` |
+| `GET /db/:db` | read | aucune | 200 infos : `name`, `config`, `read_only`, `db_path`, `keyspace`, `retention_period`, `history_floor`, `att_floor`, `write_groups`, `embedder` | 400, 500 |
+| `DELETE /db/:db` | server only | `?purge=true` supprime aussi les fichiers | 200 `{"ok":true,"db":"demo"}`, plus `"purged":true` | 500 |
+
+## Documents
+
+| Route | Auth | Requête | Réponse | Erreurs |
+|---|---|---|---|---|
+| `PUT /db/:db/doc/:id` | write | le document ; `_rev` pour mettre à jour ; en-têtes de provenance | 201 `{"id","ok":true,"rev"}` | 409 `conflict`, 400 `bad_json`, `invalid_provenance` |
+| `GET /db/:db/doc/:id` | read | `?include_embedding=true`, `?conflicts=true` (ajoute `_conflicts`, `_observed`) | 200 le document avec `_rev` | 404 `not_found` |
+| `DELETE /db/:db/doc/:id` | write | en-têtes de provenance | 200 `{"id","ok":true,"rev"}` | 404 |
+| `POST /db/:db/_bulk_docs` | write | `{"docs":[...]}` | 201 `{"results":[{"id","ok","rev"} or {"error"}]}` | 400 |
+| `POST /db/:db/_bulk_get` | read | `{"ids":[...],"include_embedding"?}` | 200 `{"results":[doc or {"error":"not_found"}]}` | 400 |
+| `GET /db/:db/doc/:id/_versions` | read | aucune | 200 `{"id","versions":[{rev,status,deleted,provenance?}]}` | 404 |
+| `GET /db/:db/doc/:id/_versions/:rev` | read | aucune | 200 le corps stocké de cette version | 404 |
+| `GET /db/:db/_history` | read | `?since`, `?until` (curseurs), `?limit`, `?id` | 200 `{"history":[{id,rev,deleted,cause,hlc,provenance?}]}` | 400 `bad_since`, `bad_until`, `bad_limit` |
+
+```shell
+curl -X PUT localhost:8080/db/demo/doc/a \
+  -H 'content-type: application/json' \
+  -d '{"title":"hello world","kind":"note"}'
+```
+
+```json
+{"id":"a","ok":true,
+ "rev":"000001a1b876972d00000000@w78160d59891ba7d7"}
+```
+
+## Recherche structurée et requêtes
+
+| Route | Auth | Requête | Réponse | Erreurs |
+|---|---|---|---|---|
+| `POST /db/:db/find` | read | `where`, `limit`, `offset`, `include_docs`, `id_prefix` ; toute autre clé est refusée | 200 `{"rows":[{id,doc}],"meta":{has_more,continuation?}}` | 400 `invalid_query` + `reason` |
+| `POST /db/:db/query` | read | du BQL brut avec un content type non JSON, ou `{query, params, continuation, max_rows, deadline_ms}` | 200 `application/x-ndjson` : des lignes `{"row":...}`, puis `{"meta":{...}}` | 400 `invalid_query` + `message`, `line`, `column` ; `missing_query` ; `bad_json` ; `invalid_max_rows` ; `invalid_deadline_ms` ; `subscribe_requires_sse` |
+| `GET /db/:db/query` | read | `?q=`, `?max_rows=`, `?deadline_ms=` (pour EventSource) | comme pour POST | comme pour POST |
+
+- Les éléments `where` sont des tableaux sous la forme des filtres de réplication, comme `["path",["kind"],"note"]`.
+- `/find` renvoie `meta.continuation` quand il reste des lignes, mais le refuse en entrée ; paginez avec `offset`. Il renvoie `doc` dans chaque ligne, avec ou sans `include_docs`.
+- `max_rows` vaut 1000 au plus et `deadline_ms` 300000 au plus. La dernière ligne `meta` porte `has_more`, `bound` (`limit_reached` ou `exhausted`), `count`, `continuation`, `instance_id`, `last_seq` et, pour la recherche, `embedding`. Une erreur survenue après l’envoi de lignes arrive dans une dernière ligne `{"error":"deadline"}` ou avec une autre raison.
+- Une instruction `SUBSCRIBE` demande `Accept: text/event-stream` ou `?feed=sse`, et diffuse les événements `row`, `ready`, `change`, `error` et `ping` (toutes les 30 s).
+
+```shell
+curl -X POST localhost:8080/db/demo/query \
+  -H 'content-type: text/plain' \
+  --data-binary "SELECT id, title FROM c
+    WHERE kind = 'note' ORDER BY id LIMIT 2"
+```
+
+La réponse, capturée avec la même instruction envoyée en JSON :
+
+```json
+{"row":{"id":"a","title":"hello world"}}
+{"row":{"id":"c","title":"third"}}
+{"meta":{"count":2,"bound":"limit_reached",
+ "last_seq":"AAABobh2tYwAAAAB",
+ "instance_id":"95e252eeaff57fa0","has_more":false}}
+```
+
+## Changements
+
+| Route | Auth | Requête | Réponse | Erreurs |
+|---|---|---|---|---|
+| `GET /db/:db/changes` | read | `?since=<cursor>` ou `first` ; `?feed=sse` ou `continuous`, ou `Accept: text/event-stream` | 200 `{"changes":[{id,rev,hlc,changes:[{rev}],num_conflicts}],"last":cursor}` | aucune |
+
+Un `since` invalide n’échoue pas : le flux repart du premier changement. En SSE, une lecture ponctuelle envoie des lignes `data:` puis `event: last` ; `continuous` garde le flux ouvert avec un `ping` toutes les 30 s.
+
+## Pièces jointes
+
+| Route | Auth | Requête | Réponse | Erreurs |
+|---|---|---|---|---|
+| `PUT /db/:db/doc/:id/att/:name` | write | les octets bruts ; `content-type` ; `If-None-Match: *` pour créer seulement ; `If-Match: <etag>` | 201 `{name,length,digest,content_type,chunked}` ; le `_rev` du document ne change pas | 400 `bad_if_none_match`, 409 `conflict`, 501 `conditional_writes_unsupported` ou `attachments_disabled`, 503 `att_sync_pending` |
+| `GET /db/:db/doc/:id/att/:name` | read | aucune | 200 les octets avec leur content type stocké | 404 |
+| `DELETE /db/:db/doc/:id/att/:name` | write | aucune | 200 `{"ok":true}` | 404 |
+
+## Vecteurs et recherche
+
+| Route | Auth | Requête | Réponse | Erreurs |
+|---|---|---|---|---|
+| `POST /db/:db/vector` | write | `{id, text, metadata, vector?}` ; sans `vector`, le serveur calcule l’embedding de `text` | 201 `{"ok":true,"id"}` | 500 dimensions incorrectes ou pas d’embedder |
+| `POST /db/:db/search/vector` | read | `{"vector":[...],"k"}` ; `k` vaut 10 par défaut, 10000 au plus | 200 `{"hits":[{key,score,text,metadata}]}` | 500 `{dimension_mismatch,768,N}` |
+| `POST /db/:db/search/bm25` | read | `{"query","k"}` | 200 `{"hits":[{key,score}]}` | 500 `bm25_not_enabled` |
+| `POST /db/:db/search/hybrid` | read | `{"query","k"}` | 200 `{"hits":[...]}` | 500 `embedder_not_configured` |
+
+Une base ouverte avec les options par défaut a un magasin de vecteurs cosinus à 768 dimensions, BM25 désactivé et aucun embedder. Définissez `open_opts` dans la configuration du serveur, ou ouvrez la base en mode enregistrement, pour obtenir la recherche par mots-clés et hybride.
+
+## Timeline
+
+Toutes les routes de timeline sont server only.
+
+| Route | Requête | Réponse | Erreurs |
+|---|---|---|---|
+| `GET /db/:db/_timeline` | aucune | `{"db","branches":[...],"parent"?,"fork_hlc"?}` | 400, 500 |
+| `POST /db/:db/_timeline/branch` | `{"name", "at"?}` (un curseur du flux de changements) ou `{"name", "at_time"?}` (RFC 3339) | 201 `{"ok","branch","parent","fork_hlc"}` | 400 `invalid_name`, `bad_at`, `pitr_window_exceeded` ; 409 `already_exists`, `cannot_branch_a_branch` |
+| `POST /db/:db/_timeline/merge` | aucune ; appelez-la sur la branche | 200 `docs_read`, `docs_written`, `failed`, `last_merged`, `att_sync` | 409 `not_a_branch`, 404 `parent_not_found` |
+
+## Protocole de réplication
+
+Ces routes transportent la réplication entre les nœuds et barrel-lite. Vous ne les appelez pas à la main ; `barrel_rep` et barrel-lite le font. Chaque réponse porte un en-tête `x-barrel-hlc`. Elles ne créent jamais de base.
+
+| Route | Droit | Rôle |
+|---|---|---|
+| `GET /db/:db/_sync/info` | read | Capacités : `full_state`, `att_flush`, `att_filter`, planchers |
+| `POST /db/:db/_sync/hlc` | read | Échange d’horloges |
+| `POST /db/:db/_sync/changes` | read | `{since, limit, filter?, deleted?}` vers `{changes, last_seq}` |
+| `POST /db/:db/_sync/diff` | read | Les versions qui manquent au serveur |
+| `GET`, `PUT /db/:db/_sync/doc/:id` | read, write | Une version |
+| `GET`, `PUT /db/:db/_sync/state/:id` | read, write | L’état complet du document |
+| `PUT /db/:db/_sync/repair/:id` | write | Réparation des corps, utilisée par `reconcile` |
+| `GET`, `PUT`, `DELETE /db/:db/_sync/local/:id` | read, write, write | Checkpoints de réplication |
+| `GET /db/:db/_sync/att_changes` | read | Flux des pièces jointes |
+| `POST /db/:db/_sync/att_diff` | read | `{attachments, touch?}` |
+| `POST /db/:db/_sync/att_list` | read | `{ids}` |
+| `POST /db/:db/_sync/att_flush` | write | Rendre durables les écritures de pièces jointes |
+| `GET /db/:db/_sync/att_state/:id/:name` | read | État d’une pièce jointe |
+| `GET`, `PUT`, `DELETE /db/:db/_sync/att/:id/:name` | read, write, write | Octets de pièce jointe en flux, avec `x-barrel-digest`, `x-barrel-att-origin`, `x-barrel-att-touch` |
+
+## Espaces, sessions et passations
+
+Toutes en classe agent. Voir le [guide des espaces](/fr/docs/guides/spaces) pour les corps.
+
+| Routes | Rôle |
+|---|---|
+| `POST`, `GET /spaces` ; `GET`, `DELETE /spaces/:space` | Créer, lister, lire et supprimer des espaces |
+| `POST`, `GET /spaces/:space/grants` ; `DELETE /spaces/:space/grants/:token_id` | Émettre, lister et révoquer des jetons de capacité |
+| `POST`, `GET /spaces/:space/sessions` ; `GET`, `DELETE .../sessions/:sid` ; `POST .../sessions/:sid/touch` | Sessions avec un TTL glissant |
+| `POST`, `GET .../sessions/:sid/messages` | Messages de session |
+| `PUT`, `GET .../sessions/:sid/data/:key` | Données de session |
+| `POST`, `GET /handoffs` ; `POST /handoffs/accept` ; `POST /handoffs/complete` | Passations |
+
+```shell
+curl -X POST localhost:8080/spaces \
+  -H 'content-type: application/json' \
+  -d '{"label":"team"}'
+```
+
+```json
+{"ok":true,"space":"sp_..."}
+```
+
+## Contextes et ensembles de travail
+
+Voir le [guide des contextes](/fr/docs/guides/contexts) pour les corps.
+
+| Route | Auth |
+|---|---|
+| `POST /contexts` (201) | server only |
+| `GET /contexts` (`?prefix=`, `?unlisted=true`, `?q=`) | agent |
+| `GET /contexts/_capabilities` | agent |
+| `GET /contexts/_offline` | agent |
+| `PUT /contexts/_offline` | server only |
+| `POST /contexts/_query` | agent ; chaque membre local est vérifié comme `POST /db/:db/query` |
+| `GET /contexts/:id` | agent |
+| `DELETE /contexts/:id` | server only |
+| `POST`, `GET /worksets` | server only |
+| `GET`, `DELETE /worksets/:ws` | server only |
+| `POST /worksets/:ws/members` | server only |
+| `DELETE /worksets/:ws/members/:ctx` | server only |
+| `POST /worksets/:ws/_materialize` | server only |
+| `POST /worksets/:ws/_import` | server only |
+
+Il n’y a pas de route pour mettre à jour une fiche de contexte.
+
+## MCP
+
+`POST`, `GET`, `DELETE` et `OPTIONS /mcp` servent le Model Context Protocol en HTTP streamable. Le point d’accès n’accepte que des tokens bearer. Les outils sont listés dans [Outils MCP](/fr/docs/reference/mcp-tools).
