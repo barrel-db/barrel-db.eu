@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/reference/configuration.md
-source_hash: "2d257b4aa654b6c7"
+source_hash: "d5be8c8e5b467ba3"
 title: Configuration
 description: Les options que vous passez à l’ouverture d’une base, et les clés d’environnement de chaque application Barrel avec leurs valeurs par défaut.
 ---
@@ -47,11 +47,18 @@ Ce sont les options de `barrel_docdb:create_db/2`. `encryption`, `read_only`, `c
 | `conflict_resolver` | aucun | Un résolveur pour les versions concurrentes |
 | `max_conflict_versions` | `8` | Versions concurrentes conservées par document |
 | `max_group`, `write_chunk` | `256`, `16` | Tailles du group commit |
-| `prune_depth` | `1000` | Profondeur de l’historique des versions |
-| `compaction_interval` | `3600000` ms | Vérification de compaction en arrière-plan |
-| `compaction_size_threshold` | 1 Gio | Taille qui déclenche la compaction |
+| `stats_interval` | `60000` ms | Fréquence de mise à jour des gauges de taille et de compaction ; `0` la désactive |
 | `att_upload_timeout` | `3600` s | Durée maximale pendant laquelle un envoi de pièce jointe peut rester ouvert |
-| `store_opts` | `#{}` | Options RocksDB |
+| `store_opts` | `#{}` | Options RocksDB, voir ci-dessous |
+
+Deux clés de `store_opts` arrivent avec barrel_docdb 2.2.0 :
+
+| Clé | Défaut | Rôle |
+|---|---|---|
+| `min_tombstones_for_range_conversion` | `64` | Une suite d’au moins ce nombre de suppressions devient une seule suppression de plage au flush, et les lectures la sautent d’un coup. `0` la désactive. |
+| `use_direct_io_for_compaction_reads` | `false` | Les compactions lisent en I/O directe et laissent le cache de pages à vos lectures. Acceptée aussi dans `att_opts`. Demande un système de fichiers qui gère l’I/O directe (pas tmpfs). |
+
+`prune_depth`, `compaction_interval` et `compaction_size_threshold` n’ont plus d’effet depuis la 2.2.0 ; une base qui les reçoit écrit un avertissement dans le journal.
 
 ### Magasin de vecteurs (`vectordb`)
 

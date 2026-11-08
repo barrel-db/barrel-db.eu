@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/operate/troubleshooting.mdx
-source_hash: "f3f3e8111b518e71"
+source_hash: "6c471c182fd5698c"
 title: Dépannage
 description: Les symptômes que vous pouvez rencontrer avec Barrel, leur cause et leur correction, regroupés par domaine.
 ---
@@ -61,6 +61,8 @@ maps:with([docs_checked, bodies_repaired,
 | Un jeton de capacité reçoit 403 | Il est pour un autre espace, ou n’a pas le droit nécessaire. | Utilisez un jeton pour cet espace avec le droit requis. |
 | Prometheus ne trouve rien sur `/metrics` | Cette route n’existe pas. | Poussez avec l’exporter OTLP, voir [Supervision](/fr/docs/operate/monitoring). |
 | `barrel_db_documents_total` reste à 0 | Cette gauge n’est jamais renseignée. | Utilisez `barrel:info/1`, `barrel:vector_stats/1` ou `barrel_docdb:stub_stats/1`. |
+| `barrel_db_pending_compaction_bytes` ne cesse de grandir | La compaction ne suit plus les écritures. | Augmentez `max_background_jobs` dans `store_opts`, ou étalez les écritures. |
+| Un avertissement dit que `compaction_interval` ou `prune_depth` n’a plus d’effet | Ces options ont été retirées dans barrel_docdb 2.2.0. | Retirez-les de votre configuration. |
 
 ## Branches
 

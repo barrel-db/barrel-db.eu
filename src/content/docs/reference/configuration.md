@@ -45,11 +45,18 @@ These are the options of `barrel_docdb:create_db/2`. `encryption`, `read_only`, 
 | `conflict_resolver` | none | A resolver for concurrent versions |
 | `max_conflict_versions` | `8` | Concurrent versions kept per document |
 | `max_group`, `write_chunk` | `256`, `16` | Group commit sizes |
-| `prune_depth` | `1000` | Version history depth |
-| `compaction_interval` | `3600000` ms | Background compaction check |
-| `compaction_size_threshold` | 1 GiB | Size that triggers compaction |
+| `stats_interval` | `60000` ms | How often the size and compaction gauges refresh; `0` turns it off |
 | `att_upload_timeout` | `3600` s | Longest an attachment upload may stay open |
-| `store_opts` | `#{}` | RocksDB options |
+| `store_opts` | `#{}` | RocksDB options, see below |
+
+Two `store_opts` keys come with barrel_docdb 2.2.0:
+
+| Key | Default | Meaning |
+|---|---|---|
+| `min_tombstones_for_range_conversion` | `64` | A run of this many deletes becomes one range delete at flush, so reads skip it at once. `0` turns it off. |
+| `use_direct_io_for_compaction_reads` | `false` | Compactions read with direct I/O and leave the page cache to your reads. Also accepted in `att_opts`. Needs a file system with direct I/O (not tmpfs). |
+
+`prune_depth`, `compaction_interval` and `compaction_size_threshold` have no effect since 2.2.0; a database given them logs a warning.
 
 ### Vector store (`vectordb`)
 
