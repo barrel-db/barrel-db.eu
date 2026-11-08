@@ -2,6 +2,7 @@
 import type { APIRoute } from 'astro';
 import { docsOrder } from '../data/docs-nav';
 import { allDocs } from '../lib/docs';
+import { mdxToMarkdown } from '../lib/mdx-to-md';
 import { mcpToolsMarkdown } from './docs/reference/mcp-tools.md';
 
 export const GET: APIRoute = async () => {
@@ -14,7 +15,7 @@ export const GET: APIRoute = async () => {
       continue;
     }
     if (!e) continue;
-    parts.push(`\n---\n\n# ${e.data.title}\n\nURL: https://barrel-db.eu/docs/${i.slug}\n\n${(e.body ?? '').trim()}\n`);
+    parts.push(`\n---\n\n# ${e.data.title}\n\nURL: https://barrel-db.eu/docs/${i.slug}\n\n${mdxToMarkdown(e.body ?? '').trim()}\n`);
   }
   return new Response(parts.join(''), { headers: { 'content-type': 'text/plain; charset=utf-8' } });
 };

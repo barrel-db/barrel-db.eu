@@ -1,6 +1,7 @@
 // Every docs page as plain Markdown, for agents and for "View as Markdown".
 import type { APIRoute } from 'astro';
 import { allDocs } from '../../lib/docs';
+import { mdxToMarkdown } from '../../lib/mdx-to-md';
 
 export async function getStaticPaths() {
   const entries = await allDocs();
@@ -11,5 +12,5 @@ export const GET: APIRoute = ({ props }) => {
   const { entry } = props as any;
   const d = entry.data;
   const head = `# ${d.title}\n\n${d.source ? `Source: https://github.com/barrel-db/barrel/blob/main/${d.source}\n\n` : ''}`;
-  return new Response(head + (entry.body ?? '').trim() + '\n', { headers: { 'content-type': 'text/markdown; charset=utf-8' } });
+  return new Response(head + mdxToMarkdown(entry.body ?? '').trim() + '\n', { headers: { 'content-type': 'text/markdown; charset=utf-8' } });
 };
