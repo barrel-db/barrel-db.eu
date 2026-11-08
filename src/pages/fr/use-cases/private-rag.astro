@@ -1,0 +1,136 @@
+---
+// translation_of: src/pages/use-cases/private-rag.astro source_hash: e9e8d2c372d07de3
+import UseCasePage from '../../../components/usecase/UseCasePage.astro';
+import type { ArchColumn, Step } from '../../../components/usecase/types';
+
+const arch: ArchColumn[] = [
+  { who: 'Votre application', boxes: [
+    { name: 'Ingestion', note: 'écrit les documents' },
+    { name: 'Réponse', note: 'prompt et appel au LLM : votre code' } ] },
+  { who: 'Barrel, sur votre nœud', boxes: [
+    { name: 'kb, mode enregistrement', note: 'les documents avec leurs vecteurs', rec: true },
+    { name: 'Recherche hybride', note: 'vecteurs et BM25, fusionnés' } ] },
+  { who: 'Modèles sur vos machines', boxes: [
+    { name: 'Embedder', note: 'barrel_embed : Ollama ou local' },
+    { name: 'Reclasseur', note: 'barrel_rerank, optionnel' } ] },
+];
+
+const steps: Step[] = [
+  { title: 'Lancer un modèle d’embeddings en local',
+    body: 'Ollama garde le modèle sur votre machine. Le fournisseur `local` (sentence-transformers dans un virtualenv Python géré) fonctionne aussi ; il installe les paquets et télécharge le modèle à la première utilisation.',
+    status: 'optional',
+    label: 'Shell', lang: 'bash',
+    code: `ollama pull nomic-embed-text
+ollama serve` },
+  { title: 'Ouvrir une base en mode enregistrement',
+    body: 'La politique nomme les champs à vectoriser et les champs à renvoyer comme métadonnées. Avec `mode => sync`, la vectorisation a lieu avant le retour de l’écriture. Fixez `db_path` pour que le stockage vectoriel ne se retrouve pas dans le répertoire courant.',
+    label: 'Erlang', lang: 'erlang',
+    code: `{ok, _} = application:ensure_all_started(barrel),
+{ok, Db} = barrel:open(kb, #{
+    embedding => #{
+        fields => [<<"title">>, <<"body">>],
+        mode => sync,
+        dimensions => 768,
+        embedder => {ollama,
+            #{model => <<"nomic-embed-text">>}},
+        metadata_fields => [<<"product">>, <<"status">>]},
+    vectordb => #{db_path => "data/kb_vec"}}).` },
+  { title: 'Écrire vos documents',
+    body: 'Écrivez des documents ordinaires. Une mise à jour revectorise le document ; une suppression retire le vecteur.',
+    label: 'Erlang', lang: 'erlang',
+    code: `barrel:put_docs(Db, [
+  #{<<"id">> => <<"kb:101">>,
+    <<"title">> => <<"Reset a forgotten password">>,
+    <<"body">> => <<"Open the login page and choose "
+                    "forgot password to receive a link">>,
+    <<"product">> => <<"portal">>,
+    <<"status">> => <<"published">>},
+  #{<<"id">> => <<"kb:201">>,
+    <<"title">> => <<"Export invoices">>,
+    <<"body">> => <<"Billing admins can export invoices "
+                    "as CSV from the reports tab">>,
+    <<"product">> => <<"billing">>,
+    <<"status">> => <<"published">>}]).` },
+  { title: 'Chercher par le sens et par mots-clés à la fois',
+    body: '`hybrid_top_k` lance une recherche vectorielle et une recherche BM25, puis fusionne les deux classements. Un `WHERE` sur les métadonnées filtre dans la même requête.',
+    label: 'Erlang', lang: 'erlang',
+    code: `{ok, Rows, _} = barrel:query(Db,
+    <<"SELECT h.id, h._score, title "
+      "FROM hybrid_top_k('login reset', k => 3) AS h "
+      "WHERE h.status = 'published'">>).`,
+    outLabel: 'D’après une exécution enregistrée avec un embedder de test hors ligne à la place d’Ollama (abrégé)',
+    out: `{ok,[#{<<"_score">> => 0.01639344262295082,
+        <<"id">> => <<"kb:101">>,
+        <<"title">> => <<"Reset a forgotten password">>},
+      #{<<"_score">> => 0.008408206049715483,
+        <<"id">> => <<"kb:201">>,
+        <<"title">> => <<"Export invoices">>}], ...}` },
+  { title: 'Reclasser les meilleurs résultats',
+    body: 'Un cross-encoder lit la requête et chaque passage ensemble, puis les réordonne. Il renvoie des paires `{Index, Score}`, la meilleure en premier, où l’index désigne une position dans la liste que vous avez passée. Fixez `venv_path` après le chargement de l’application et avant son démarrage.',
+    status: 'optional',
+    label: 'Erlang', lang: 'erlang',
+    code: `ok = application:load(barrel_rerank),
+ok = application:set_env(barrel_rerank, venv_path,
+                         "/opt/barrel/venv"),
+{ok, _} = application:ensure_all_started(barrel_rerank),
+{ok, R} = barrel_rerank:start_link(#{}),
+{ok, Hits} = barrel:search_hybrid(Db, Question, #{k => 20}),
+Texts = [maps:get(text, H) || H <- Hits],
+{ok, Ranked} = barrel_rerank:rerank(R, Question, Texts,
+                                    #{top_k => 5}).`,
+    outLabel: 'Forme du résultat, d’après une exécution enregistrée sur trois passages',
+    out: `{ok,[{0,9.581769943237305},
+     {2,-5.255744457244873},
+     {1,-9.625640869140625}]}` },
+  { title: 'Passer les passages à votre modèle',
+    body: 'Cette étape relève de votre application, pas de Barrel. Barrel n’appelle jamais de LLM. Si le modèle que vous appelez est une API dans le cloud, c’est ici que vos données quittent votre réseau.',
+    label: 'Erlang, votre code', lang: 'erlang',
+    code: `Context = [lists:nth(I + 1, Texts) || {I, _} <- Ranked],
+Prompt = my_app:build_prompt(Question, Context),
+%% your LLM client, local or remote
+{ok, Answer} = my_llm:complete(Prompt).` },
+];
+---
+
+<UseCasePage
+  title="Recherche privée dans vos connaissances"
+  lead="Cherchez dans vos propres documents par le sens et par mots-clés, sur des machines que vous exploitez, puis donnez les meilleurs passages au modèle de votre choix. Barrel stocke, vectorise et cherche ; votre application appelle le modèle."
+  sub="Construit avec le mode enregistrement de barrel, barrel_embed et, si vous le souhaitez, barrel_rerank. Un seul nœud Erlang, pas de base vectorielle à part."
+  problem="La recherche documentaire implique d’ordinaire un stockage de documents, une base vectorielle et un service d’embeddings que votre code garde synchronisés, et vos documents partent chez un tiers pour être vectorisés. Chaque mise à jour risque de laisser un vecteur qui ne correspond plus à son texte."
+  arch={arch}
+  edges={['put_docs, query', 'vectorise à l’écriture et à la requête']}
+  archNote="Le document et son vecteur vivent sous un même identifiant : une mise à jour ou une suppression change les deux. La vectorisation et le reclassement tournent sur des modèles que vous hébergez. Le seul appel qui sort de Barrel vers un LLM est celui que fait votre application à l’étape 6."
+  stepsIntro="Six étapes dans une application Erlang. Les étapes 1 et 5 demandent une installation hors de Barrel."
+  steps={steps}
+  barrel={[
+    'Stocke les documents et garde un vecteur par document, synchronisé avec lui',
+    'Appelle le fournisseur d’embeddings que vous configurez, à l’écriture et à chaque requête',
+    'Répond aux requêtes vectorielles, par mots-clés (BM25) et hybrides, avec filtres sur les métadonnées',
+    'Fait tourner le processus du modèle de reclassement quand vous utilisez barrel_rerank',
+  ]}
+  app={[
+    'Choisit et fait tourner le modèle d’embeddings',
+    'Découpe les grands documents en passages avant de les écrire',
+    'Construit le prompt et appelle le LLM',
+    'Décide quels passages un utilisateur peut voir avant qu’ils n’arrivent dans le prompt',
+  ]}
+  limits={[
+    'Les scores hybrides viennent de la fusion des rangs (environ 0.016 pour une première place) ; comparez-les uniquement au sein d’une même requête.',
+    'Les scores du reclasseur sont des logits bruts du cross-encoder, pas des valeurs entre 0 et 1.',
+    'Changer la politique ne s’applique qu’aux nouvelles écritures ; les documents existants ne sont pas revectorisés.',
+    'Les index vectoriels ne se répliquent pas ; chaque nœud reconstruit le sien à partir des documents.',
+    'Passez `dimensions` selon votre modèle ; la taille propre au fournisseur n’est pas relue.',
+    'Les contextes peuvent interroger plusieurs bases de connaissances à la fois, mais ne fusionnent pas les scores BM25 ou hybrides entre elles.',
+  ]}
+  links={[
+    { label: 'Exemple : RAG privé', href: '/examples/private-rag' },
+    { label: 'Exemple : interroger plusieurs jeux de données en BQL', href: '/examples/contexts-bql' },
+    { label: 'Mode enregistrement', href: '/docs/guides/record-mode' },
+    { label: 'Vectorielle, mots-clés et hybride', href: '/docs/search/hybrid' },
+    { label: 'Reclassement', href: '/docs/search/reranking' },
+    { label: 'Choisir un fournisseur d’embeddings', href: '/docs/search/embedding-providers' },
+    { label: 'barrel_embed', href: '/product/embed' },
+    { label: 'barrel_rerank', href: '/product/rerank' },
+    { label: 'Recherche', href: '/product/search' },
+  ]}
+/>

@@ -1,15 +1,27 @@
 ---
+import { langOf } from '../i18n';
 // The record drawn as one isometric block: document on top, attachments left, vector right.
 // Same geometry as the logo. `id` labels the record; `animate` assembles it once on load.
 interface Props { id?: string; animate?: boolean; caption?: string; /** Labels without database terms. */ plain?: boolean; }
 const { id = 'kb-142', animate = false, caption, plain = false } = Astro.props;
-const L = plain
-  ? { doc: ['the text', 'every version kept'], att: ['its files', 'pictures, PDFs, recordings'], vec: ['its meaning', 'what makes it findable'] }
-  : { doc: ['document', 'JSON, every version kept'], att: ['attachments', 'files, stored in chunks'], vec: ['vector', 'embedded from its fields'] };
+const lang = langOf(Astro.url);
+const labels = {
+  en: {
+    plain: { doc: ['the text', 'every version kept'], att: ['its files', 'pictures, PDFs, recordings'], vec: ['its meaning', 'what makes it findable'] },
+    tech: { doc: ['document', 'JSON, every version kept'], att: ['attachments', 'files, stored in chunks'], vec: ['vector', 'embedded from its fields'] },
+    aria: (id: string, d: string, a: string, v: string) => `One record, ${id}, drawn as a block of three faces: ${d} on top, ${a} on the left, ${v} on the right.`,
+  },
+  fr: {
+    plain: { doc: ['le texte', 'chaque version gardée'], att: ['ses fichiers', 'images, PDF, enregistrements'], vec: ['son sens', 'ce qui permet de le retrouver'] },
+    tech: { doc: ['document', 'JSON, versions gardées'], att: ['pièces jointes', 'fichiers, stockés par blocs'], vec: ['vecteur', 'calculé à partir des champs'] },
+    aria: (id: string, d: string, a: string, v: string) => `Un enregistrement, ${id}, dessiné comme un bloc à trois faces\u00a0: ${d} en haut, ${a} à gauche, ${v} à droite.`,
+  },
+}[lang];
+const L = plain ? labels.plain : labels.tech;
 ---
 
 <figure class:list={['rec', { 'rec--anim': animate }]}>
-  <svg viewBox="0 0 460 420" role="img" aria-label={`One record, ${id}, drawn as a block of three faces: ${L.doc[0]} on top, ${L.att[0]} on the left, ${L.vec[0]} on the right.`}>
+  <svg viewBox="0 0 460 420" role="img" aria-label={labels.aria(id, L.doc[0], L.att[0], L.vec[0])}>
     <g class="f-doc">
       <polygon points="230,66 340,130 230,194 120,130" class="fill-coral stroke-ink" />
       <line x1="213.5" y1="94.8" x2="290.5" y2="139.6" class="stroke-on" />

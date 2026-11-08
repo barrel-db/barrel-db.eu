@@ -93,12 +93,14 @@ const other = counterpart(path);
 <style>
   .hdr { border-bottom: 1px solid var(--rule); background: var(--paper); position: relative; z-index: 40; }
   .hdr-row { display: flex; align-items: center; justify-content: space-between; height: 68px; gap: 24px; }
-  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font-weight: 650; font-stretch: 112%; font-size: 19px; }
+  .brand { flex: none; display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font-weight: 650; font-stretch: 112%; font-size: 19px; }
   .hdr-nav { display: flex; gap: 28px; align-items: center; }
-  .hdr-link { color: var(--ink-2); text-decoration: none; font: inherit; background: none; border: 0; padding: 4px 0; cursor: pointer; border-bottom: 2px solid transparent; }
+  @media (max-width: 1480px) { .hdr-nav { gap: 22px; } .search-label { display: none; } }
+  .hdr-link { white-space: nowrap; color: var(--ink-2); text-decoration: none; font: inherit; background: none; border: 0; padding: 4px 0; cursor: pointer; border-bottom: 2px solid transparent; }
   .hdr-link:hover, .hdr-link.is-active, .hdr-product[aria-expanded='true'] { color: var(--ink); }
   .hdr-link.is-active, .hdr-product[aria-expanded='true'] { border-bottom-color: var(--coral); }
   .hdr-tools { display: flex; align-items: center; gap: 10px; }
+  .search-btn svg { flex: none; }
   .search-btn { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--card); color: var(--ink-2); font: inherit; font-size: 15px; cursor: pointer; }
   .search-btn kbd { font-size: 12px; border: 1px solid var(--rule); border-radius: 4px; padding: 0 5px; }
   .lang { height: 40px; min-width: 40px; display: flex; align-items: center; justify-content: center; padding: 0 10px; border: 1px solid var(--rule); border-radius: var(--radius); text-decoration: none; color: var(--ink-2); font-size: 14px; font-weight: 600; }
@@ -127,7 +129,7 @@ const other = counterpart(path);
   .mobile a { display: block; padding: 10px 0; color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--rule); }
   .mobile .mega-title { margin-top: 16px; }
 
-  @media (max-width: 980px) {
+  @media (max-width: 1080px) {
     .hdr-nav, .gh, .search-label, .search-btn kbd { display: none; }
     .menu-btn { display: block; }
     .mega-grid { grid-template-columns: minmax(0, 1fr); }

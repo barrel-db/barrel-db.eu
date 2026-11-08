@@ -1,0 +1,188 @@
+---
+translation_of: src/content/docs/search/hybrid.mdx
+source_hash: "537813fd35fa5ed6"
+title: Vectorielle, par mot-clé et hybride
+description: Recherchez des documents par leur sens, par mot-clé avec BM25, ou les deux fusionnés, depuis Erlang, BQL, REST et MCP, et connaissez les limites des filtres et des scores.
+---
+import CodeBlock from '../../../../components/CodeBlock.astro';
+import CodeTabs from '../../../../components/CodeTabs.astro';
+import Callout from '../../../../components/Callout.astro';
+
+Barrel recherche dans une base de trois façons : par similarité
+vectorielle (le sens), par BM25 (les mots-clés), et en hybride, qui lance
+les deux et fusionne les deux classements. Les mêmes recherches
+s’exécutent comme appels Erlang, comme fonctions de table BQL jointes à
+vos documents, en REST et comme outil MCP. Servez-vous de cette page
+quand vous mettez en place la recherche sur vos documents et devez
+choisir un mode, filtrer les résultats ou lire les scores.
+
+## Préparer une base interrogeable
+
+Le mode enregistrement est le chemin simple : Barrel calcule l’embedding
+des champs que vous nommez à chaque écriture, et active un index BM25 sur
+disque.
+
+```erlang
+{ok, Db} = barrel:open(<<"runbooks">>, #{
+    embedding => #{
+        fields => [<<"title">>, <<"body">>],
+        mode => sync,
+        embedder => {ollama,
+                     #{model => <<"nomic-embed-text">>}},
+        dimensions => 768,
+        metadata_fields => [<<"team">>]},
+    vectordb => #{db_path => "data/vectors/runbooks"}}),
+barrel:put_docs(Db, [
+  #{<<"id">> => <<"rb:pg">>, <<"team">> => <<"data">>,
+    <<"title">> => <<"Postgres failover">>,
+    <<"body">> => <<"Promote the replica when the primary "
+                    "stops answering.">>},
+  #{<<"id">> => <<"rb:redis">>, <<"team">> => <<"data">>,
+    <<"title">> => <<"Redis eviction">>,
+    <<"body">> => <<"Set maxmemory-policy to allkeys-lru "
+                    "when memory is full.">>},
+  #{<<"id">> => <<"rb:tls">>, <<"team">> => <<"edge">>,
+    <<"title">> => <<"Renew TLS certificates">>,
+    <<"body">> => <<"Run the renewal job before the "
+                    "certificate expires.">>}]).
+```
+
+`metadata_fields` choisit ce que les résultats de recherche portent comme
+`metadata`. Dans une base simple, ajoutez les vecteurs vous-même avec
+`vector_add` et définissez `bm25_backend => memory | disk` dans les
+options `vectordb` ; sinon BM25 est désactivé.
+
+## Rechercher par le sens
+
+```erlang
+barrel:search(Db, <<"the database is down">>,
+              #{k => 2, include_text => false}).
+```
+
+<CodeBlock output label="Sortie d’une exécution sur barrel 1.12.0 avec Ollama nomic-embed-text" code={`{ok,[#{metadata => #{<<"team">> => <<"data">>},
+       key => <<"rb:pg">>,score => 0.5337445455915225},
+     #{metadata => #{<<"team">> => <<"data">>},
+       key => <<"rb:redis">>,score => 0.4549723605217504}]}`} />
+
+Le score est la similarité cosinus. Passez un vecteur que vous avez
+calculé avec `search_vector/3` au lieu d’un texte.
+
+## Rechercher par mot-clé
+
+```erlang
+barrel:search_bm25(Db, <<"replica">>, #{k => 2}).
+```
+
+<CodeBlock output label="Sortie d’une exécution sur barrel 1.12.0" code={`{ok,[{<<"rb:pg">>,1.0187153614971578}]}`} />
+
+BM25 renvoie des paires `{Id, Score}`, seulement pour les documents qui
+contiennent les termes. Le score est la valeur BM25 brute, sans borne.
+
+## Hybride
+
+```erlang
+barrel:search_hybrid(Db, <<"cache is out of memory">>,
+                     #{k => 2, include_text => false}).
+```
+
+<CodeBlock output label="Sortie d’une exécution sur barrel 1.12.0 avec Ollama nomic-embed-text" code={`{ok,[#{metadata => #{<<"team">> => <<"data">>},
+       key => <<"rb:redis">>,score => 0.01639344262295082},
+     #{metadata => #{<<"team">> => <<"data">>},
+       key => <<"rb:pg">>,score => 0.008536214242239805}]}`} />
+
+La fusion par défaut est la reciprocal rank fusion (`rrf_k` 60) : le
+score vient des rangs, donc 1/61 veut dire premier dans une liste. Pour
+une somme pondérée des deux scores, passez `fusion => linear` avec
+`bm25_weight` et `vector_weight` (0.5 chacun par défaut).
+
+## Rechercher depuis BQL
+
+Les fonctions de table lancent la recherche et joignent chaque résultat à
+son document : `WHERE` et la projection voient donc tous les champs.
+
+```erlang
+barrel:query(Db,
+  <<"SELECT h.id, h._score, title "
+    "FROM hybrid_top_k($q, k => 3) AS h "
+    "WHERE h.team = 'data'">>,
+  #{params => #{<<"q">> => <<"primary database failed">>}}).
+```
+
+<CodeBlock output label="Sortie d’une exécution sur barrel 1.12.0 avec Ollama nomic-embed-text" code={`{ok,[#{<<"_score">> => 0.01639344262295082,
+       <<"id">> => <<"rb:pg">>,
+       <<"title">> => <<"Postgres failover">>},
+     #{<<"_score">> => 0.008536214242239805,
+       <<"id">> => <<"rb:redis">>,
+       <<"title">> => <<"Redis eviction">>}],
+    #{count => 2, ...}}`} />
+
+| Fonction | `_score` |
+|----------|----------|
+| `vector_top_k(text, k => N)` | 1 moins la distance ; `_distance` est aussi sélectionnable |
+| `bm25_top_k(text, k => N)` | le score BM25 |
+| `hybrid_top_k(text, k => N)` | le score fusionné |
+
+`k` vaut 10 par défaut. Une fonction de table récupère 3 fois `k`
+candidats (1000 au plus), applique `WHERE`, et renvoie jusqu’à `k`
+lignes. Les fonctions de table demandent l’API `barrel` :
+`barrel_docdb:query/2` les refuse.
+
+## En REST et MCP
+
+<CodeTabs tabs={[
+  { label: 'Erlang', lang: 'erlang', code: `barrel:search_hybrid(Db, <<"replica lag">>, #{k => 5}).` },
+  { label: 'REST', lang: 'shell', code: `curl -X POST localhost:8080/db/runbooks/search/hybrid \\
+  -H 'content-type: application/json' \\
+  -d '{"query":"replica lag","k":5}'` },
+  { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":5,"method":"tools/call",
+ "params":{"name":"search","arguments":{
+   "db":"runbooks","mode":"hybrid",
+   "query":"replica lag","k":5}}}` },
+]} />
+
+Les routes REST sont `/search/vector` (avec `"vector"`), `/search/bm25`
+et `/search/hybrid` ; elles répondent `{"hits":[...]}`. Une base que le
+serveur ouvre avec les options par défaut a un stockage vectoriel de
+dimension 768, aucun embedder et pas de BM25 : `/search/bm25` répond 500
+`bm25_not_enabled` et `/search/hybrid` 500 `embedder_not_configured`
+tant que vous ne définissez pas `open_opts` ou une politique d’embedding.
+
+## Filtres
+
+`filter => fun(Metadata) -> boolean() end` ne garde que les résultats
+dont les métadonnées passent le test. Il s’exécute sur les résultats que
+renvoie l’index : il peut donc renvoyer moins de `k` résultats, voire
+aucun.
+
+```erlang
+barrel:search(Db, <<"the database is down">>,
+  #{k => 2, include_text => false,
+    filter => fun(M) ->
+                  maps:get(<<"team">>, M, undefined)
+                      =:= <<"edge">>
+              end}).
+```
+
+<CodeBlock output label="Sortie d’une exécution sur barrel 1.12.0 avec Ollama nomic-embed-text" code={`{ok,[]}`} />
+
+`rb:tls` est le seul document `edge`, et il n’est pas dans les deux
+premiers. Filtrez plutôt dans le `WHERE` de BQL, qui récupère d’abord 3
+fois `k`, ou augmentez `k`.
+
+<Callout kind="limit" label="Limite">
+La valeur par défaut de `k` dépend du point d’entrée : 5 pour `search/3`
+et `search_vector/3`, 10 pour `search_bm25/3`, `search_hybrid/3` et les
+fonctions de table BQL. Les résultats hybrides et BM25 ne sont jamais
+fusionnés entre contextes.
+</Callout>
+
+## Notes
+
+- Une recherche a besoin que l’embedder soit joignable : les requêtes
+  textuelles calculent d’abord l’embedding de la requête.
+- Les vecteurs ne sont pas répliqués. Chaque copie en mode
+  enregistrement calcule les embeddings de ses propres documents.
+- Pour les chaînes exactes, les identifiants et les codes d’erreur, voir
+  [Sous-chaîne et regex](/fr/docs/search/substring-regex). Pour réordonner
+  les résultats avec un cross-encoder, voir
+  [Reranking](/fr/docs/search/reranking).

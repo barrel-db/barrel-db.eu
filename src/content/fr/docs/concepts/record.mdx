@@ -1,0 +1,116 @@
+---
+translation_of: src/content/docs/concepts/record.mdx
+source_hash: "9dce749f1c6d6e07"
+title: L’enregistrement
+description: Ce que Barrel stocke sous un même id (un document JSON, ses pièces jointes et son vecteur) et quels champs Barrel ajoute ou réserve.
+---
+import CodeBlock from '../../../../components/CodeBlock.astro';
+import RecordFigure from '../../../../components/RecordFigure.astro';
+
+Un enregistrement est tout ce que Barrel garde sous un même id : un
+document JSON, les fichiers qui y sont attachés et, en mode
+enregistrement, le vecteur qui le représente. Ils sont lus, écrits,
+répliqués et supprimés par cet id. Lisez cette page pour savoir à quoi
+ressemble un document à l’entrée et à la sortie, quels champs Barrel
+ajoute, et ce qui accompagne l’enregistrement.
+
+<RecordFigure id="kb-142" caption="Un seul id : le document en haut, les pièces jointes à gauche, le vecteur à droite." />
+
+## Les trois parties
+
+| Partie | Ce que c’est | Versionné | Répliqué |
+|------|------------|-----------|------------|
+| Document | Un objet JSON avec un `id` | oui, chaque écriture est une version | oui |
+| Pièces jointes | Des blobs binaires nommés, par id de document et par nom | non, la dernière écriture l’emporte selon son horodatage | oui, sur leur propre flux |
+| Vecteur | L’embedding des champs que vous choisissez | suit le document | non, chaque copie le reconstruit |
+
+## Le document
+
+Vous écrivez une map avec un `id`. Chaque chemin qu’elle contient est
+indexé : vous pouvez donc interroger n’importe quel champ sans déclarer
+d’index.
+
+<CodeBlock label="Shell Erlang" code={`barrel:put_doc(Db, #{<<"id">> => <<"kb-142">>,
+    <<"title">> => <<"Reset a locked account">>,
+    <<"_note">> => <<"dropped">>}),
+barrel:get_doc(Db, <<"kb-142">>).`} />
+
+<CodeBlock output label="Sortie d’une exécution sur barrel 1.12.0" code={`{ok,#{<<"_rev">> =>
+          <<"000001a1ba45b14e00000000@wddc4e1c028733ad0">>,
+      <<"id">> => <<"kb-142">>,
+      <<"title">> => <<"Reset a locked account">>}}`} />
+
+- `_rev` est le jeton de version que Barrel ajoute à la lecture.
+  Renvoyez-le pour mettre le document à jour ; un `_rev` absent ou
+  périmé renvoie `{error, conflict}`. Voir [Versions, conflits,
+  convergence](/fr/docs/concepts/versions).
+- Les champs de premier niveau qui commencent par `_` sont réservés.
+  Barrel écarte ceux que vous envoyez (`_note` ci-dessus) et ne les
+  indexe jamais.
+- Une suppression écrit une version qui marque le document comme
+  supprimé. Une lecture renvoie alors `{error, not_found}`, et le vecteur
+  disparaît aussi.
+
+## Champs que Barrel ajoute à la demande
+
+| Champ | Option de lecture | Ce qu’il contient |
+|-------|-------------|---------------|
+| `_rev` | toujours | Le jeton de la version gagnante |
+| `_conflicts` | `conflicts => true` | Les autres versions concurrentes |
+| `_observed` | `conflicts => true` | Chaque version que la lecture a montrée, à renvoyer lors d’une résolution |
+| `_embedding` | `include_embedding => true` | `vector` et `source` (`computed` quand Barrel a calculé l’embedding) |
+
+## Les pièces jointes
+
+Les pièces jointes appartiennent à un id de document. En écrire une ne
+change pas le `_rev` du document.
+
+<CodeBlock label="Shell Erlang" code={`barrel:put_attachment(Db, <<"kb-142">>, <<"steps.md">>,
+                      <<"1. Open the console">>),
+barrel:list_attachments(Db, <<"kb-142">>).`} />
+
+<CodeBlock output label="Sortie d’une exécution sur barrel 1.12.0, empreinte raccourcie" code={`{ok,#{name => <<"steps.md">>,length => 19,
+      digest => <<"sha256-dd490eb840644ed69f89e41c5...">>,
+      content_type => <<"application/octet-stream">>,
+      chunked => false}}
+[<<"steps.md">>]`} />
+
+Voir [Pièces jointes](/fr/docs/store/attachments).
+
+## Le vecteur
+
+En [mode enregistrement](/fr/docs/guides/record-mode), vous donnez à la
+base une politique d’embedding : quels champs traiter, avec quel
+fournisseur, à quelle dimension. Barrel calcule l’embedding de ces champs
+à chaque écriture et supprime le vecteur à la suppression. Les résultats
+de recherche lisent leur texte et leurs métadonnées dans le document
+courant.
+
+Dans une base simple, vous gérez les vecteurs vous-même avec
+`vector_add`, sous le même id ou un autre. Le document et son vecteur
+sont alors deux écritures séparées.
+
+## Ce qu’une écriture peut porter d’autre
+
+| Option d’écriture | Effet |
+|--------------|--------|
+| `provenance => #{actor, session, source}` | Stockée avec la version, affichée dans l’historique |
+| `expires_at => UnixMs` | Le document disparaît après cette date |
+| `sync => true` | Attend que l’écriture atteigne le disque |
+
+<CodeBlock label="Shell Erlang" code={`barrel:put_doc(Db, Doc,
+    #{provenance => #{actor => <<"agent-7">>,
+                      session => <<"ses_42">>}}),
+barrel:doc_versions(Db, <<"kb-142">>).`} />
+
+<CodeBlock output label="Sortie d’une exécution sur barrel 1.12.0" code={`{ok,[#{status => current,
+       version =>
+           <<"000001a1ba45b14e00000000@wddc4e1c028733ad0">>,
+       deleted => false,
+       provenance => #{session => <<"ses_42">>,
+                       actor => <<"agent-7">>},
+       vv => #{<<"wddc4e1c028733ad0">> =>
+                   {timestamp,1794126491982,0}}}]}`} />
+
+La provenance n’est pas répliquée. Voir [Audit et
+provenance](/fr/docs/guides/audit-provenance).

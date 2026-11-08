@@ -1,0 +1,173 @@
+---
+translation_of: src/content/docs/concepts/versions.mdx
+source_hash: "da2aa269c0dd31bb"
+title: Versions, conflits, convergence
+description: Comment Barrel nomme chaque écriture par un jeton de version, garde les modifications concurrentes comme versions sœurs, choisit le même gagnant sur chaque copie, et vous laisse résoudre avec _observed.
+---
+import CodeBlock from '../../../../components/CodeBlock.astro';
+import Callout from '../../../../components/Callout.astro';
+
+Chaque écriture dans un document Barrel crée une version, nommée par un
+jeton construit à partir d’une horloge logique hybride (HLC) et de l’id
+de la base qui l’a écrite. Les copies d’une base échangent leurs
+versions, gardent côte à côte les modifications concurrentes comme
+versions sœurs, et affichent toutes le même gagnant. Lisez cette page
+avant de répliquer, ou quand un document revient avec `_conflicts`.
+
+## Le jeton de version
+
+```text
+000001a1ba45b14e00000000@wddc4e1c028733ad0
+|--------------||------| |---------------|
+ wall clock ms   counter   writer id
+```
+
+- Les 24 premiers chiffres hexadécimaux sont la HLC de l’écriture : 16
+  pour l’horloge murale en millisecondes, 8 pour un compteur logique qui
+  ordonne les écritures d’une même milliseconde. L’hexadécimal est à
+  largeur fixe : comparer les jetons comme des chaînes les compare donc
+  par horloge.
+- Après `@` vient l’id d’écrivain de la base qui a fait l’écriture. Une
+  base reçoit un nouvel id d’écrivain à chaque ouverture.
+- `_rev` à la lecture est le jeton de la version gagnante.
+
+## L’horloge
+
+Une HLC suit l’horloge murale et ne recule jamais. Chaque échange de
+réplication porte l’horloge du pair (`x-barrel-hlc` sur HTTP) et chaque
+côté l’intègre à la sienne : une écriture faite après la réception d’une
+version reçoit donc toujours un jeton plus grand.
+
+- Si l’horloge du nœud recule sous la HLC la plus haute qu’une base a
+  écrite, les écritures échouent avec `{error, clock_skew}` jusqu’à ce que
+  l’horloge rattrape son retard. Les données sont conservées.
+- Un pair dont l’horloge est en avance de plus de `hlc_max_offset` ms est
+  refusé avec `clock_skew` (409 sur HTTP). La valeur par défaut, 0,
+  désactive cette vérification.
+
+## Ordre causal et versions sœurs
+
+Chaque version porte un vecteur de versions : pour chaque écrivain, la
+dernière HLC qu’il avait vue. Barrel compare les vecteurs pour distinguer
+deux cas :
+
+- **Une version a vu l’autre.** La plus récente remplace la plus
+  ancienne. C’est le cas normal : vous lisez `_rev`, modifiez le corps,
+  écrivez.
+- **Aucune n’a vu l’autre.** Deux copies ont modifié le même document
+  avant de se synchroniser. Les deux versions sont gardées comme versions
+  sœurs. Rien n’est perdu.
+
+## Le gagnant
+
+Parmi les versions sœurs, le gagnant est la plus grande version : la HLC
+la plus haute d’abord, l’id d’écrivain pour départager une égalité. La
+règle ne dépend que de l’ensemble des versions : chaque copie qui détient
+les mêmes versions sœurs affiche donc le même gagnant, quel que soit
+l’ordre des synchronisations. Afficher un gagnant ne supprime rien ; les
+autres restent dans `_conflicts` jusqu’à ce que vous les résolviez.
+
+Deux copies, `laptop` et `phone`, modifient `task:1` puis se
+synchronisent dans les deux sens :
+
+<CodeBlock label="Shell Erlang" code={`{ok, L} = barrel_docdb:get_doc(<<"laptop">>, <<"task:1">>),
+{ok, P} = barrel_docdb:get_doc(<<"phone">>, <<"task:1">>),
+barrel_docdb:put_doc(<<"laptop">>,
+                     L#{<<"state">> => <<"done">>}),
+barrel_docdb:put_doc(<<"phone">>,
+                     P#{<<"state">> => <<"blocked">>}),
+barrel_rep:replicate(<<"laptop">>, <<"phone">>),
+barrel_rep:replicate(<<"phone">>, <<"laptop">>),
+barrel_docdb:get_doc(<<"laptop">>, <<"task:1">>,
+                     #{conflicts => true}).`} />
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_docdb 2.1.0" code={`{ok,#{<<"_conflicts">> =>
+          [<<"000001a1ba40490400000000@w0db1f003b3487bf5">>],
+      <<"_observed">> =>
+          [<<"000001a1ba40490400000001@w6e689af2f29a3bb0">>,
+           <<"000001a1ba40490400000000@w0db1f003b3487bf5">>],
+      <<"_rev">> =>
+          <<"000001a1ba40490400000001@w6e689af2f29a3bb0">>,
+      <<"id">> => <<"task:1">>,<<"state">> => <<"blocked">>}}`} />
+
+Lire `phone` renvoie le même `_rev`, les mêmes `_conflicts` et le même
+corps. Les deux écritures sont tombées dans la même milliseconde : c’est
+le compteur logique qui a tranché.
+
+## Résoudre avec `_observed`
+
+`_observed` liste chaque version que votre lecture a montrée.
+Renvoyez-le et la résolution remplace exactement ces versions. Une
+version arrivée après votre lecture n’en fait pas partie : elle reste
+donc un conflit. Vous n’écrasez jamais une modification que vous n’avez
+pas vue.
+
+<CodeBlock label="Shell Erlang" code={`{ok, #{<<"_observed">> := Seen}} =
+    barrel_docdb:get_doc(<<"laptop">>, <<"task:1">>,
+                         #{conflicts => true}),
+barrel_docdb:resolve_conflict(<<"laptop">>, <<"task:1">>, Seen,
+    {merge, #{<<"id">> => <<"task:1">>,
+              <<"state">> => <<"blocked">>,
+              <<"note">> => <<"done once unblocked">>}}).`} />
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_docdb 2.1.0" code={`{ok,#{id => <<"task:1">>,
+      rev => <<"000001a1ba40490700000000@w0db1f003b3487bf5">>,
+      conflicts_resolved => 1}}`} />
+
+Après la réplication suivante, `phone` a la résolution et aucun conflit :
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_docdb 2.1.0" code={`> barrel_docdb:get_conflicts(<<"phone">>, <<"task:1">>).
+{ok,[]}`} />
+
+La résolution peut être :
+
+| Résolution | Effet |
+|------------|--------|
+| `{choose, Token}` | Garder le corps de cette version et son indicateur de suppression |
+| `{merge, Body}` | Écrire un nouveau corps |
+| `delete` | Résoudre par une suppression |
+
+Vous pouvez aussi écrire le document avec `_observed` dans le corps (en
+REST, lisez avec `?conflicts=true` et renvoyez `_observed`). Une écriture
+avec seulement `_rev` remplace le gagnant et laisse les conflits en
+place. Un `_rev` qui n’est pas le gagnant renvoie `{error, conflict}`.
+
+## Résoudre automatiquement
+
+Donnez à la base un `conflict_resolver`. Il s’exécute chaque fois qu’une
+écriture ou une synchronisation laisse plus d’une version, et renvoie
+`{choose, Token}`, `{merge, Body}`, `delete` ou `keep`.
+
+```erlang
+Resolver = fun(Versions) ->
+    %% Versions: [#{token, deleted, body}], triées par jeton
+    Live = [B || #{deleted := false, body := B} <- Versions],
+    case Live of
+        [] -> delete;
+        _ -> {merge, lists:max(Live)}
+    end
+end,
+{ok, _} = barrel_docdb:create_db(<<"db">>,
+    #{conflict_resolver => Resolver}).
+```
+
+Rendez-le pur et indépendant de l’ordre dans lequel il voit les versions.
+Ainsi, chaque copie écrit la même résolution et le conflit se termine par
+une seule version partout. Un plantage compte comme `keep`. Passez-le de
+nouveau à chaque ouverture : il n’est pas stocké.
+
+<Callout kind="limit" label="Limite">
+Deux copies qui résolvent le même conflit au même moment laissent leurs
+deux résolutions en conflit ; résolvez encore une fois. Au-delà de
+`max_conflict_versions` (8 par défaut), les versions sœurs les plus
+anciennes sont évincées ; le gagnant reste toujours.
+</Callout>
+
+## Pourquoi cela converge
+
+Chaque copie finit avec le même ensemble de versions, le même gagnant, le
+même corps et le même indicateur de suppression, quel que soit l’ordre
+des écritures et des synchronisations. La livraison est idempotente :
+envoyer une version deux fois est sans danger. Le modèle et ses
+propriétés vérifiées se trouvent dans [Preuves de
+réplication](/fr/docs/architecture/replication-proofs).

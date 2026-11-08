@@ -2,6 +2,7 @@
 // Mechanism diagram: columns of labeled boxes, with the call between each pair.
 // Coral boxes hold the data (the record); plain boxes are callers and services.
 import type { ArchColumn } from './types';
+import { langOf } from '../../i18n';
 
 interface Props {
   columns: ArchColumn[];
@@ -11,6 +12,7 @@ interface Props {
 }
 
 const { columns, edges = [], label } = Astro.props;
+const then = langOf(Astro.url) === 'fr' ? 'puis' : 'then';
 ---
 
 <figure class="arch" aria-label={label}>
@@ -29,7 +31,7 @@ const { columns, edges = [], label } = Astro.props;
           </ul>
         </li>
         {i < columns.length - 1 && (
-          <li class="arch-edge" aria-label={edges[i] ? `then: ${edges[i]}` : 'then'}>
+          <li class="arch-edge" aria-label={edges[i] ? (then === 'puis' ? `puis : ${edges[i]}` : `then: ${edges[i]}`) : then}>
             <span class="arch-line" aria-hidden="true"></span>
             {edges[i] && <span class="arch-edge-t">{edges[i]}</span>}
           </li>

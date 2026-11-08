@@ -1,0 +1,73 @@
+---
+// translation_of: src/pages/opensource.astro source_hash: 6bb23f0910e04178
+import Base from '../../layouts/Base.astro';
+import { components, componentGroups, GITHUB } from '../../data/fr/site';
+import { localize } from '../../i18n';
+
+const L = (p: string) => localize(p, 'fr');
+---
+
+<Base title="Open source" description="Chaque bibliothèque de Barrel est open source sous licence Apache 2.0. Utilisez la base de données entière ou seulement la partie dont vous avez besoin.">
+  <section class="wrap os-top">
+    <h1 class="display os-h1">Open source, entièrement</h1>
+    <p class="lead">Chaque bibliothèque de Barrel est publiée sous licence Apache 2.0. Utilisez-la à des fins commerciales, modifiez-la, faites-la tourner en privé. Enki Bridge vit du support et de l’infrastructure gérée, pas de l’accès au code.</p>
+    <p class="os-cta"><a class="button button--primary" href={GITHUB}>Le code sur GitHub</a><a class="button" href={L('/docs/contribute/build-and-test')}>Le compiler et le tester</a></p>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Les bibliothèques</h2>
+      <p class="section-intro">Un seul dépôt, une base de données faite de bibliothèques que vous pouvez aussi utiliser séparément.</p>
+      <div class="os-groups">
+        {componentGroups.map((g) => (
+          <div>
+            <h3 class="os-g">{g}</h3>
+            {components.filter((c) => c.group === g).map((c) => (
+              <p class="os-lib">
+                <a href={L(`/product/${c.slug}`)}><code>{c.name}</code></a> <span class="small muted">{c.version}</span><br />
+                <span class="muted small">{c.body}</span>
+              </p>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap os-two">
+      <div>
+        <h2 class="h3">La licence</h2>
+        <p>La licence Apache 2.0 vous permet d’utiliser Barrel à des fins commerciales, de le modifier et de le redistribuer, de l’utiliser en privé, et vous accorde une licence sur les brevets. Vous conservez les mentions de licence et de droit d’auteur et vous indiquez vos modifications.</p>
+        <p><a href={`${GITHUB}/blob/main/LICENSE`}>Lire la licence</a></p>
+      </div>
+      <div>
+        <h2 class="h3">Contribuer</h2>
+        <ul>
+          <li>Corrigez ou complétez la documentation : chaque page a un lien « Modifier cette page ».</li>
+          <li>Discutez d’une fonctionnalité ou signalez un bug dans les <a href={`${GITHUB}/issues`}>tickets GitHub</a>.</li>
+          <li>Envoyez une pull request : <a href={L('/docs/contribute/build-and-test')}>compiler et tester</a> explique les suites de tests qu’elle doit passer.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h3">Support et hébergement géré</h2>
+      <p class="section-intro">Le code est gratuit. Si vous avez besoin de délais de réponse garantis, d’aide pour un déploiement, ou de quelqu’un pour le faire tourner à votre place, Enki Bridge propose <a href={L('/commercial')}>un support commercial et Barrel géré dans l’UE</a>.</p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .os-top { padding-top: 72px; padding-bottom: 56px; }
+  .os-h1 { font-size: clamp(2.5rem, 5vw, 3.75rem); margin-bottom: 20px; }
+  .os-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+  .os-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 40px; }
+  .os-g { font-size: 17px; border-bottom: 1px solid var(--rule); padding-bottom: 6px; margin: 0 0 8px; }
+  .os-lib { margin: 0 0 12px; }
+  .os-lib code { background: none; padding: 0; font-size: 15px; }
+  .os-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; }
+  @media (max-width: 820px) { .os-groups, .os-two { grid-template-columns: minmax(0, 1fr); } }
+</style>

@@ -1,0 +1,114 @@
+---
+// translation_of: src/pages/use-cases/write-on-every-node.astro source_hash: 2f2a910a45bcdcfd
+import UseCasePage from '../../../components/usecase/UseCasePage.astro';
+import TwoSiteDemo from '../../../components/demos/TwoSiteDemo.astro';
+import type { ArchColumn, Step } from '../../../components/usecase/types';
+
+const arch: ArchColumn[] = [
+  { who: 'Site A (votre release Erlang)', boxes: [
+    { name: 'Votre application', note: 'lit et écrit en local' },
+    { name: 'inventory', note: 'barrel_docdb, sur disque local', rec: true } ] },
+  { who: 'Hub (barrel_server)', boxes: [
+    { name: '/db/inventory/_sync', note: 'le canal de réplication' },
+    { name: 'inventory', note: 'la copie centrale', rec: true } ] },
+  { who: 'Site B et les autres', boxes: [
+    { name: 'Votre application', note: 'lit et écrit en local' },
+    { name: 'inventory', note: 'sa propre copie', rec: true } ] },
+];
+
+const steps: Step[] = [
+  { title: 'Lancer un hub',
+    body: 'Un barrel_server avec un jeton partagé par les nœuds. La réplication ne crée pas de base : créez-la d’abord.',
+    tabs: [
+      { label: 'Erlang', lang: 'erlang', code: `%% sys.config of the hub
+[{barrel_server, [
+   {http_port, 8080},
+   {auth, #{tokens => [<<"sync-token">>]}}
+ ]}].` },
+      { label: 'REST', lang: 'bash', code: `curl -X PUT hub.example:8080/db/inventory \\
+  -H 'authorization: Bearer sync-token'` } ] },
+  { title: 'Intégrer Barrel sur chaque nœud',
+    body: 'Créez la même base en local. Donnez le jeton par origine dans l’environnement de l’application, pour que la configuration des tâches ne contienne aucun secret.',
+    label: 'Erlang, sur chaque nœud', lang: 'erlang',
+    code: `{ok, _} = application:ensure_all_started(barrel_docdb),
+{ok, _} = barrel_docdb:create_db(<<"inventory">>),
+application:set_env(barrel_docdb, sync_auth,
+    #{<<"http://hub.example:8080">> => <<"sync-token">>}).` },
+  { title: 'Lancer une tâche continue dans les deux sens',
+    body: 'Les tâches survivent aux redémarrages. Une source locale réveille la tâche à chaque changement ; le côté distant est interrogé périodiquement, 500 ms après des données et jusqu’à 15 s quand il est inactif.',
+    label: 'Erlang, sur chaque nœud', lang: 'erlang',
+    code: `{ok, TaskId} = barrel_rep_tasks:start_task(#{
+    source    => <<"inventory">>,
+    target    => <<"http://hub.example:8080/db/inventory">>,
+    mode      => continuous,
+    direction => both}).` },
+  { title: 'Écrire en local, connecté ou non',
+    body: 'Les écritures n’attendent jamais le hub. Quand le lien tombe, la tâche espace ses tentatives de 1 s à 60 s, enregistre `last_error` et reste `running` ; elle rattrape son retard depuis son point de reprise quand le lien revient.',
+    label: 'Erlang', lang: 'erlang',
+    code: `{ok, _} = barrel_docdb:put_doc(<<"inventory">>,
+    #{<<"id">> => <<"sku:42">>, <<"qty">> => 7}),
+{ok, #{status := running}} =
+    barrel_rep_tasks:get_task(TaskId).` },
+  { title: 'Résoudre les conflits qui vous importent',
+    body: 'Deux sites qui modifient le même document pendant qu’ils sont séparés gardent chacun leur modification : chaque copie choisit le même gagnant et garde l’autre comme conflit. Résolvez-le en écrivant une version qui remplace les versions observées. Un `conflict_resolver` passé à `create_db` peut le faire pour vous.',
+    label: 'Erlang', lang: 'erlang',
+    code: `{ok, #{<<"_observed">> := Seen}} =
+    barrel_docdb:get_doc(<<"inventory">>, <<"sku:42">>,
+                         #{conflicts => true}),
+{ok, _} = barrel_docdb:resolve_conflict(<<"inventory">>,
+    <<"sku:42">>, Seen, {merge, #{<<"qty">> => 5}}).`,
+    outLabel: 'Forme du résultat, d’après une exécution enregistrée (autres noms)',
+    out: `{ok,#{id => <<"task:1">>,
+      rev => <<"000001a1b879d59500000000@w7bcb971434496877">>,
+      conflicts_resolved => 1}}` },
+];
+---
+
+<UseCasePage
+  title="Écrire sur chaque nœud"
+  lead="Faites tourner une copie de la base sur chaque site, appareil ou région. Chaque copie accepte les écritures pendant que son lien est coupé, et la réplication ramène toutes les copies au même état sans perdre une modification."
+  sub="Active-active : ni leader, ni base primaire. Construit avec les tâches de réplication de barrel_docdb et le canal `_sync` servi par barrel_server."
+  problem="Sites, appareils et régions ont chacun besoin de leurs données en local, plus une copie centrale, sur des liens qui vont et viennent. Une base primaire fait attendre le réseau à chaque site, et une synchronisation où la dernière écriture gagne perd en silence un côté de chaque modification concurrente."
+  arch={arch}
+  edges={['tâche continue, dans les deux sens', 'tâche continue, dans les deux sens']}
+  archNote="Chaque copie accepte les écritures. Chaque nœud fait tourner une tâche vers le hub ; le hub transmet les changements aux autres nœuds. Filtres et canaux décident des documents que reçoit un nœud."
+  stepsIntro="Cinq étapes : un hub, puis les mêmes quelques appels sur chaque nœud."
+  steps={steps}
+  barrel={[
+    'Ordonne les écritures avec une horloge logique hybride et des vecteurs de versions',
+    'Choisit le même gagnant sur chaque copie, et garde les modifications concurrentes comme conflits',
+    'Enregistre un point de reprise à chaque lot et reprend après une panne',
+    'Déplace les pièces jointes avec leurs documents, adressées par leur contenu',
+    'Filtre à la source par chemin, requête ou canal',
+  ]}
+  app={[
+    'Choisit la topologie : un hub, plusieurs, ou un maillage',
+    'Décide quelles données vont où, avec des filtres ou des canaux',
+    'Remet à chaque nœud son jeton via `sync_auth`',
+    'Résout les conflits, ou définit un `conflict_resolver`',
+    'Surveille l’état des tâches et `last_error`',
+  ]}
+  limits={[
+    'Les index vectoriels ne sont pas répliqués. En mode enregistrement, les documents voyagent et chaque nœud reconstruit son index.',
+    'La provenance (acteur, session, source) reste sur le nœud qui a reçu l’écriture ; les arrivées sont marquées comme répliquées.',
+    'Un document qui quitte un canal reste sur les répliques qui l’ont déjà.',
+    'La façade `barrel` n’expose pas la réplication : appelez `barrel_rep_tasks` sur le nom docdb.',
+    'Un pair dont l’horloge est trop en avance est refusé avec `clock_skew`. Les listeners HTTP/3 ne vérifient pas encore les certificats clients.',
+  ]}
+  links={[
+    { label: 'Comment fonctionne la réplication et comment elle est testée', href: '/product/replication' },
+    { label: 'Guide de synchronisation', href: '/docs/guides/synchronization' },
+    { label: 'Conflits', href: '/docs/replicate/conflicts' },
+    { label: 'Versions, conflicts, convergence', href: '/docs/concepts/versions' },
+    { label: 'Authentification', href: '/docs/security/authentication' },
+    { label: 'barrel_docdb', href: '/product/docdb' },
+    { label: 'Exemple : intégré dans une application Erlang', href: '/examples/embedded-erlang' },
+    { label: 'Cas d’usage : applications hors ligne d’abord', href: '/use-cases/offline-first' },
+  ]}
+>
+  <div slot="after-arch" class="demo-wrap"><TwoSiteDemo /></div>
+</UseCasePage>
+
+<style>
+  .demo-wrap { margin-top: 32px; }
+</style>

@@ -1,0 +1,184 @@
+---
+// translation_of: src/pages/index.astro source_hash: 144519209fa99203
+import Base from '../../layouts/Base.astro';
+import RecordFigure from '../../components/RecordFigure.astro';
+import TwoSiteDemo from '../../components/demos/TwoSiteDemo.astro';
+import UseCaseTabs from '../../components/UseCaseTabs.astro';
+import CodeTabs from '../../components/CodeTabs.astro';
+import { localize } from '../../i18n';
+
+const L = (p: string) => localize(p, 'fr');
+
+const places = [
+  { title: 'Intégrée', when: 'Dans votre release Erlang/OTP. Aucun aller-retour réseau, aucun service séparé à faire tourner.', href: '/docs/start/quickstart-embedded', layers: [
+    { name: 'Votre application', note: 'agents, workers, processus OTP', edge: 'appelle l’API barrel' },
+    { name: 'barrel', note: 'enregistrements, recherche, branches', edge: 'stocke dans', rec: true },
+    { name: 'RocksDB sur disque local', note: 'documents, pièces jointes, vecteurs' } ] },
+  { title: 'Serveur', when: 'Un nœud partagé par de nombreux clients : les agents en MCP, les services en REST, les autres nœuds par le protocole de synchronisation.', href: '/docs/start/quickstart-server', layers: [
+    { name: 'Agents et services', note: 'clients MCP, curl, votre backend', edge: 'MCP sur /mcp, REST sur /db' },
+    { name: 'barrel_server', note: 'authentification, jetons de capacité, espaces', edge: 'appelle' },
+    { name: 'barrel', note: 'la même base intégrée', rec: true } ] },
+  { title: 'Navigateur', when: 'Une copie locale dans une application web. Lectures et écritures continuent de fonctionner hors ligne.', href: '/docs/start/quickstart-browser', layers: [
+    { name: 'Votre application web', note: 'TypeScript', edge: 'lit et écrit en local' },
+    { name: 'barrel-lite', note: 'stocke dans le navigateur (OPFS)', edge: 'se synchronise via /db/:db/_sync', rec: true },
+    { name: 'barrel_server', note: 'la copie avec laquelle il se synchronise' } ] },
+];
+
+const status = [
+  { title: 'Fonctionne aujourd’hui', kind: 'today', items: ['Documents, pièces jointes, chaque version gardée', 'Recherche vectorielle, par mots-clés (BM25) et hybride', 'Recherche par sous-chaîne et par expression régulière', 'Requêtes BQL et abonnements en direct', 'Réplication active-active : nœuds et navigateurs', 'Branches et restauration à un instant donné', 'Chiffrement au repos', 'Espaces, sessions, jetons de capacité, passations', 'Serveur REST et MCP'] },
+  { title: 'Optionnel, à installer', kind: 'optional', items: ['Embeddings locaux (virtualenv Python)', 'Fournisseurs d’embeddings dans le cloud (clé d’API)', 'Reclassement (virtualenv Python)', 'Moteur d’index FAISS (FAISS du système)', 'Stockage des pièces jointes compatible S3'] },
+  { title: 'Prévu', kind: 'planned', items: ['Requêtes fédérées en direct sur plusieurs contextes', 'Fusion des classements et reclassement sur plusieurs contextes', 'Inscription des contextes dans un catalogue'] },
+];
+
+const repPoints = [
+  ['La même réponse partout.', 'Chaque copie choisit la même version gagnante pour chaque document.'],
+  ['Aucune modification perdue.', 'Les modifications concurrentes restent des conflits jusqu’à ce que vous les résolviez.'],
+  ['Reprend après une panne.', 'Points de reprise à chaque lot ; testé avec des arrêts brutaux et des coupures de courant.'],
+  ['Documents et fichiers.', 'Les pièces jointes voyagent avec leurs documents.'],
+];
+
+const quick = [
+  { label: 'Erlang', lang: 'erlang', code: `{ok, _} = application:ensure_all_started(barrel),
+{ok, Db} = barrel:open(<<"kb">>, #{vectordb => none}),
+{ok, _} = barrel:put_doc(Db, #{<<"id">> => <<"kb-142">>,
+    <<"title">> => <<"Reset a locked account">>}),
+{ok, Rows, _} = barrel:query(Db,
+    <<"SELECT id, title FROM kb WHERE id = 'kb-142'">>).` },
+  { label: 'REST', lang: 'bash', code: `curl -X PUT localhost:8080/db/kb
+curl -X PUT localhost:8080/db/kb/doc/kb-142 \\
+  -H 'content-type: application/json' \\
+  -d '{"title":"Reset a locked account"}'
+curl -X POST localhost:8080/db/kb/query \\
+  -H 'content-type: text/plain' \\
+  --data-binary "SELECT id, title FROM kb WHERE id = 'kb-142'"` },
+  { label: 'TypeScript', lang: 'ts', code: `import { Database } from "barrel-lite";
+
+const db = await Database.open("kb", {
+  remote: { url: "http://localhost:8080", db: "kb", token },
+});
+await db.put({ id: "kb-142", title: "Reset a locked account" });
+await db.sync();   // envoie les écritures locales, puis récupère` },
+];
+---
+
+<Base title="Barrel">
+  <section class="wrap hero">
+    <div class="hero-text">
+      <h1 class="display">Une base de données pour les agents.</h1>
+      <p class="lead">Donnez à chaque agent, chaque client et chaque tâche sa propre base. Barrel garde le document, les fichiers qui y sont attachés et son vecteur sous un même identifiant. Vous y cherchez par le sens et par mots-clés, vous gardez chaque version, vous créez des branches pour faire des essais, vous la synchronisez avec d’autres nœuds et des navigateurs, et vous la partagez avec des jetons de capacité.</p>
+      <p class="muted hero-sub">Chaque copie accepte les écritures, sur un serveur, en périphérie ou dans un navigateur, et la réplication les remet d’accord sans perdre une seule modification. Intégrée en Erlang, servie en REST et en MCP. Open source, Apache 2.0.</p>
+      <p class="hero-cta">
+        <a class="button button--primary" href={L('/docs/start/quickstart-embedded')}>Commencer</a>
+        <a class="button" href={L('/what-is-barrel')}>Qu’est-ce que Barrel ?</a>
+      </p>
+      <div class="hero-install">
+        <p class="small muted">Ajoutez-le à votre rebar.config</p>
+        <code>{'{deps, [{barrel, "~> 1.12"}]}.'}</code>
+      </div>
+    </div>
+    <RecordFigure animate caption="Un identifiant les relie. Le vecteur suit chaque modification et chaque suppression du document, et la réplication emporte le document et ses fichiers vers les autres copies." />
+  </section>
+
+  <section class="section">
+    <div class="wrap rep">
+      <div>
+        <h2 class="h2">Chaque copie accepte les écritures</h2>
+        <p>Réplication active-active : ni leader, ni copie principale. Sites, nœuds en périphérie et navigateurs continuent chacun de travailler quand ils sont séparés, puis convergent.</p>
+        <ul class="rep-points">
+          {repPoints.map(([t, b]) => <li><strong>{t}</strong> <span class="muted">{b}</span></li>)}
+        </ul>
+        <a href={L('/product/replication')}><strong>Comment fonctionne la réplication, et comment elle est testée</strong></a>
+      </div>
+      <TwoSiteDemo />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Ce que vous construisez avec</h2>
+      <p class="section-intro">Huit architectures pour lesquelles Barrel est conçu. Chacune a sa page et un exemple à exécuter.</p>
+      <UseCaseTabs />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Trois endroits où la faire tourner</h2>
+      <p class="section-intro">Le même enregistrement, le même protocole de réplication. Choisissez où vit la base ; les agents qui l’utilisent ne changent pas.</p>
+      <div class="three">
+        {places.map((p) => (
+          <div>
+            <h3 class="pl-t"><a href={L(p.href)}>{p.title}</a></h3>
+            <p class="muted small pl-w">{p.when}</p>
+            <ol class="stack" aria-label={`Couches du mode ${p.title.toLowerCase()}, de haut en bas`}>
+              {p.layers.map((l) => (
+                <li>
+                  <div class:list={['layer', { 'is-rec': l.rec }]}><strong>{l.name}</strong><span>{l.note}</span></div>
+                  {l.edge && <p class="edge">{l.edge}</p>}
+                </li>
+              ))}
+            </ol>
+          </div>
+        ))}
+      </div>
+      <p class="small"><a href={L('/docs/start/choose-deployment')}>Choisir un déploiement</a></p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Essayez en deux minutes</h2>
+      <p class="section-intro">Le même enregistrement, écrit et lu de trois façons.</p>
+      <div class="quick"><CodeTabs tabs={quick} /></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Ce qui fonctionne aujourd’hui, et ce qui ne fonctionne pas encore</h2>
+      <p class="section-intro">Chaque page porte les trois mêmes marques. Tout ce qui n’est pas marqué fonctionne aujourd’hui et est couvert par les suites de tests.</p>
+      <div class="status">
+        {status.map((g) => (
+          <div>
+            <h3 class={`mark mark--${g.kind} st-h`}>{g.title}</h3>
+            <ul>{g.items.map((i) => <li>{i}</li>)}</ul>
+          </div>
+        ))}
+      </div>
+      <p class="small"><a href={L('/product/status')}>État de chaque fonctionnalité</a></p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .hero { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 48px; align-items: center; padding-top: 88px; padding-bottom: 72px; }
+  .hero .display { margin-bottom: 28px; }
+  .hero .lead { margin: 0 0 20px; }
+  .hero-sub { max-width: 36em; margin: 0 0 32px; }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 32px; }
+  .hero-install { border-top: 1px solid var(--rule); padding-top: 16px; max-width: 34em; }
+  .hero-install p { margin: 0 0 6px; }
+  .hero-install code { background: none; padding: 0; font-size: 15px; }
+  .rep { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 48px; align-items: start; }
+  .rep-points { list-style: none; padding: 0; margin: 0 0 24px; }
+  .rep-points li { padding: 10px 0; border-top: 1px solid var(--rule); }
+  .three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; margin-bottom: 20px; }
+  .pl-t { font-size: var(--step-1); margin: 0 0 4px; }
+  .pl-t a { color: var(--ink); text-decoration: none; }
+  .pl-w { min-height: 4.8em; margin: 0 0 16px; }
+  .stack { list-style: none; margin: 0; padding: 0; }
+  .layer { padding: 12px 14px; border: 1.5px solid var(--ink); border-radius: 6px; background: var(--card); display: flex; flex-direction: column; }
+  .layer span { font-size: 13px; color: var(--ink-2); }
+  .layer.is-rec { background: var(--coral); border-color: var(--coral); color: var(--on-coral); }
+  .layer.is-rec span { color: var(--on-coral); opacity: 0.9; }
+  .edge { margin: 0 0 0 16px; padding: 6px 0 6px 12px; border-left: 1.5px solid var(--teal); font-size: 13px; color: var(--teal); }
+  .quick { max-width: 820px; }
+  .status { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px; margin-bottom: 16px; }
+  .st-h { font-size: 19px; margin: 0 0 12px; }
+  .status ul { list-style: none; margin: 0; padding: 0; }
+  .status li { padding: 8px 0; border-top: 1px solid var(--rule); font-size: 15px; }
+  @media (max-width: 900px) {
+    .hero, .rep, .three, .status { grid-template-columns: minmax(0, 1fr); }
+    .hero { padding-top: 48px; }
+  }
+</style>

@@ -3,28 +3,79 @@
 // follows barrel's rules: a write replaces only the versions it read, concurrent
 // versions are kept as conflicts, every copy picks the same winner (highest clock,
 // then writer id), and a resolution replaces the versions it observed.
+import { langOf } from '../../i18n';
+const lang = langOf(Astro.url);
+const S = {
+  en: {
+    title: 'Two sites edit the same task',
+    intro: 'Cut the link, edit on both sides, sync. Neither edit is lost: both copies pick the same winner and keep the other edit as a conflict until someone resolves it.',
+    reset: 'Start over',
+    callH: 'The call behind your last step',
+    callNote: "Demonstration in your browser, following barrel's rules",
+    // Used by the script; {site} is replaced.
+    linkUp: 'Link up',
+    linkDown: 'Link down: both sites keep taking writes',
+    cut: 'Cut the link',
+    restore: 'Restore the link',
+    sync: 'Sync both ways',
+    winner: 'winner',
+    conflict: 'conflict',
+    by: 'by {site}',
+    edit: 'Edit on {site}',
+    resolve: 'Resolve here',
+    cStart: '%% both sites start from the same copy',
+    cWrite: '%% on {site}: the write replaces the version it read',
+    cKept: '%% both edits kept; the same winner on both sites',
+    cOne: '%% one version: both sites hold the same document',
+    cBack: '%% the network is back; nothing has synced yet',
+    cDrop: '%% the network drops; each site keeps\n%% accepting reads and writes locally',
+  },
+  fr: {
+    title: 'Deux sites modifient la même tâche',
+    intro: 'Coupez la liaison, modifiez des deux côtés, synchronisez. Aucune modification n’est perdue : les deux copies choisissent la même gagnante et gardent l’autre modification comme conflit jusqu’à ce que quelqu’un le résolve.',
+    reset: 'Recommencer',
+    callH: 'L’appel derrière votre dernière action',
+    callNote: 'Démonstration dans votre navigateur, selon les règles de barrel',
+    linkUp: 'Liaison active',
+    linkDown: 'Liaison coupée : les deux sites continuent d’accepter les écritures',
+    cut: 'Couper la liaison',
+    restore: 'Rétablir la liaison',
+    sync: 'Synchroniser dans les deux sens',
+    winner: 'gagnante',
+    conflict: 'conflit',
+    by: 'par {site}',
+    edit: 'Modifier à {site}',
+    resolve: 'Résoudre ici',
+    cStart: '%% les deux sites partent de la même copie',
+    cWrite: '%% à {site} : l’écriture remplace la version lue',
+    cKept: '%% les deux modifications restent ; même gagnante partout',
+    cOne: '%% une seule version : les deux sites ont le même document',
+    cBack: '%% le réseau est revenu ; rien n’est encore synchronisé',
+    cDrop: '%% le réseau tombe ; chaque site continue\n%% d’accepter lectures et écritures en local',
+  },
+}[lang];
 ---
 
-<div class="demo" data-two-site>
+<div class="demo" data-two-site data-strings={JSON.stringify(S)}>
   <div class="demo-head">
     <div>
-      <h3 class="demo-t">Two sites edit the same task</h3>
-      <p class="muted small demo-intro">Cut the link, edit on both sides, sync. Neither edit is lost: both copies pick the same winner and keep the other edit as a conflict until someone resolves it.</p>
+      <h3 class="demo-t">{S.title}</h3>
+      <p class="muted small demo-intro">{S.intro}</p>
     </div>
-    <button type="button" class="button button--small" data-act="reset">Start over</button>
+    <button type="button" class="button button--small" data-act="reset">{S.reset}</button>
   </div>
   <div class="demo-nodes">
     <div class="node" data-site="paris"></div>
     <div class="link">
       <span class="link-line" data-link-line></span>
-      <span class="link-label small" data-link-label>Link up</span>
-      <button type="button" class="button button--small" data-act="toggle" aria-pressed="false">Cut the link</button>
-      <button type="button" class="button button--small button--primary" data-act="sync">Sync both ways</button>
+      <span class="link-label small" data-link-label>{S.linkUp}</span>
+      <button type="button" class="button button--small" data-act="toggle" aria-pressed="false">{S.cut}</button>
+      <button type="button" class="button button--small button--primary" data-act="sync">{S.sync}</button>
     </div>
     <div class="node" data-site="lyon"></div>
   </div>
   <div class="demo-call">
-    <p class="small muted demo-call-h"><span>The call behind your last step</span><span>Demonstration in your browser, following barrel's rules</span></p>
+    <p class="small muted demo-call-h"><span>{S.callH}</span><span>{S.callNote}</span></p>
     <pre data-call aria-live="polite"></pre>
   </div>
 </div>
@@ -67,16 +118,19 @@
     lyon: [['"state": "done"', '<<"state">> => <<"done">>'], ['"state": "done", "qa": true', '<<"qa">> => true']],
   };
 
+  type T = Record<string, string>;
+  const fill = (t: string, site: string) => t.replace('{site}', site);
   const winner = (live: V[]) => live.slice().sort((a, b) => (b.clock - a.clock) || (b.by < a.by ? -1 : 1))[0];
 
-  function initial(): S {
+  function initial(T: T): S {
     const v0: V = { id: 'v0', body: '"state": "open"', by: 'paris', clock: 1, replaces: [] };
     return { clock: 1, n: 0, link: true, nodes: { paris: { live: [v0], seen: ['v0'] }, lyon: { live: [v0], seen: ['v0'] } },
-      call: '%% both sites start from the same copy\n{ok, _} = barrel_rep:replicate(<<"paris">>, <<"lyon">>).' };
+      call: `${T.cStart}\n{ok, _} = barrel_rep:replicate(<<"paris">>, <<"lyon">>).` };
   }
 
   document.querySelectorAll<HTMLElement>('[data-two-site]').forEach((root) => {
-    let s = initial();
+    const T: T = JSON.parse(root.dataset.strings!);
+    let s = initial(T);
     const el = (tag: string, cls?: string, text?: string) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
 
     function edit(site: string) {
@@ -86,7 +140,7 @@
       s.clock++; s.n++;
       const v: V = { id: `v${s.n}${site}`, body, by: site, clock: s.clock, replaces: node.live.map((x) => x.id) };
       s.nodes[site] = { live: [v], seen: [...node.seen, v.id] };
-      s.call = `%% on ${site}: the write replaces the version it read\n{ok, _} = barrel_docdb:put_doc(<<"${site}">>,\n    Doc#{${erl}}).`;
+      s.call = `${fill(T.cWrite, site)}\n{ok, _} = barrel_docdb:put_doc(<<"${site}">>,\n    Doc#{${erl}}).`;
       draw();
     }
     function resolve(site: string) {
@@ -106,8 +160,8 @@
       const seen = [...new Set([...s.nodes.paris.seen, ...s.nodes.lyon.seen])];
       SITES.forEach((k) => { s.nodes[k] = { live: live.slice(), seen }; });
       s.call = live.length > 1
-        ? '{ok, _} = barrel_rep:replicate(<<"paris">>, <<"lyon">>),\n{ok, _} = barrel_rep:replicate(<<"lyon">>, <<"paris">>),\n%% both edits kept; the same winner on both sites\n{ok, [_Loser]} = barrel_docdb:get_conflicts(<<"paris">>, <<"task:1">>).'
-        : '{ok, _} = barrel_rep:replicate(<<"paris">>, <<"lyon">>),\n{ok, _} = barrel_rep:replicate(<<"lyon">>, <<"paris">>).\n%% one version: both sites hold the same document';
+        ? `{ok, _} = barrel_rep:replicate(<<"paris">>, <<"lyon">>),\n{ok, _} = barrel_rep:replicate(<<"lyon">>, <<"paris">>),\n${T.cKept}\n{ok, [_Loser]} = barrel_docdb:get_conflicts(<<"paris">>, <<"task:1">>).`
+        : `{ok, _} = barrel_rep:replicate(<<"paris">>, <<"lyon">>),\n{ok, _} = barrel_rep:replicate(<<"lyon">>, <<"paris">>).\n${T.cOne}`;
       draw();
     }
 
@@ -121,14 +175,14 @@
       host.append(h, el('div', 'small muted', 'task:1'));
       [w, ...live.filter((v) => v.id !== w.id)].forEach((v) => {
         const row = el('div', v.id === w.id ? 'ver' : 'ver is-conflict');
-        row.append(el('span', 'ver-k', v.id === w.id ? 'winner' : 'conflict'), el('span', 'ver-by', `by ${v.by}`), el('span', 'ver-b', `{${v.body}}`));
+        row.append(el('span', 'ver-k', v.id === w.id ? T.winner : T.conflict), el('span', 'ver-by', fill(T.by, v.by)), el('span', 'ver-b', `{${v.body}}`));
         host.append(row);
       });
-      const e = el('button', 'button button--small', `Edit on ${NAME[site]}`) as HTMLButtonElement;
+      const e = el('button', 'button button--small', fill(T.edit, NAME[site])) as HTMLButtonElement;
       e.type = 'button'; e.addEventListener('click', () => edit(site));
       host.append(e);
       if (live.length > 1) {
-        const r = el('button', 'button button--small resolve', 'Resolve here') as HTMLButtonElement;
+        const r = el('button', 'button button--small resolve', T.resolve) as HTMLButtonElement;
         r.type = 'button'; r.addEventListener('click', () => resolve(site));
         host.append(r);
       }
@@ -141,8 +195,8 @@
       root.querySelector('[data-link-line]')!.classList.toggle('is-down', !s.link);
       const label = root.querySelector('[data-link-label]')!;
       label.classList.toggle('is-down', !s.link);
-      label.textContent = s.link ? 'Link up' : 'Link down: both sites keep taking writes';
-      toggle.textContent = s.link ? 'Cut the link' : 'Restore the link';
+      label.textContent = s.link ? T.linkUp : T.linkDown;
+      toggle.textContent = s.link ? T.cut : T.restore;
       toggle.setAttribute('aria-pressed', String(!s.link));
       syncBtn.disabled = !s.link;
       root.querySelector('[data-call]')!.textContent = s.call;
@@ -150,11 +204,11 @@
 
     root.querySelector('[data-act=toggle]')!.addEventListener('click', () => {
       s.link = !s.link;
-      s.call = s.link ? '%% the network is back; nothing has synced yet' : '%% the network drops; each site keeps\n%% accepting reads and writes locally';
+      s.call = s.link ? T.cBack : T.cDrop;
       draw();
     });
     root.querySelector('[data-act=sync]')!.addEventListener('click', sync);
-    root.querySelector('[data-act=reset]')!.addEventListener('click', () => { s = initial(); draw(); });
+    root.querySelector('[data-act=reset]')!.addEventListener('click', () => { s = initial(T); draw(); });
     draw();
   });
 </script>

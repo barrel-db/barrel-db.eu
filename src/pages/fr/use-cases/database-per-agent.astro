@@ -1,0 +1,130 @@
+---
+// translation_of: src/pages/use-cases/database-per-agent.astro source_hash: 602c051e289d893b
+import UseCasePage from '../../../components/usecase/UseCasePage.astro';
+import type { ArchColumn, Step } from '../../../components/usecase/types';
+
+const arch: ArchColumn[] = [
+  { who: 'Planificateur (jeton admin)', boxes: [
+    { name: 'space_create', note: 'un espace par agent' },
+    { name: 'space_grant', note: 'lecture et écriture, pour un sujet' } ] },
+  { who: 'barrel_server', boxes: [
+    { name: 'sp_research', note: 'la base du chercheur', rec: true },
+    { name: 'sp_writer', note: 'la base du rédacteur', rec: true } ] },
+  { who: 'Agents (chacun son jeton)', boxes: [
+    { name: 'Agent de recherche', note: 'MCP, bearer bsp_…' },
+    { name: 'Agent rédacteur', note: 'MCP, bearer bsp_…' } ] },
+];
+
+const steps: Step[] = [
+  { title: 'Démarrer le serveur avec l’authentification',
+    body: 'Chaque requête demande alors un jeton. Le jeton admin est le vôtre ; les agents ne le voient jamais.',
+    label: 'sys.config', lang: 'erlang',
+    code: `[{barrel_server, [
+   {http_port, 8080},
+   {auth, #{tokens => [<<"admin-token">>]}}
+ ]}].` },
+  { title: 'Créer un espace pour l’agent',
+    body: 'Le planificateur appelle `space_create` avec le jeton admin. Un jeton de capacité ne peut pas créer d’espace.',
+    tabs: [
+      { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":3,"method":"tools/call",
+ "params":{"name":"space_create",
+  "arguments":{"label":"research","owner":"planner"}}}` },
+      { label: 'REST', lang: 'bash', code: `curl -X POST localhost:8080/spaces \\
+  -H 'authorization: Bearer admin-token' \\
+  -H 'content-type: application/json' \\
+  -d '{"label":"research","owner":"planner"}'` } ],
+    outLabel: 'Réponse REST, d’après une exécution enregistrée',
+    out: `HTTP/1.1 201 Created
+{"ok":true,"space":"sp_wh2tq2ocmemj52ln"}` },
+  { title: 'Lui accorder un jeton',
+    body: 'Le jeton n’est renvoyé qu’une fois ; seul son hash est stocké. Remettez-le à l’agent et gardez le `token_id` pour le révoquer plus tard.',
+    tabs: [
+      { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":4,"method":"tools/call",
+ "params":{"name":"space_grant",
+  "arguments":{"space":"sp_…",
+               "rights":["read","write"],
+               "subject":"researcher"}}}` },
+      { label: 'REST', lang: 'bash', code: `curl -X POST localhost:8080/spaces/sp_…/grants \\
+  -H 'authorization: Bearer admin-token' \\
+  -H 'content-type: application/json' \\
+  -d '{"rights":["read","write"],
+       "subject":"researcher"}'` } ],
+    outLabel: 'Réponse REST, d’après une exécution enregistrée avec un droit de lecture (lignes coupées, jeton raccourci)',
+    out: `{"token":"bsp_cc36jf4gfrnkk6sm_ps5i…",
+ "grant":{"id":"grant:cc36jf4gfrnkk6sm",
+  "token_id":"cc36jf4gfrnkk6sm",
+  "rights":["read"],"subject":"agent-1",
+  "space":"sp_wh2tq2ocmemj52ln",
+  "expires_at":0,"revoked_at":0,"type":"grant", …}}` },
+  { title: 'L’agent travaille dans son espace',
+    body: 'Il se connecte à `/mcp` avec son propre jeton en bearer et écrit dans la base de l’espace. L’écriture est enregistrée avec l’agent comme acteur.',
+    label: 'Requête MCP de l’agent de recherche', lang: 'json',
+    code: `{"jsonrpc":"2.0","id":8,"method":"tools/call",
+ "params":{"name":"doc_put",
+  "arguments":{"db":"sp_…",
+   "doc":{"id":"note-1",
+          "title":"sources for Q3 report"}}}}`,
+    outLabel: 'Forme de la réponse, d’après une exécution enregistrée (lignes coupées, rev raccourcie)',
+    out: `data: {"id":8,"jsonrpc":"2.0","result":{"content":[
+  {"type":"text","text":"{\\"id\\":\\"note-1\\",
+  \\"ok\\":true,\\"rev\\":\\"000001a1…\\"}"}]}}` },
+  { title: 'Les autres bases lui restent fermées',
+    body: 'Le même jeton sur une autre base est refusé : 403 en REST, un résultat d’outil avec `isError` en MCP. Il en va de même pour une écriture avec un droit en lecture seule.',
+    label: 'REST', lang: 'bash',
+    code: `curl -H 'authorization: Bearer bsp_…' \\
+  localhost:8080/db/demo/doc/a`,
+    outLabel: 'D’après une exécution enregistrée',
+    out: `HTTP/1.1 403 Forbidden
+{"error":"forbidden"}` },
+  { title: 'Révoquer le jeton à la fin de la tâche',
+    body: 'La révocation est immédiate sur ce nœud. L’espace et ses données restent pour l’agent suivant ou pour une relecture.',
+    tabs: [
+      { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":9,"method":"tools/call",
+ "params":{"name":"space_revoke",
+  "arguments":{"space":"sp_…",
+               "token_id":"cc36jf4gfrnkk6sm"}}}` },
+      { label: 'REST', lang: 'bash', code: `curl -X DELETE \\
+  localhost:8080/spaces/sp_…/grants/cc36jf4gfrnkk6sm \\
+  -H 'authorization: Bearer admin-token'` } ] },
+];
+---
+
+<UseCasePage
+  title="Une base par agent"
+  lead="Donnez à chaque agent sa propre base et décidez, agent par agent, ce qu’il peut lire et écrire. Quand un agent se comporte mal ou que sa tâche est finie, révoquez son jeton ; rien d’autre n’est touché."
+  sub="Construit avec les espaces et les jetons de capacité, appliqués par barrel_server en REST et MCP. Tourne sur un seul nœud, sans autre service."
+  problem="Plusieurs agents qui écrivent dans une base partagée se marchent sur les données, et chaque règle d’accès vit dans votre prompt ou votre code d’intégration. Retirer l’accès d’un agent, ou nettoyer après lui, oblige à retrouver ses lignes."
+  arch={arch}
+  edges={['crée et accorde', 'jeton via MCP']}
+  archNote="Le planificateur détient un jeton admin et crée un espace par agent. Chaque agent se connecte à `/mcp` avec son propre jeton ; le serveur refuse un jeton utilisé sur un autre espace ou sans le droit nécessaire."
+  stepsIntro="Six étapes sur un barrel_server en marche. Chaque requête MCP est un `tools/call` envoyé à `POST /mcp` après le `initialize` habituel."
+  steps={steps}
+  barrel={[
+    'Crée et supprime la base de chaque agent',
+    'Émet, vérifie et révoque des jetons avec des droits de lecture, d’écriture ou d’administration',
+    'Garde sessions et messages par agent, avec expiration',
+    'Enregistre qui a écrit quoi, dans quelle session',
+  ]}
+  app={[
+    'Décide quel agent reçoit quel espace et quels droits',
+    'Range chaque jeton là où seul cet agent peut l’utiliser',
+    'Fait tourner les agents et leurs appels au modèle',
+    'Appelle la révocation à la fin d’une tâche',
+  ]}
+  limits={[
+    'Les jetons sont appliqués par le serveur. Le code de votre propre nœud Erlang peut ouvrir n’importe quel espace sans jeton ; donnez aux espaces leurs propres clés de chiffrement s’ils ne doivent pas se lire entre eux.',
+    'Chaque espace est une base complète avec ses propres fichiers sur disque. Les espaces inactifs se ferment d’eux-mêmes, mais dimensionnez le nœud pour les espaces que vous gardez ouverts en même temps.',
+    'Le stockage vectoriel d’un espace reste sur le nœud qui l’a construit ; répliquez les documents et reconstruisez-le ailleurs.',
+    'Un jeton de capacité donne accès à l’espace lui-même seulement, pas à ses branches.',
+    'En REST et MCP, les espaces s’ouvrent avec les options par défaut : les espaces chiffrés ne sont donc accessibles que par l’API Erlang pour l’instant.',
+  ]}
+  links={[
+    { label: 'Exemple : deux agents et une passation', href: '/examples/agents-handoff' },
+    { label: 'Espaces, sessions, passations', href: '/docs/guides/spaces' },
+    { label: 'Point d’accès MCP', href: '/docs/guides/mcp' },
+    { label: 'Espaces et capacités', href: '/docs/concepts/spaces' },
+    { label: 'barrel_spaces', href: '/product/spaces' },
+    { label: 'Couche agents', href: '/product/agents' },
+    { label: 'Cas d’usage : la mémoire des agents', href: '/use-cases/agent-memory' },
+  ]}
+/>

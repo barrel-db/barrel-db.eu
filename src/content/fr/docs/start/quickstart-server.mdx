@@ -1,0 +1,209 @@
+---
+translation_of: src/content/docs/start/quickstart-server.mdx
+source_hash: "ac6bdd4a5c55b0f9"
+title: "Démarrage rapide : serveur"
+description: Compilez et démarrez barrel_server, créez une base, écrivez et lisez des documents, lancez une requête BQL, et appelez un outil via MCP.
+---
+import CodeBlock from '../../../../components/CodeBlock.astro';
+import Callout from '../../../../components/Callout.astro';
+
+`barrel_server` sert Barrel sur HTTP : une API REST/JSON et un point
+d’accès MCP pour les agents. Dans ce démarrage rapide, vous le compilez
+depuis l’umbrella, le démarrez, créez une base, écrivez et lisez des
+documents, lancez une requête BQL, et appelez la même base comme outil
+MCP. Suivez ce parcours quand vos clients ne sont pas en Erlang, tournent
+sur d’autres machines, ou sont des agents.
+
+## Avant de commencer
+
+- Erlang/OTP 26 ou plus récent, rebar3, CMake et un compilateur C/C++.
+- `curl`.
+
+## 1. Compiler
+
+```shell
+git clone https://github.com/barrel-db/barrel.git
+cd barrel
+rebar3 as server compile
+```
+
+## 2. Configurer et démarrer
+
+Écrivez un `sys.config` avec un port et un répertoire de données :
+
+<CodeBlock label="sys.config" code={`[{barrel_server, [{http_port, 8080},
+                  {data_dir, "/var/tmp/barrel/data"}]},
+ {kernel, [{logger_level, notice}]}].`} />
+
+Démarrez le serveur :
+
+```shell
+erl -noshell -config sys \
+    -pa _build/server/lib/*/ebin \
+    -eval 'application:ensure_all_started(barrel_server).'
+```
+
+Pour un shell interactif à la place, lancez `rebar3 as server shell`, puis
+`application:ensure_all_started(barrel_server).`
+
+Vérifiez qu’il répond :
+
+```shell
+curl localhost:8080/health
+```
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_server 1.13.0" code={`{"status":"ok"}`} />
+
+<Callout kind="limit" label="Limite">
+Ce serveur n’a aucune authentification : quiconque atteint le port peut
+lire et écrire. Verrouillez-le avant de l’exposer. Voir
+[Authentification](/fr/docs/security/authentication).
+</Callout>
+
+## 3. Créer une base
+
+```shell
+curl -X PUT localhost:8080/db/demo
+```
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_server 1.13.0" code={`HTTP/1.1 201 Created
+{"ok":true,"db":"demo"}`} />
+
+Utilisez des noms en minuscules. Toute route `/db/:db/...` crée la base
+si elle n’existe pas : une faute de frappe en crée donc une vide.
+
+## 4. Écrire et lire un document
+
+```shell
+curl -X PUT localhost:8080/db/demo/doc/a \
+  -H 'content-type: application/json' \
+  -d '{"title":"hello world","kind":"note","n":1}'
+curl localhost:8080/db/demo/doc/a
+```
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_server 1.13.0" code={`{"id":"a","ok":true,
+ "rev":"000001a1b876972d00000000@w78160d59891ba7d7"}
+{"_rev":"000001a1b876972d00000000@w78160d59891ba7d7",
+ "id":"a","kind":"note","n":1,"title":"hello world"}`} />
+
+Pour le mettre à jour, envoyez le `_rev` actuel dans le corps. Un `_rev`
+périmé répond 409 :
+
+```shell
+curl -X PUT localhost:8080/db/demo/doc/a \
+  -H 'content-type: application/json' \
+  -d '{"title":"stale","_rev":"bogus"}'
+```
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_server 1.13.0" code={`HTTP/1.1 409 Conflict
+{"error":"conflict"}`} />
+
+Écrivez-en plusieurs à la fois avec `_bulk_docs` :
+
+```shell
+curl -X POST localhost:8080/db/demo/_bulk_docs \
+  -H 'content-type: application/json' \
+  -d '{"docs":[{"id":"c","kind":"note","title":"third"},
+              {"id":"d","kind":"note","title":"fourth"}]}'
+```
+
+## 5. Interroger avec BQL
+
+`POST /db/:db/query` répond en JSON délimité par des sauts de ligne : une
+ligne par résultat, puis une ligne `meta`.
+
+```shell
+curl -X POST localhost:8080/db/demo/query \
+  -H 'content-type: text/plain' \
+  --data-binary "SELECT id, title FROM c
+    WHERE kind = 'note' ORDER BY id LIMIT 2"
+```
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_server 1.13.0" code={`{"row":{"id":"a","title":"hello world"}}
+{"row":{"id":"c","title":"third"}}
+{"meta":{"count":2,"bound":"limit_reached",
+ "last_seq":"AAABobpEb-MAAAAB",
+ "instance_id":"4552d48d297c5b2b","has_more":false}}`} />
+
+Envoyez plutôt du JSON (`{"query": ..., "params": ...}`) quand vous passez
+des paramètres ou `max_rows`.
+
+Le nom de collection après `FROM` est ignoré : la base vient de l’URL.
+Voir [Interroger avec BQL](/fr/docs/guides/query-bql).
+
+## 6. L’appeler via MCP
+
+Le même serveur répond en MCP sur `/mcp` (Streamable HTTP). Initialisez
+une session et gardez l’en-tête `mcp-session-id` qu’elle renvoie :
+
+```shell
+curl -i -X POST localhost:8080/mcp \
+  -H 'content-type: application/json' \
+  -H 'accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize",
+       "params":{"protocolVersion":"2025-06-18",
+                 "capabilities":{},
+                 "clientInfo":{"name":"curl","version":"0"}}}'
+```
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_server 1.13.0" code={`HTTP/1.1 200 OK
+content-type: application/json
+mcp-session-id: mcp_eb612d0280eda9fef1a406b42ce2c3ea
+{"id":1,"jsonrpc":"2.0","result":{"capabilities":{...},
+ "protocolVersion":"2025-06-18",
+ "serverInfo":{"name":"barrel","version":"4.4.1"}}}`} />
+
+Envoyez `notifications/initialized`, puis appelez un outil. Chaque
+requête après `initialize` porte l’id de session et la version du
+protocole :
+
+```shell
+SID=mcp_eb612d0280eda9fef1a406b42ce2c3ea
+mcp() {
+  curl -s -X POST localhost:8080/mcp \
+    -H 'content-type: application/json' \
+    -H 'accept: application/json, text/event-stream' \
+    -H "mcp-session-id: $SID" \
+    -H 'mcp-protocol-version: 2025-06-18' -d "$1"
+}
+mcp '{"jsonrpc":"2.0","method":"notifications/initialized"}'
+mcp '{"jsonrpc":"2.0","id":2,"method":"tools/call",
+      "params":{"name":"db_create",
+                "arguments":{"db":"mcpdemo"}}}'
+mcp '{"jsonrpc":"2.0","id":3,"method":"tools/call",
+      "params":{"name":"doc_put","arguments":{"db":"mcpdemo",
+        "doc":{"id":"note-1","title":"stored over MCP"}}}}'
+mcp '{"jsonrpc":"2.0","id":4,"method":"tools/call",
+      "params":{"name":"query","arguments":{"db":"mcpdemo",
+        "query":"SELECT id, title FROM c LIMIT 5"}}}'
+```
+
+Les appels d’outils répondent en server-sent events. Le résultat de
+l’outil est du JSON dans le champ `text` :
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_server 1.13.0" code={`data: {"id":2,"jsonrpc":"2.0","result":{"content":[{"text":
+  "{\\"ok\\":true,\\"db\\":\\"mcpdemo\\"}","type":"text"}]}}
+
+data: {"id":3,"jsonrpc":"2.0","result":{"content":[{"text":
+  "{\\"id\\":\\"note-1\\",\\"ok\\":true,\\"rev\\":
+  \\"000001a1ba44713d00000000@w1b9de1b98c6d4949\\"}",
+  "type":"text"}]}}
+
+data: {"id":4,"jsonrpc":"2.0","result":{"content":[{"text":
+  "{\\"count\\":1,\\"rows\\":[{\\"id\\":\\"note-1\\",
+  \\"title\\":\\"stored over MCP\\"}],\\"has_more\\":false}",
+  "type":"text"}]}}`} />
+
+`tools/list` renvoie 39 outils. Voir [Point d’accès MCP](/fr/docs/guides/mcp)
+pour y brancher un agent.
+
+## Notes
+
+- Les stockages vectoriels vont dans `./priv/` sous le répertoire depuis
+  lequel vous démarrez le serveur, et non sous `data_dir`. Démarrez-le
+  depuis un répertoire que vous conservez.
+- Les bases par défaut ont un stockage vectoriel de dimension 768, aucun
+  embedder et BM25 désactivé : `/search/bm25` et `/search/hybrid`
+  répondent donc 500 tant que vous ne les configurez pas. Voir [Faire
+  tourner le serveur](/fr/docs/guides/rest-server).
+- `/health` renvoie ok sans rien vérifier.
