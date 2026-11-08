@@ -1,0 +1,158 @@
+---
+translation_of: src/content/docs/search/embedding-providers.mdx
+source_hash: "ce6a793b80b7a973"
+title: Choisir un fournisseur d’embeddings
+description: Choisissez le fournisseur qui transforme votre texte en vecteurs, local ou cloud, configurez-le, enchaînez un repli, travaillez hors ligne, ou écrivez le vôtre.
+---
+import CodeBlock from '../../../../components/CodeBlock.astro';
+import Callout from '../../../../components/Callout.astro';
+
+Un fournisseur d’embeddings transforme du texte en vecteurs, ceux que
+Barrel recherche. Choisissez-en un selon l’endroit où vos données ont le
+droit d’aller et ce que vous pouvez faire tourner : un modèle sur la même
+machine, un serveur local comme Ollama, ou une API cloud. Les
+fournisseurs viennent de `barrel_embed` 2.6.1 ; vous en nommez un dans
+une politique du mode enregistrement ou dans la configuration d’un
+stockage vectoriel, et Barrel l’appelle à chaque écriture et à chaque
+requête textuelle.
+
+## Choix rapide
+
+- Les données ne doivent pas quitter la machine, et vous pouvez faire
+  tourner Python : `local`.
+- Vous faites déjà tourner Ollama : `ollama`, la configuration la plus
+  simple.
+- Vous utilisez déjà un modèle cloud : le fournisseur cloud
+  correspondant, avec sa clé d’API.
+- Rien ne convient : écrivez votre propre module fournisseur.
+
+## Tous les fournisseurs
+
+Les fournisseurs locaux tournent sur votre machine (Ollama comme serveur
+local) :
+
+| Id | Demande | Modèle par défaut | Dimensions | Testé |
+|----|-------|---------------|------|--------|
+| `local` | Python 3, sentence-transformers | `BAAI/bge-base-en-v1.5` | 768 | oui |
+| `ollama` | Ollama avec le modèle téléchargé | `nomic-embed-text` | 768 | oui |
+| `fastembed` | Python 3, fastembed | `BAAI/bge-small-en-v1.5` | 384 | non |
+| `splade` | Python 3, transformers, torch | `prithivida/Splade_PP_en_v1` | creux | non |
+| `colbert` | Python 3, transformers, torch | `colbert-ir/colbertv2.0` | 128 par token | non |
+| `clip` | Python 3, transformers, torch, pillow | `openai/clip-vit-base-patch32` | 512 | non |
+| votre module | le behaviour `barrel_embed_provider` | le vôtre | les vôtres | oui |
+
+Les fournisseurs cloud envoient votre texte à l’API de l’éditeur :
+
+| Id | Demande | Modèle par défaut | Dimensions | Testé |
+|----|-------|---------------|------|--------|
+| `openai` | `OPENAI_API_KEY` | `text-embedding-3-small` | 1536 | non |
+| `cohere` | `COHERE_API_KEY` | `embed-english-v3.0` | 1024 | non |
+| `voyage` | `VOYAGE_API_KEY` | `voyage-3` | 1024 | non |
+| `jina` | `JINA_API_KEY` | `jina-embeddings-v3` | 1024 | non |
+| `mistral` | `MISTRAL_API_KEY` | `mistral-embed` | 1024 | non |
+| `azure` | `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`, un déploiement | votre déploiement | 1536 | non |
+| `bedrock` | `BEDROCK_API_KEY` ou des clés AWS | `amazon.titan-embed-text-v2:0` | 1024 | non |
+| `vertex` | `GOOGLE_CLOUD_PROJECT` et un token ou une clé | `text-embedding-004` | 768 | non |
+
+« Testé » signifie que nous l’avons fait tourner pour cette
+documentation. Les autres sont décrits d’après leur code source.
+
+<Callout label="Fixer les dimensions">
+Barrel utilise les dimensions que vous configurez, 768 par défaut, et non
+la taille propre au modèle. Réglez-les pour correspondre au modèle, par
+exemple 384 pour bge-small.
+</Callout>
+
+## En configurer un
+
+Passez `embedder => {Id, Options}` dans une politique du mode
+enregistrement :
+
+```erlang
+{ok, Db} = barrel:open(<<"kb">>, #{
+    embedding => #{
+        fields     => [<<"title">>, <<"body">>],
+        embedder   => {ollama,
+                       #{model => <<"nomic-embed-text">>}},
+        dimensions => 768},
+    vectordb => #{db_path => "data/vectors/kb"}}).
+```
+
+Options par fournisseur : `model`, `timeout` (30000 ms pour les
+fournisseurs HTTP, 120000 ms pour ceux en Python), `url` pour `ollama`
+(par défaut `http://localhost:11434`), `api_key` pour `openai`,
+`deployment` et `api_version` pour `azure`, `region` pour `bedrock` et
+`vertex`.
+
+`barrel:embedder_info(Db)` renvoie le fournisseur, le modèle, les
+dimensions et une empreinte. Deux bases avec la même empreinte calculent
+les mêmes embeddings.
+
+<CodeBlock output label="Sortie d’une exécution sur barrel 1.12.0 avec Ollama" code={`#{provider => ollama,dimensions => 768,
+  model => <<"nomic-embed-text:latest">>,
+  fingerprint => <<"sha256:865b329a1672b35dba7c9c87afcc38db...">>}`} />
+
+L’empreinte est raccourcie ci-dessus.
+
+## Se replier quand l’un est indisponible
+
+Passez une liste : Barrel essaie chaque fournisseur dans l’ordre et
+utilise le premier qui répond. Gardez le même modèle et les mêmes
+dimensions dans chaque entrée, sinon les vecteurs ne seront pas
+comparables.
+
+```erlang
+embedder => [{ollama, #{model => <<"nomic-embed-text">>}},
+             {my_provider, #{}}]
+```
+
+## Travailler hors ligne
+
+Les fournisseurs Python installent leurs paquets dans un virtualenv géré
+(`priv/.venv` de `barrel_embed`) et téléchargent le modèle la première
+fois. Lancez une fois avec un accès réseau, puis définissez
+`HF_HUB_OFFLINE=1` et `TRANSFORMERS_OFFLINE=1`. Pour utiliser votre
+propre Python à la place, définissez `{barrel_embed, managed_venv, false}`,
+ou déplacez le virtualenv avec `{barrel_embed, venv_dir, Dir}`.
+
+Les versions des paquets Python ne sont pas figées.
+
+## Écrire le vôtre
+
+Tout module qui implémente `barrel_embed_provider` fonctionne comme
+embedder : `embed/2`, `embed_batch/2`, `dimension/1` et `name/0`, avec en
+option `init/1`, `available/1` et `model_info/1`. Passez-le sous la forme
+`{my_provider, Opts}`.
+
+```erlang
+-module(my_provider).
+-behaviour(barrel_embed_provider).
+-export([embed/2, embed_batch/2, dimension/1, name/0]).
+
+embed(Text, _Opts) ->
+    <<A:8, B:8, C:8, D:8, _/binary>> =
+        crypto:hash(sha256, Text),
+    {ok, [A / 255, B / 255, C / 255, D / 255]}.
+
+embed_batch(Texts, Opts) ->
+    {ok, [V || T <- Texts, {ok, V} <- [embed(T, Opts)]]}.
+
+dimension(_Opts) -> 4.
+name() -> my_provider.
+```
+
+Celui-ci hache le texte : il ne sert donc qu’aux tests. Il fait
+correspondre des chaînes identiques, pas le sens. Un vrai fournisseur
+appelle un modèle.
+
+<Callout kind="limit" label="Coût">
+Les fournisseurs cloud vérifient qu’ils sont joignables avant chaque
+appel, ce qui ajoute une requête par embedding.
+</Callout>
+
+## Sans fournisseur
+
+Vous pouvez aussi apporter vos propres vecteurs : passez
+`vector => [...]` à `put_doc/3` en mode enregistrement, ou utilisez
+`vector_add/5` dans une base simple. La dimension doit correspondre au
+stockage.

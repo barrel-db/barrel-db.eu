@@ -1,0 +1,132 @@
+---
+translation_of: src/content/docs/concepts/spaces.mdx
+source_hash: "8eff427eca5628c1"
+title: Espaces et capacités
+description: Comment s’articulent un espace, un jeton de capacité, une session et une passation, les droits read, write et admin, et quelles vérifications ont lieu dans le processus et lesquelles seulement dans barrel_server.
+---
+import CodeBlock from '../../../../components/CodeBlock.astro';
+import Callout from '../../../../components/Callout.astro';
+
+Un espace est une base Barrel que des agents partagent en détenant un
+jeton de capacité pour elle. Une session est le contexte de travail d’un
+agent dans un espace, avec un TTL glissant. Une passation transmet une
+tâche, et le jeton pour y travailler, d’un agent à un autre. Lisez cette
+page pour comprendre le modèle avant d’utiliser le [guide des
+espaces](/fr/docs/guides/spaces), et pour savoir lesquelles de ces
+vérifications vous protègent dans votre propre processus et lesquelles
+seulement derrière `barrel_server`.
+
+## Les éléments
+
+| Élément | Ce que c’est | Où il vit |
+|-------|------------|----------------|
+| Espace | Une base nommée `sp_` suivi de 16 caractères, avec une entrée dans le registre | Sa propre base ; l’entrée dans `_barrel_spaces` |
+| Jeton de capacité | `bsp_...`, limité à un espace, avec des droits | Affiché une fois ; seul son hachage SHA-256 est stocké |
+| Session | Un contexte de travail avec des messages, des données et des épingles | Des documents dans l’espace, qui expirent selon le TTL |
+| Passation | Une tâche plus un jeton pour son espace | Le registre, pour qu’elle puisse être listée |
+
+## Les droits
+
+Les droits forment une échelle : `read` < `write` < `admin`. Un droit
+supérieur inclut les droits inférieurs.
+
+| Droit | Sur `barrel_server`, il permet |
+|-------|-------------------------------|
+| `read` | Les GET, `changes`, `query`, `search`, et les lectures de réplication (pull) |
+| `write` | Les écritures de documents et de pièces jointes, et les écritures de réplication (push) |
+| `admin` | Émettre, lister et révoquer des jetons ; créer des passations pour l’espace |
+
+Un jeton n’atteint jamais un autre espace, le cycle de vie des bases
+(`PUT` et `DELETE /db/:db`), ni les routes `_timeline` : celles-ci
+répondent 403.
+
+## Créer un espace et émettre un jeton
+
+<CodeBlock label="Shell Erlang" code={`{ok, _} = application:ensure_all_started(barrel_spaces),
+{ok, #{id := SpaceId} = Space} =
+    barrel_spaces:create_space(#{label => <<"joint research">>,
+                                 owner => <<"alice">>,
+                                 vectordb => none}),
+{ok, ReadTok, _} = barrel_caps:grant(SpaceId,
+    #{rights => [read], subject => <<"carol">>}),
+barrel_caps:verify(ReadTok, SpaceId, write),
+barrel_caps:verify(ReadTok, <<"sp_other">>, read).`} />
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_spaces 1.3.1" code={`{error,forbidden}
+{error,wrong_space}`} />
+
+`barrel_caps:revoke/1` met fin à un jeton ; `barrel_spaces:drop_space/1`
+met fin à l’espace et révoque tous ses jetons.
+
+## Les sessions
+
+Une session appartient à un agent et expire après `ttl` secondes sans
+`touch` (la valeur par défaut de l’espace est 3600). Elle contient des
+messages, des données clé/valeur et du contexte épinglé, le tout stocké
+comme documents dans l’espace : tout détenteur d’un jeton pour l’espace
+peut donc les lire.
+
+<CodeBlock label="Shell Erlang" code={`{ok, Sid} = barrel_session:create(Space,
+    #{agent => <<"alice">>, ttl => 1800}),
+{ok, _} = barrel_session:add_message(Space, Sid,
+    #{role => <<"user">>, content => <<"draft is half done">>}).`} />
+
+## Les passations
+
+Une passation émet un jeton pour l’espace (droits `read` et `write` par
+défaut) et ne le renvoie qu’une fois. Celui qui le présente accepte : la
+passation passe de en attente à acceptée, une deuxième acceptation
+échoue, et celui qui accepte obtient une session dans le même espace.
+Rien n’est copié ; le contexte est lu sur place.
+
+<CodeBlock label="Shell Erlang" code={`{ok, #{token := HTok}} = barrel_handoff:create(Space,
+    #{task_name => <<"finish the draft">>,
+      from_agent => <<"alice">>, to_agent => <<"bob">>,
+      from_session => Sid}),
+{ok, #{session := BobSid}} =
+    barrel_handoff:accept(HTok, #{agent => <<"bob">>}),
+barrel_handoff:accept(HTok, #{agent => <<"mallory">>}),
+{ok, _} = barrel_handoff:complete(HTok,
+                                  #{result => <<"shipped">>}),
+barrel_caps:verify(HTok, SpaceId, read).`} />
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_spaces 1.3.1" code={`{error,already_accepted}
+{error,revoked}`} />
+
+Terminer une passation révoque son jeton par défaut. `chain/2` le
+transmet à la place ; utilisez l’un ou l’autre, pas les deux.
+
+## Dans le processus et derrière le serveur
+
+<Callout kind="limit" label="Limite">
+Dans votre propre nœud Erlang, les jetons sont indicatifs.
+`barrel_spaces:open_space/1` et chaque appel `barrel_session` ne prennent
+aucun jeton : n’importe quel code du nœud peut donc ouvrir n’importe quel
+espace. `barrel_caps:grant/2`, `revoke/1` et `barrel_handoff:create/2` ne
+vérifient pas le droit `admin`. Le chiffrement par espace est la seule
+isolation dans le processus.
+</Callout>
+
+| Vérification | Dans le processus (`barrel_spaces`) | REST et MCP de `barrel_server` |
+|-------|------------------------------|------------------------------|
+| Un jeton est valide, non révoqué, non expiré | quand vous appelez `barrel_caps:verify/3` | à chaque requête |
+| L’espace du jeton correspond à la base | quand vous appelez `verify/3` | oui, 403 sinon |
+| `read` / `write` par opération | quand vous appelez `verify/3` | oui, par route ou par outil |
+| `admin` pour émettre, révoquer, créer une passation | non | oui |
+| Accepter ou terminer une passation | demande seulement `read` sur le jeton | demande seulement `read` sur le jeton |
+
+Donc : quand des agents ne doivent pas atteindre les données les uns des
+autres, faites-les passer par `barrel_server` avec des jetons de
+capacité, et gardez le jeton global hors de leur portée. Voir
+[Authentification](/fr/docs/security/authentication).
+
+## Notes
+
+- Les droits émis et les passations vivent dans la base de registre
+  `_barrel_spaces`. La répliquer permet à un jeton émis sur un nœud d’être
+  vérifié sur un autre ; la révocation voyage alors à la vitesse de la
+  réplication.
+- Le stockage vectoriel d’un espace est propre à chaque nœud et n’est pas
+  répliqué.
+- Les espaces chiffrés ne sont disponibles que depuis Erlang : le serveur
+  ne peut pas passer de spécification de clé quand il ouvre un espace.

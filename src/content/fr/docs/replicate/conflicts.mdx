@@ -1,0 +1,135 @@
+---
+translation_of: src/content/docs/replicate/conflicts.mdx
+source_hash: "a48384f4a261f8af"
+title: Conflits
+description: Trouvez les documents en conflit après une réplication, lisez chaque version, résolvez-les depuis Erlang, REST ou barrel-lite, ou laissez la base les résoudre pour vous.
+---
+import CodeBlock from '../../../../components/CodeBlock.astro';
+import CodeTabs from '../../../../components/CodeTabs.astro';
+import Callout from '../../../../components/Callout.astro';
+
+Un conflit, ce sont deux versions ou plus d’un document écrites sur des
+copies différentes avant qu’elles se synchronisent. Barrel les garde
+toutes, affiche le même gagnant sur chaque copie, et laisse les autres en
+place jusqu’à ce que quelqu’un les résolve. Servez-vous de cette page
+quand vous répliquez et devez trouver les conflits, trancher entre des
+versions, ou mettre en place une règle qui les résout d’elle-même. Le
+modèle est décrit dans [Versions, conflits,
+convergence](/fr/docs/concepts/versions).
+
+## Les trouver
+
+Le flux des changements compte les conflits par document :
+
+```erlang
+{ok, Changes, _Last} =
+    barrel_docdb:get_changes(<<"laptop">>, first),
+[Id || #{id := Id, num_conflicts := N} <- Changes, N > 0].
+```
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_docdb 2.1.0" code={`[<<"task:1">>]`} />
+
+En REST, chaque ligne de `GET /db/:db/changes` porte `num_conflicts`.
+Pour un document, demandez ses conflits :
+
+<CodeTabs tabs={[
+  { label: 'Erlang', lang: 'erlang', code: `barrel_docdb:get_conflicts(<<"laptop">>, <<"task:1">>).` },
+  { label: 'REST', lang: 'shell', code: `curl 'localhost:8080/db/laptop/doc/task:1?conflicts=true'` },
+  { label: 'TypeScript', lang: 'ts', code: `await db.conflicts("task:1");
+// [{ version, deleted, body }]` },
+]} />
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_docdb 2.1.0 (Erlang)" code={`{ok,[<<"000001a1ba40490400000000@w0db1f003b3487bf5">>]}`} />
+
+## Lire chaque version
+
+Lisez avec `conflicts => true` pour obtenir le gagnant, `_conflicts`, et
+`_observed`, la liste des versions que cette lecture a montrées :
+
+```erlang
+{ok, Doc} = barrel_docdb:get_doc(<<"laptop">>, <<"task:1">>,
+                                 #{conflicts => true}),
+#{<<"_conflicts">> := Others, <<"_observed">> := Seen} = Doc,
+Bodies = [barrel_docdb:get_version_body(<<"laptop">>,
+                                        <<"task:1">>, V)
+          || V <- Others].
+```
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_docdb 2.1.0 (Bodies)" code={`[{ok,#{<<"id">> => <<"task:1">>,<<"state">> => <<"done">>}}]`} />
+
+## Résoudre
+
+Renvoyez `_observed`. Seules les versions que vous avez lues sont
+remplacées ; une version arrivée après votre lecture reste un conflit.
+
+<CodeTabs tabs={[
+  { label: 'Erlang', lang: 'erlang', code: `barrel_docdb:resolve_conflict(<<"laptop">>, <<"task:1">>,
+    Seen, {merge, #{<<"id">> => <<"task:1">>,
+                    <<"state">> => <<"blocked">>}}).` },
+  { label: 'REST', lang: 'shell', code: `curl -X PUT localhost:8080/db/laptop/doc/task:1 \\
+  -H 'content-type: application/json' \\
+  -d '{"state":"blocked",
+       "_observed":["000001a1ba...@w6e68...",
+                    "000001a1ba...@w0db1..."]}'` },
+  { label: 'TypeScript', lang: 'ts', code: `await db.resolve("task:1", { state: "blocked" });
+await db.push();` },
+]} />
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_docdb 2.1.0 (Erlang)" code={`{ok,#{id => <<"task:1">>,
+      rev => <<"000001a1ba40490700000000@w0db1f003b3487bf5">>,
+      conflicts_resolved => 1}}`} />
+
+En Erlang, la résolution est `{choose, Token}`, `{merge, Body}` ou
+`delete`. Dans barrel-lite, `resolve(id, null)` résout par une
+suppression. Répliquez ensuite : la résolution remplace ces versions sur
+chaque copie.
+
+<Callout kind="limit" label="Limite">
+Une écriture avec seulement `_rev` remplace le gagnant et laisse les
+conflits. Passer le `_rev` du gagnant à `resolve_conflict/4` au lieu
+d’une liste remplace toutes les versions actuelles, y compris une que
+vous n’avez pas lue.
+</Callout>
+
+## Résoudre automatiquement
+
+Définissez `conflict_resolver` à l’ouverture de la base. Il s’exécute
+chaque fois qu’une écriture ou une synchronisation laisse plus d’une
+version :
+
+```erlang
+Resolver = fun(Versions) ->
+    %% Versions: [#{token, deleted, body}], triées par jeton
+    Live = [B || #{deleted := false, body := B} <- Versions],
+    case Live of
+        [] -> delete;
+        _ -> {merge, lists:max(Live)}
+    end
+end,
+{ok, _} = barrel_docdb:create_db(<<"db">>,
+    #{conflict_resolver => Resolver}).
+```
+
+- Renvoyez `{choose, Token}`, `{merge, Body}`, `delete` ou `keep`.
+- Rendez-le pur et faites-lui donner la même réponse quel que soit
+  l’ordre des versions (« le prix le plus haut l’emporte », « union des
+  tags »). Ainsi, chaque copie écrit la même résolution.
+- Un plantage ou une erreur compte comme `keep`.
+- Si des copies exécutent des fonctions différentes, rien n’est perdu,
+  mais le résultat qui survit dépend de l’ordre des synchronisations ;
+  `resolver_disagreement` est journalisé.
+- Il n’est pas stocké : passez-le à chaque ouverture. Un client
+  barrel-lite reçoit la résolution du serveur à son prochain pull.
+
+## Notes
+
+- Deux copies qui résolvent le même conflit en même temps laissent deux
+  résolutions en conflit. Résolvez encore une fois.
+- Au-delà de `max_conflict_versions` (8 par défaut), les versions les
+  plus anciennes sont évincées, celles des pairs plus anciens en premier.
+  Le gagnant reste toujours.
+- Les pairs sur une version de barrel_docdb antérieure à 2.0 envoient une
+  version à la fois : leurs modifications apparaissent comme des
+  conflits. Mettez-les à jour.
+- Une fusion de branche applique le `conflict_resolver` du parent ; il
+  n’y a pas de politique par fusion.

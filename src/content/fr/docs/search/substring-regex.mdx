@@ -1,0 +1,123 @@
+---
+translation_of: src/content/docs/search/substring-regex.mdx
+source_hash: "896dae248302e5aa"
+title: Sous-chaîne et regex
+description: Trouvez des chaînes exactes et des expressions régulières dans les documents avec barrel_ngram, un index de trigrammes tenu à jour depuis le flux des changements, depuis Erlang ou via MCP.
+---
+import CodeBlock from '../../../../components/CodeBlock.astro';
+import CodeTabs from '../../../../components/CodeTabs.astro';
+import Callout from '../../../../components/Callout.astro';
+
+`barrel_ngram` trouve des sous-chaînes exactes et des expressions
+régulières PCRE dans les documents d’une base `barrel_docdb`. C’est un
+index de trigrammes tenu à jour depuis le flux des changements de la
+base, et chaque candidat est vérifié sur le vrai texte : un résultat est
+donc toujours une vraie correspondance. Utilisez-le pour les
+identifiants, les codes d’erreur, les clés de configuration et les
+chemins de fichiers : les chaînes que la recherche sémantique et par
+mot-clé manquent ou découpent.
+
+## L’ajouter
+
+```erlang
+{deps, [{barrel_ngram, "~> 0.11"}]}.
+```
+
+Il compile une bibliothèque native avec CMake. L’API `barrel` et BQL ne
+l’exposent pas : vous appelez `barrel_ngram` directement, ou l’outil MCP
+`ngram_search` sur `barrel_server`.
+
+## Ouvrir un index
+
+Un index est un corpus sur une base. Nommez les champs à indexer, ou
+laissez `fields => all`.
+
+```erlang
+{ok, _} = application:ensure_all_started(barrel_ngram),
+{ok, _} = barrel_docdb:create_db(<<"runbooks">>),
+barrel_docdb:put_docs(<<"runbooks">>, [
+  #{<<"id">> => <<"rb:db">>,
+    <<"title">> => <<"Postgres failover">>,
+    <<"body">> => <<"If you see ERR_CONN_TIMEOUT=30s on "
+                    "pg-primary-01, promote pg-replica-02.">>},
+  #{<<"id">> => <<"rb:cache">>,
+    <<"title">> => <<"Redis eviction">>,
+    <<"body">> => <<"Set maxmemory-policy allkeys-lru; watch "
+                    "evicted_keys in INFO stats.">>},
+  #{<<"id">> => <<"rb:api">>, <<"title">> => <<"API 502s">>,
+    <<"body">> => <<"Check upstream connect_timeout and "
+                    "read_timeout in nginx.conf">>}]),
+ok = barrel_ngram:open(<<"rb_idx">>,
+                       #{db => <<"runbooks">>,
+                         fields => [<<"title">>, <<"body">>]}),
+barrel_ngram:index(<<"rb_idx">>).
+```
+
+`index/1` (ou `refresh/1`) met l’index à jour par rapport au flux puis
+rend la main. Ensuite, les nouvelles écritures atteignent l’index en
+arrière-plan ; rappelez-le quand vous avez besoin que les dernières
+écritures soient trouvables.
+
+## Rechercher
+
+<CodeTabs tabs={[
+  { label: 'Erlang', lang: 'erlang', code: `barrel_ngram:search(<<"rb_idx">>, <<"ERR_CONN_TIMEOUT">>),
+barrel_ngram:regex(<<"rb_idx">>,
+                   <<"pg-(primary|replica)-\\\\d+">>),
+barrel_ngram:regex(<<"rb_idx">>, <<"\\\\w+_timeout">>).` },
+  { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":11,"method":"tools/call",
+ "params":{"name":"ngram_search","arguments":{
+   "db":"runbooks","mode":"regex",
+   "query":"pg-(primary|replica)-\\\\d+"}}}` },
+]} />
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_ngram 0.11.4 (Erlang)" code={`{ok,[#{id => <<"rb:db">>,spans => [{11,16}]}]}
+{ok,[#{id => <<"rb:db">>,spans => [{35,13},{58,13}]}]}
+{ok,[#{id => <<"rb:api">>,spans => [{15,15},{35,12}]}]}`} />
+
+Un résultat est l’id du document et les correspondances sous la forme
+`{Offset, Length}` en octets. Les positions comptent dans le texte
+indexé, qui joint les champs indexés dans l’ordre trié des champs
+(`body` avant `title`).
+
+Recherche insensible à la casse :
+
+```erlang
+barrel_ngram:search(<<"rb_idx">>, <<"redis">>,
+                    #{case_sensitive => false}).
+```
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_ngram 0.11.4" code={`{ok,[#{id => <<"rb:cache">>,spans => [{68,5}]}]}`} />
+
+Un motif invalide renvoie `{error, {bad_regex, _}}`.
+
+## Via MCP
+
+`ngram_search` prend `db`, `query`, `mode` (`literal` par défaut, ou
+`regex`) et `limit` (50 par défaut, 1000 au plus). Le serveur ouvre un
+index par base à la première utilisation, sur tous les champs, sous son
+répertoire de données, et le rafraîchit avant chaque recherche.
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_server 1.13.0 : requête littérale 'over MCP' sur une base contenant une note" code={`data: {"id":11,"jsonrpc":"2.0","result":{"content":[{"text":
+  "{\\"count\\":1,\\"hits\\":[{\\"id\\":\\"note-1\\",
+  \\"spans\\":[[7,8]]}]}","type":"text"}]}}`} />
+
+## L’entretenir
+
+- `compact/1` fusionne les segments ; il renvoie `{error, busy}` si une
+  fusion est en cours.
+- `close/1` ferme l’index ; `open/2` avec les mêmes options le rouvre.
+- `delete_corpus/1` le supprime.
+- `db`, `fields`, `shards`, `postings` et `phase2_selector_opts` sont
+  fixés pour toute la vie d’un corpus. Ouvrir avec une autre valeur
+  renvoie `{error, {config_mismatch, Field, Persisted, Requested}}` ;
+  supprimez le corpus et reconstruisez-le.
+- Un index écrit par la 0.10 ou une version plus ancienne demande
+  `on_legacy => reindex`.
+
+<Callout kind="limit" label="Limite">
+L’index occupe environ 34 fois la taille du texte indexé. N’indexez que
+les champs que vous recherchez. Les données vont dans `data/barrel_ngram`
+sous le répertoire courant, sauf si vous définissez l’option ou la
+variable d’environnement d’application `data_dir`.
+</Callout>

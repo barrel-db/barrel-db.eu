@@ -1,0 +1,146 @@
+---
+translation_of: src/content/docs/start/quickstart-embedded.mdx
+source_hash: "f51ebefec8b339d0"
+title: "Démarrage rapide : embarqué"
+description: Ajoutez Barrel à une application Erlang, stockez des articles de support, interrogez-les avec BQL, puis recherchez-les par leur sens.
+---
+import CodeBlock from '../../../../components/CodeBlock.astro';
+import Callout from '../../../../components/Callout.astro';
+
+Ajoutez Barrel à une application Erlang, stockez des articles de
+support, interrogez-les avec BQL, puis recherchez-les par leur sens.
+Comptez une dizaine de minutes. Suivez ce parcours quand Barrel tournera
+dans votre propre release OTP, sans serveur entre les deux.
+
+## Avant de commencer
+
+- Erlang/OTP 26 ou plus récent, et rebar3.
+- CMake et un compilateur C++ : le stockage vectoriel compile une
+  bibliothèque native.
+- Pour l’étape 5 seulement : [Ollama](https://ollama.com) en marche en
+  local avec le modèle `nomic-embed-text` (`ollama pull nomic-embed-text`).
+
+## 1. Créer le projet
+
+```shell
+rebar3 new release kb
+cd kb
+```
+
+Ajoutez barrel aux dépendances, et indiquez-lui où garder ses fichiers.
+
+<CodeBlock label="rebar.config" code={`{deps, [{barrel, "~> 1.12"}]}.`} />
+
+<CodeBlock label="config/sys.config" code={`[{barrel_docdb, [{data_dir, "data/docdb"}]}].`} />
+
+## 2. Ouvrir une base
+
+Lancez un shell avec `rebar3 shell`. `vectordb => none` n’ouvre que le
+stockage de documents, donc aucun modèle n’est encore nécessaire.
+
+<CodeBlock label="Shell Erlang" code={`{ok, _} = application:ensure_all_started(barrel),
+{ok, Db} = barrel:open(<<"kb">>, #{vectordb => none}).`} />
+
+## 3. Écrire des documents
+
+<CodeBlock label="Shell Erlang" code={`Articles = [
+  #{<<"id">> => <<"kb-142">>, <<"product">> => <<"console">>,
+    <<"title">> => <<"Reset a locked account">>},
+  #{<<"id">> => <<"kb-207">>, <<"product">> => <<"console">>,
+    <<"title">> => <<"Rotate an API key">>},
+  #{<<"id">> => <<"kb-311">>, <<"product">> => <<"mobile">>,
+    <<"title">> => <<"Sign in with a passkey">>}],
+[{ok, _} = barrel:put_doc(Db, A) || A <- Articles],
+barrel:get_doc(Db, <<"kb-207">>).`} />
+
+<CodeBlock output label="Sortie d’une exécution sur barrel 1.12.0" code={`{ok,#{<<"_rev">> =>
+          <<"000001a1ba3fd05d00000000@w4f0cb98700ad5ffc">>,
+      <<"id">> => <<"kb-207">>,<<"product">> => <<"console">>,
+      <<"title">> => <<"Rotate an API key">>}}`} />
+
+`_rev` est le jeton de version de l’écriture. Pour mettre le document à
+jour, renvoyez-le avec votre modification. Voir
+[L’enregistrement](/fr/docs/concepts/record).
+
+## 4. Interroger avec BQL
+
+<CodeBlock label="Shell Erlang" code={`{ok, Rows, _Meta} = barrel:query(Db,
+    <<"SELECT id, title FROM kb "
+      "WHERE product = 'console' ORDER BY id">>).`} />
+
+<CodeBlock output label="Sortie d’une exécution sur barrel 1.12.0" code={`{ok,[#{<<"id">> => <<"kb-142">>,
+       <<"title">> => <<"Reset a locked account">>},
+     #{<<"id">> => <<"kb-207">>,
+       <<"title">> => <<"Rotate an API key">>}],
+    #{count => 2, ...}}`} />
+
+## 5. Rechercher par le sens
+
+Ouvrez une deuxième base en mode enregistrement. Barrel calcule
+l’embedding du titre de chaque document que vous y écrivez et garde
+l’index vectoriel en phase avec les modifications et suppressions
+suivantes. Le mode enregistrement ne traite que les documents écrits
+après son activation : vous réécrivez donc les articles dans cette
+nouvelle base.
+
+<CodeBlock label="Shell Erlang" code={`{ok, Kb} = barrel:open(<<"kb_search">>, #{
+    embedding => #{
+        fields   => [<<"title">>],
+        mode     => sync,
+        embedder => {ollama,
+                     #{model => <<"nomic-embed-text">>}}},
+    vectordb => #{db_path => "data/vectors/kb_search"}}),
+[{ok, _} = barrel:put_doc(Kb, A) || A <- Articles],
+barrel:search(Kb, <<"I cannot log in">>, #{k => 2}).`} />
+
+<CodeBlock output label="Sortie d’une exécution sur barrel 1.12.0 avec Ollama nomic-embed-text" code={`{ok,[#{text => <<"Sign in with a passkey">>,
+       metadata =>
+           #{<<"product">> => <<"mobile">>,
+             <<"title">> => <<"Sign in with a passkey">>},
+       key => <<"kb-311">>,score => 0.5656703092487099},
+     #{text => <<"Reset a locked account">>,
+       metadata =>
+           #{<<"product">> => <<"console">>,
+             <<"title">> => <<"Reset a locked account">>},
+       key => <<"kb-142">>,score => 0.5460874853125287}]}`} />
+
+La même recherche s’exécute depuis BQL, jointe aux documents :
+
+<CodeBlock label="Shell Erlang" code={`barrel:query(Kb,
+    <<"SELECT v.id, v._score, title "
+      "FROM vector_top_k('lost my credentials', k => 2) AS v">>).`} />
+
+<CodeBlock output label="Sortie d’une exécution sur barrel 1.12.0 avec Ollama nomic-embed-text" code={`{ok,[#{<<"_score">> => 0.5919581721812395,
+       <<"id">> => <<"kb-142">>,
+       <<"title">> => <<"Reset a locked account">>},
+     #{<<"_score">> => 0.47384916313011594,
+       <<"id">> => <<"kb-311">>,
+       <<"title">> => <<"Sign in with a passkey">>}],
+    #{count => 2, ...}}`} />
+
+<Callout label="Note">
+Le mode enregistrement traite ce que vous écrivez après son activation ;
+il n’indexe pas les documents déjà présents dans une base ouverte sans
+lui. Pas d’Ollama ? N’importe quel fournisseur fonctionne ici : un modèle
+local via un virtualenv Python, ou une API cloud avec une clé. Voir
+[Choisir un fournisseur
+d’embeddings](/fr/docs/search/embedding-providers).
+</Callout>
+
+Définissez `db_path` comme ci-dessus. Sans lui, le stockage vectoriel va
+dans `./priv/barrel_vectordb_kb_search` sous le répertoire courant.
+
+## 6. Fermer
+
+<CodeBlock label="Shell Erlang" code={`ok = barrel:close(Db),
+ok = barrel:close(Kb).`} />
+
+## Ensuite
+
+- Recherche hybride et fonctions de table BQL : [Interroger avec
+  BQL](/fr/docs/guides/query-bql) et [Vectorielle, par mot-clé et
+  hybride](/fr/docs/search/hybrid).
+- Garder une deuxième copie en phase :
+  [Synchronisation](/fr/docs/guides/synchronization).
+- Essayer des changements sans toucher l’original : [Brancher, fusionner,
+  récupérer](/fr/docs/guides/timeline).

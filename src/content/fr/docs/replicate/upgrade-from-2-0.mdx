@@ -1,0 +1,155 @@
+---
+translation_of: src/content/docs/replicate/upgrade-from-2-0.mdx
+source_hash: "e527a895924bc9fa"
+title: Mettre à jour depuis la 2.0
+description: Passez des réplicas de barrel_docdb 2.0.0 à 2.1.0, sachez ce que fait seule la première exécution après la mise à jour, et réparez une fois un réplica abîmé avec reconcile.
+---
+import Callout from '../../../../components/Callout.astro';
+
+barrel_docdb 2.1.0 corrige des bugs de réplication de la 2.0.0 qui
+pouvaient laisser un réplica sans certains documents ou pièces jointes,
+ou avec un corps vide pour une version vivante. La mise à jour empêche de
+nouveaux dégâts mais ne répare pas ce qui est déjà faux. Lisez cette page
+quand vous mettez à jour des réplicas qui ont tourné en 2.0.0 : l’ordre
+de mise à jour, ce qui change dans votre configuration, et la réparation
+à lancer une fois par réplica.
+
+## Ce qui peut être faux sur un réplica 2.0
+
+- Une réplication filtrée a sauté des documents correspondants : avec une
+  petite taille de lot, seules les premières pages sont arrivées.
+- Un filtre de canal avec une requête n’envoyait pas les suppressions :
+  le réplica a donc gardé des documents supprimés sur la source.
+- Un état qui nommait une version sans son corps a stocké un document
+  vide.
+- Un transfert de pièce jointe en échec a été sauté définitivement : le
+  point de reprise l’a dépassé.
+- Une tâche bidirectionnelle partageait une seule position de pièces
+  jointes entre ses deux sens et pouvait sauter des pièces jointes.
+
+## 1. Mettre à jour les serveurs avant les clients
+
+Les requêtes de réplication signées utilisent désormais la signature v3,
+que les anciens serveurs refusent. Mettez d’abord à jour chaque
+`barrel_server` en 1.13.0, puis les clients qui répliquent
+(barrel_docdb 2.1.0). Pendant le déploiement, les requêtes v1 et v2
+continuent de répliquer les documents mais sont refusées avec 401
+`signature_v3_required` quand elles écrivent une pièce jointe. Voir
+[Authentification](/fr/docs/security/authentication).
+
+## 2. Sortir les identifiants des configurations de tâches
+
+Les tâches de réplication refusent désormais les identifiants en ligne :
+`auth`, `signing`, `ssl_options`, `headers`, ou un utilisateur et un mot
+de passe dans l’URL. Une configuration de tâche qui en contient échoue
+avec `{error, {inline_credentials, Keys}}`. Placez-les dans l’app env,
+indexés par origine ou par URL de base :
+
+```erlang
+{barrel_docdb, [
+  {sync_auth,
+     #{<<"https://node2:8080">> => <<"s3cret">>}},
+  {sync_signing,
+     #{<<"https://node2:8080/db/orders">> =>
+           #{key_id => <<"node1">>, priv_key => Priv32}}}
+]}
+```
+
+Une réplication ponctuelle refuse aussi une URL avec un utilisateur et
+un mot de passe.
+
+## 3. Vérifier vos cibles de pièces jointes
+
+Une exécution attend désormais que la cible ait rendu durables les
+écritures de pièces jointes avant chaque point de reprise. Une cible qui
+ne sait pas le faire échoue avec `att_flush_unsupported`. Mettez cette
+cible à jour, ou répliquez vers elle sans la garantie :
+
+```erlang
+barrel_rep:replicate(Source, Target,
+                     #{att_durability => best_effort}).
+```
+
+Une réplication filtrée depuis un serveur qui ne sait pas filtrer les
+pièces jointes échoue désormais avec `att_filter_unsupported`. Mettez la
+source à jour.
+
+## 4. Laisser la première exécution réinitialiser ses points de reprise
+
+Vous n’avez rien à faire ici ; sachez seulement à quoi vous attendre. La
+première exécution après la mise à jour :
+
+- réinitialise, une fois, les points de reprise de documents filtrés et
+  tous les points de reprise de pièces jointes écrits par la 2.0, et
+  parcourt le flux depuis le début ; les documents et pièces jointes que
+  la cible détient déjà sont comparés, pas renvoyés ;
+- garde les points de reprise de documents non filtrés et les ids en
+  attente ;
+- réinitialise les mêmes positions dans les tâches de réplication
+  (`att_seq`, et `last_seq` pour les tâches filtrées, par sens) ;
+- journalise quelle réplication a été réinitialisée et pourquoi.
+
+Les points de reprise écrits à partir de là portent `vsn => 2` et sont
+conservés.
+
+## 5. Réparer chaque réplica une fois
+
+Lancez `barrel_rep:reconcile/3` une fois par réplica, depuis une copie
+de confiance :
+
+```erlang
+{ok, _} = barrel_rep:replicate(<<"healthy">>, <<"replica">>),
+{ok, #{docs_checked := Checked,
+       bodies_repaired := Repaired,
+       atts_resent := Resent,
+       doc_failures := [],
+       att_failures := []}} =
+    barrel_rep:reconcile(<<"healthy">>, <<"replica">>, #{}).
+```
+
+`reconcile/3` parcourt tout le flux de la source, sans point de reprise :
+
+- une version que les deux côtés détiennent, mais que la cible stocke
+  avec un autre corps, reçoit le corps de la source (un corps vide n’est
+  jamais écrit) ;
+- l’état de la source est fusionné comme lors d’une exécution normale,
+  ce qui copie les documents manquants ;
+- chaque pièce jointe de la source qui manque à la cible, ou qu’elle
+  détient avec d’autres octets, est renvoyée.
+
+Les échecs sont listés dans `doc_failures` et `att_failures`, et le
+parcours continue. Corrigez-les et relancez.
+
+Pour un réplica distant, passez le transport comme pour `replicate/3`.
+La cible demande un droit d’écriture ou une clé de signature, puisque la
+réparation est une écriture (`PUT /db/:db/_sync/repair/:id`) :
+
+```erlang
+Replica = barrel_rep_transport_http:endpoint(
+    <<"https://node2:8080/db/orders">>),
+{ok, _} = barrel_rep:reconcile(<<"orders">>, Replica,
+    #{target_transport => barrel_rep_transport_http}).
+```
+
+<Callout label="Note">
+Passez le même `filter` que celui de votre réplication pour ne réparer
+que ce périmètre. Une cible en lecture seule est refusée avec
+`{error, read_only}`. Pour restaurer un document ou une pièce jointe,
+réconciliez depuis une copie qui le détient, ou réécrivez-le du côté sain
+pour que la prochaine exécution l’envoie.
+</Callout>
+
+## Autres changements de la 2.1.0
+
+- Une base dont l’écrivain a planté redémarre désormais d’elle-même,
+  jusqu’à 3 fois en 60 secondes, puis se signale en échec ;
+  `barrel_docdb:reopen_db/1` la redémarre avec sa dernière configuration.
+- Une version répliquée trop en avance sur l’horloge locale est refusée
+  avec une erreur de décalage d’horloge au lieu d’être acceptée.
+- Un filtre de requête invalide est désormais une erreur au lieu d’être
+  ignoré.
+- Les envois de pièces jointes inachevés plus anciens que
+  `att_upload_timeout` (3600 s par défaut) sont supprimés.
+
+La liste complète se trouve dans le `apps/barrel_docdb/CHANGELOG.md` du
+dépôt.
