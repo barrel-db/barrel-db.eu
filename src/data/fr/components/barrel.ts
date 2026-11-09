@@ -1,4 +1,4 @@
-// translation_of: src/data/components/barrel.ts source_hash: 20bd37286d4d94db
+// translation_of: src/data/components/barrel.ts source_hash: 7fb456c04536f8ea
 // French text for the barrel library page. Code, calls and outputs come from the English file.
 import { overlay } from '../../overlay';
 import { barrel as en } from '../../components/barrel';
@@ -24,7 +24,7 @@ export const barrel = overlay(en, {
     { title: 'Options de barrel:open/2', rows: [
       { meaning: 'Options transmises à `barrel_docdb:create_db/2`' },
       { def: 'un magasin de vecteurs', meaning: 'Table de configuration du magasin, ou `none` pour des documents seuls' },
-      { meaning: 'Relatif au répertoire courant. Fixez-le toujours.' },
+      { meaning: 'À côté des documents. Un magasin créé avant la 1.13.0 dans `./priv/barrel_vectordb_<name>` y reste.' },
       { meaning: 'Table de politique du mode enregistrement, ou `stored` pour réutiliser celle enregistrée' },
       { def: 'désactivé', meaning: '`default` ou `#{provider => Mod}`' },
       { meaning: 'Les écritures renvoient `{error, read_only}`' },
@@ -76,7 +76,7 @@ export const barrel = overlay(en, {
     { title: 'Documents, vecteurs, BM25 et BQL dans une même base', intro: 'D’après une exécution vérifiée. `kb_embed` est un fournisseur de démonstration en 64 dimensions écrit pour l’exécution (hachage de caractéristiques : il rapproche les mots communs, il n’est pas sémantique). N’importe quel fournisseur [barrel_embed](/product/embed) peut le remplacer.', label: 'Shell Erlang', outputLabel: 'Sortie d’une exécution sur barrel 1.12.0 (abrégée)' },
   ],
   limits: [
-    'Sans `db_path`, le magasin de vecteurs va dans `./priv/barrel_vectordb_<name>` sous le répertoire courant, pas à côté des données docdb. Une sauvegarde du seul `data_dir` le manque.',
+    'Un magasin de vecteurs créé avant barrel 1.13.0 sans `db_path` reste dans `./priv/barrel_vectordb_<name>` sous le répertoire courant, avec une notice dans le journal. Une sauvegarde du seul `data_dir` le manque ; les nouveaux magasins vont dans `<data_dir>/<name>.vectordb`.',
     'Le magasin de vecteurs est lié au processus qui l’a ouvert. Utilisez `barrel_dbs` ou `store_supervised => true` pour des propriétaires de longue durée.',
     'En mode simple, `put_doc` et `vector_add` sont deux écritures séparées. Le mode enregistrement est la voie atomique.',
     'Changer la politique du mode enregistrement à la réouverture écrit un avertissement dans les logs et ne réindexe pas les documents existants.',

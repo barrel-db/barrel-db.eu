@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/operate/troubleshooting.mdx
-source_hash: "f6ef58feab4f315e"
+source_hash: "3c4c2354591ef473"
 title: Dépannage
 description: Les symptômes que vous pouvez rencontrer avec Barrel, leur cause et leur correction, regroupés par domaine.
 ---
@@ -13,7 +13,8 @@ Cette page liste les symptômes que vous pouvez rencontrer, leur cause et leur c
 | Symptôme | Cause | Correction |
 |---|---|---|
 | Les écritures échouent avec `{error, clock_skew}` après un redémarrage | L’horloge du nœud est revenue en dessous de l’écriture la plus récente faite par la base. Les données sont conservées et l’écrivain reste actif. | Corrigez l’horloge (NTP). Les écritures reprennent dès qu’elle dépasse ce point. |
-| La réplication depuis un pair échoue avec `clock_skew` | L’horloge du pair est en avance de plus de `hlc_max_offset` millisecondes. En HTTP, toute réponse 409 du pair est signalée comme `clock_skew`. | Synchronisez les horloges. Si elles concordent, lisez la vraie réponse du pair. |
+| La réplication depuis un pair échoue avec `clock_skew` | L’horloge du pair est en avance de plus de `hlc_max_offset` millisecondes. En HTTP, une réponse 409 n’est signalée comme `clock_skew` que si son corps indique `{"error":"clock_skew"}`. | Synchronisez les horloges. |
+| La réplication en HTTP échoue avec `{error, {http, 409, Body}}` | Le pair, ou un proxy placé devant lui, a répondu 409 pour une autre raison. | Lisez `Body`. |
 
 `hlc_max_offset` vaut 0 par défaut, ce qui désactive la vérification du décalage. Définissez-le dans l’environnement applicatif de `barrel_docdb` uniquement si vous voulez refuser les pairs dont l’horloge dérive.
 
@@ -47,7 +48,7 @@ maps:with([docs_checked, bodies_repaired,
 | `500 {dimension_mismatch,768,N}` | Le magasin attend 768 dimensions par défaut. | Envoyez des vecteurs à la taille du magasin, ou ouvrez-le avec les `dimensions` du modèle. |
 | Les vecteurs n’ont pas la bonne longueur | `dimensions` n’est pas défini et vaut 768 par défaut. | Réglez `dimensions` sur la taille du modèle (384 pour bge-small). |
 | Le premier embedding local est lent ou échoue hors ligne | Les fournisseurs Python installent des paquets et téléchargent le modèle à la première utilisation. | Faites un premier passage en ligne, puis exécutez avec `HF_HUB_OFFLINE=1` et `TRANSFORMERS_OFFLINE=1`. |
-| `barrel_vectordb:update/4` a fait disparaître une entrée | Bug connu : sans embedder, ou avec un fournisseur indisponible, l’entrée est supprimée avant que le nouveau texte soit transformé en embedding. | N’appelez pas `update/4` sur un magasin sans embedder fonctionnel. |
+| `barrel_vectordb:update/4` ou `upsert` a fait disparaître une entrée | Un bug antérieur à barrel_vectordb 2.5.3 : l’entrée était supprimée avant que le nouveau texte soit transformé en embedding, si bien qu’un échec du calcul la perdait. | Passez à barrel_vectordb 2.5.3. Un échec du calcul garde alors l’ancienne entrée et renvoie l’erreur. |
 
 ## Bases et serveur
 
@@ -56,13 +57,13 @@ maps:with([docs_checked, bodies_repaired,
 | `open_db` renvoie `{error, {db_failed, Reason}}` | L’écrivain a planté 3 fois en 60 secondes. Cette base reste arrêtée ; les autres ne sont pas touchées. | Cherchez `Reason` dans le log, corrigez, puis `barrel_docdb:reopen_db(Name)`. |
 | `{error, db_is_encrypted}` | Ouverte sans ses paramètres de chiffrement. | Passez la même spécification `encryption` à chaque ouverture. |
 | L’ouverture échoue avec `Snappy is not available` | barrel_docdb 2.2.0 compressait avec Snappy, et rocksdb a été compilé sans la bibliothèque Snappy du système. | Passez à barrel_docdb 2.2.1, qui utilise zstd. Ou installez `libsnappy-dev` (ou le paquet Snappy de votre système) et recompilez rocksdb. |
-| Une faute de frappe dans un chemin REST a créé une base vide | Chaque route `/db/:db` sauf `_sync` crée la base. | Vérifiez les noms dans votre client ; `DELETE /db/:db?purge=true` la supprime. |
-| `PUT /db/MyDb` répond `500 invalid_db_name` | Les noms de base sont en minuscules. | Utilisez des lettres minuscules, des chiffres, `_` et `-`, en commençant par une lettre ou un chiffre. |
-| Des fichiers de vecteurs apparaissent dans `./priv` | Sans `db_path`, le magasin de vecteurs va sous le répertoire de travail, même quand le serveur a un `data_dir`. | Définissez toujours `vectordb => #{db_path => ...}`. |
+| Un appel REST répond `404 db_not_found` | La base n’existe pas. Depuis barrel_server 1.14.0, seul `PUT /db/:db` en crée une ; avant, n’importe quelle route le faisait, si bien qu’une faute de frappe laissait une base vide. | Vérifiez le nom, ou créez d’abord la base avec `PUT /db/:db`. `DELETE /db/:db?purge=true` supprime une base vide laissée par un serveur plus ancien. |
+| `PUT /db/MyDb` répond `400 invalid_name` | Les noms de base utilisent des lettres minuscules, des chiffres, `_` et `-`, de 1 à 63 octets, et ne commencent pas par `_`. Avant barrel_server 1.14.0, la réponse était `500 invalid_db_name`. | Utilisez un nom conforme à cette règle. |
+| Des fichiers de vecteurs apparaissent dans `./priv` | Le magasin de vecteurs a été créé avant barrel 1.13.0 sans `db_path`, sous le répertoire de travail. Il continue d’y être utilisé, avec une notice dans le journal ; les nouveaux magasins vont dans `<data_dir>/<name>.vectordb`. | Sauvegardez ce dossier, ou définissez `vectordb => #{db_path => ...}` pour le placer vous-même. |
 | Un jeton de capacité reçoit 403 | Il est pour un autre espace, ou n’a pas le droit nécessaire. | Utilisez un jeton pour cet espace avec le droit requis. |
 | Prometheus ne trouve rien sur `/metrics` | Cette route n’existe pas. | Poussez avec l’exporter OTLP, voir [Supervision](/fr/docs/operate/monitoring). |
-| `barrel_db_documents_total` reste à 0 | Cette gauge n’est jamais renseignée. | Utilisez `barrel:info/1`, `barrel:vector_stats/1` ou `barrel_docdb:stub_stats/1`. |
-| `barrel_db_pending_compaction_bytes` ne cesse de grandir | La compaction ne suit plus les écritures. | Augmentez `max_background_jobs` dans `store_opts`, ou étalez les écritures. |
+| `barrel_db_documents_total` a disparu | barrel_docdb 2.3.0 l’a retirée : elle n’a jamais eu de valeur. Un nombre de documents est prévu. | Utilisez `barrel:info/1`, `barrel:vector_stats/1` ou `barrel_docdb:stub_stats/1`. |
+| `barrel_db_pending_compaction_bytes_db` ne cesse de grandir | La compaction ne suit plus les écritures. | Augmentez `max_background_jobs` dans `store_opts`, ou étalez les écritures. |
 | Un avertissement dit que `compaction_interval` ou `prune_depth` n’a plus d’effet | Ces options ont été retirées dans barrel_docdb 2.2.0. | Retirez-les de votre configuration. |
 
 ## Branches
@@ -76,7 +77,7 @@ maps:with([docs_checked, bodies_repaired,
 
 | Symptôme | Cause | Correction |
 |---|---|---|
-| barrel_rerank crée un venv dans un dossier nommé `undefined` | L’application règle `venv_path` sur `undefined` et le code l’utilise comme chemin. | Appelez `application:load(barrel_rerank)`, puis `application:set_env(barrel_rerank, venv_path, AbsPath)` avant de la démarrer. |
+| barrel_rerank crée un venv dans un dossier nommé `undefined` | Un bug de barrel_rerank 1.0.2 : l’application déclare `venv_path` à `undefined` et le code l’utilisait comme chemin. | Passez à barrel_rerank 1.0.3, qui utilise `priv/.venv` quand `venv_path` n’est pas défini. Supprimez le dossier `undefined`. |
 | `barrel_rerank:start_link/1` renvoie `{error, {port_open_failed, enoent}}` | `python` n’est pas un chemin absolu et l’installation du venv a échoué. | Passez un `python` absolu, ou un `venv_path` fonctionnel. |
 
 <Callout label="Remarque">

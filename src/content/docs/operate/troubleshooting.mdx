@@ -11,7 +11,8 @@ This page lists symptoms you may see, what causes them and how to fix them. Find
 | Symptom | Cause | Fix |
 |---|---|---|
 | Writes fail with `{error, clock_skew}` after a restart | The node's clock went back below the newest write the database made. Data is kept and the writer stays up. | Fix the clock (NTP). Writes resume once it passes that point. |
-| Replication from a peer fails with `clock_skew` | The peer's clock is ahead by more than `hlc_max_offset` milliseconds. Over HTTP, any 409 from the peer is reported as `clock_skew`. | Sync the clocks. If they agree, read the peer's actual response. |
+| Replication from a peer fails with `clock_skew` | The peer's clock is ahead by more than `hlc_max_offset` milliseconds. Over HTTP, a 409 is reported as `clock_skew` only when its body says `{"error":"clock_skew"}`. | Sync the clocks. |
+| Replication over HTTP fails with `{error, {http, 409, Body}}` | The peer, or a proxy in front of it, answered 409 for another reason. | Read `Body`. |
 
 `hlc_max_offset` defaults to 0, which turns the offset check off. Set it in the `barrel_docdb` application environment only if you want peers with a drifting clock refused.
 
@@ -45,7 +46,7 @@ maps:with([docs_checked, bodies_repaired,
 | `500 {dimension_mismatch,768,N}` | The store expects 768 dimensions by default. | Send vectors of the store's size, or open it with the model's `dimensions`. |
 | Vectors have the wrong length | `dimensions` is not set and defaults to 768. | Set `dimensions` to the model's size (bge-small is 384). |
 | The first local embed is slow or fails offline | Python providers install packages and download the model on first use. | Warm it up once online, then run with `HF_HUB_OFFLINE=1` and `TRANSFORMERS_OFFLINE=1`. |
-| `barrel_vectordb:update/4` made an entry disappear | Known bug: with no embedder, or a provider that is down, the entry is deleted before the new text is embedded. | Do not call `update/4` on a store without a working embedder. |
+| `barrel_vectordb:update/4` or `upsert` made an entry disappear | A bug before barrel_vectordb 2.5.3: the entry was deleted before the new text was embedded, so a failed embed lost it. | Upgrade to barrel_vectordb 2.5.3. A failed embed then keeps the old entry and returns the error. |
 
 ## Databases and the server
 
@@ -54,13 +55,13 @@ maps:with([docs_checked, bodies_repaired,
 | `open_db` returns `{error, {db_failed, Reason}}` | The writer crashed 3 times in 60 seconds. That database stays down; others are not affected. | Read the log for `Reason`, fix it, then `barrel_docdb:reopen_db(Name)`. |
 | `{error, db_is_encrypted}` | Opened without its encryption settings. | Pass the same `encryption` spec on every open. |
 | Opening fails with `Snappy is not available` | barrel_docdb 2.2.0 compressed with Snappy, and rocksdb was built without the system Snappy library. | Upgrade to barrel_docdb 2.2.1, which uses zstd. Or install `libsnappy-dev` (or your system's Snappy package) and rebuild rocksdb. |
-| A typo in a REST path created an empty database | Every `/db/:db` route except `_sync` creates the database. | Check names in your client; `DELETE /db/:db?purge=true` removes it. |
-| `PUT /db/MyDb` answers `500 invalid_db_name` | Database names are lowercase. | Use lowercase letters, digits, `_` and `-`, starting with a letter or digit. |
-| Vector files appear in `./priv` | Without `db_path` the vector store goes under the working directory, even when the server has a `data_dir`. | Always set `vectordb => #{db_path => ...}`. |
+| A REST call answers `404 db_not_found` | The database does not exist. Since barrel_server 1.14.0 only `PUT /db/:db` creates one; before, any route did, so a typo left an empty database. | Check the name, or create the database with `PUT /db/:db` first. `DELETE /db/:db?purge=true` removes an empty one left by an older server. |
+| `PUT /db/MyDb` answers `400 invalid_name` | Database names use lowercase letters, digits, `_` and `-`, 1 to 63 bytes, and must not start with `_`. Before barrel_server 1.14.0 this answered `500 invalid_db_name`. | Use a name that follows the rule. |
+| Vector files appear in `./priv` | The vector store was created before barrel 1.13.0 without `db_path`, under the working directory. It keeps being used there, with a notice in the log; new stores go to `<data_dir>/<name>.vectordb`. | Back that folder up, or set `vectordb => #{db_path => ...}` to place it yourself. |
 | A capability token gets 403 | It is for another space, or lacks the right. | Use a token for that space with the right it needs. |
 | Prometheus finds nothing at `/metrics` | There is no such route. | Push with the OTLP exporter, see [Monitoring](/docs/operate/monitoring). |
-| `barrel_db_documents_total` stays at 0 | That gauge is never set. | Use `barrel:info/1`, `barrel:vector_stats/1` or `barrel_docdb:stub_stats/1`. |
-| `barrel_db_pending_compaction_bytes` keeps growing | Compaction is falling behind the writes. | Raise `max_background_jobs` in `store_opts`, or spread the writes. |
+| `barrel_db_documents_total` is missing | barrel_docdb 2.3.0 removed it: it never had a value. A document count is planned. | Use `barrel:info/1`, `barrel:vector_stats/1` or `barrel_docdb:stub_stats/1`. |
+| `barrel_db_pending_compaction_bytes_db` keeps growing | Compaction is falling behind the writes. | Raise `max_background_jobs` in `store_opts`, or spread the writes. |
 | A warning says `compaction_interval` or `prune_depth` no longer has an effect | These options were removed in barrel_docdb 2.2.0. | Remove them from your configuration. |
 
 ## Branches
@@ -74,7 +75,7 @@ maps:with([docs_checked, bodies_repaired,
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| barrel_rerank creates a venv in a folder named `undefined` | The app sets `venv_path` to `undefined` and the code uses it as a path. | Call `application:load(barrel_rerank)`, then `application:set_env(barrel_rerank, venv_path, AbsPath)` before you start it. |
+| barrel_rerank creates a venv in a folder named `undefined` | A bug in barrel_rerank 1.0.2: the app declares `venv_path` as `undefined` and the code used it as a path. | Upgrade to barrel_rerank 1.0.3, which uses `priv/.venv` when `venv_path` is unset. Remove the `undefined` folder. |
 | `barrel_rerank:start_link/1` returns `{error, {port_open_failed, enoent}}` | `python` is not an absolute path and the venv setup failed. | Pass an absolute `python`, or a working `venv_path`. |
 
 <Callout label="Note">

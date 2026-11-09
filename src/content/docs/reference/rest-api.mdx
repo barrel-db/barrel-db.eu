@@ -4,17 +4,18 @@ description: Every barrel_server HTTP route with its method, path, auth class, r
 ---
 import Callout from '../../../components/Callout.astro';
 
-This is the list of every route barrel_server serves, with who may call it, what to send and what comes back. Use it when you write a client by hand or check what a route does; the [server guide](/docs/guides/rest-server) shows the same routes in a worked session. It is built from the route table in `barrel_server_api.erl` (barrel_server 1.13.0), and the example answers were captured from a running server.
+This is the list of every route barrel_server serves, with who may call it, what to send and what comes back. Use it when you write a client by hand or check what a route does; the [server guide](/docs/guides/rest-server) shows the same routes in a worked session. It is built from the route table in `barrel_server_api.erl` (barrel_server 1.14.0), and the example answers were captured from a running server.
 
-<Callout label="Out of date" kind="limit">
-<p>The OpenAPI file at [/openapi.yaml](/openapi.yaml) (spec version 0.2.0) has drifted from the server. Do not generate a client from it without checking this page.</p>
-<p>Known drift: it has none of the 16 contexts and working-set routes; it says `GET /` is public, but it needs auth when auth is configured; it returns `{id, _rev}` from `PUT /db/:db/doc/:id`, the server returns `{id, ok, rev}`; it types `/find` `where` items as objects, they are arrays such as `["path",["kind"],"note"]`, and it allows extra keys the server refuses; it omits `max_rows`, `deadline_ms`, `?conflicts=true`, the write headers, and the 501, 503 and 500 attachment and search errors.</p>
+<Callout label="Check the details" kind="limit">
+<p>The OpenAPI file at [/openapi.yaml](/openapi.yaml) lists every route this page lists, and a barrel test fails when the two differ. Some request and response details still differ from the server, so check this page before you generate a client from it.</p>
+<p>Known differences: it says `GET /` is public, but it needs auth when auth is configured; it returns `{id, _rev}` from `PUT /db/:db/doc/:id`, the server returns `{id, ok, rev}`; it types `/find` `where` items as objects, they are arrays such as `["path",["kind"],"note"]`, and it allows extra keys the server refuses; it omits `max_rows`, `deadline_ms`, `?conflicts=true`, the write headers, and the 501, 503 and 500 attachment and search errors; the contexts and working-set routes are listed with loose bodies.</p>
 </Callout>
 
 ## Conventions
 
 - Bodies are JSON unless a route says otherwise. Errors are `{"error": "<code>"}`; see [Error codes](/docs/reference/errors).
-- Every `/db/:db/...` route creates the database if it does not exist, except the `_sync` routes. Names must match `[A-Za-z0-9_-]`, and docdb also needs them lowercase.
+- Only `PUT /db/:db` creates a database. Every other `/db/:db/...` route answers 404 `{"error":"db_not_found"}` when the database does not exist.
+- Names use lowercase letters, digits, `_` and `-`, 1 to 63 bytes, and must not start with `_`; any other name answers 400 `invalid_name`. The internal `_barrel_system` database is not reachable over REST.
 - Revisions look like `000001a1b876972d00000000@w78160d59891ba7d7`. Send the current one as `_rev` to update.
 - Writes accept `x-barrel-actor`, `x-barrel-session` and `x-barrel-source` headers, recorded as provenance (256 bytes each).
 - Changes cursors are URL-safe base64 HLCs such as `AAABobh2tYwAAAAB`.
@@ -37,12 +38,13 @@ A server with no `auth` configured skips every check. See [Authentication](/docs
 |---|---|---|---|---|
 | `GET /` | server | none | 200 text `barrel edge database` | 401 |
 | `GET /health` | public | none | 200 `{"status":"ok"}`; checks no database | none |
+| `GET /ready` | public | none | 200 `{"status":"ready"}` when the database and replication processes run | 503 `{"status":"not_ready","failed":[...]}`, `failed` among `databases`, `stores`, `replication` |
 
 ## Databases
 
 | Route | Auth | Request | Response | Errors |
 |---|---|---|---|---|
-| `PUT /db/:db` | server only | optional `{"att_opts":{"backend":"blob"\|"s3","s3":{...}}}` | 201 `{"ok":true,"db":"demo"}` | 400 `invalid_name`, `bad_att_opts`; 500 `invalid_db_name` |
+| `PUT /db/:db` | server only | optional `{"att_opts":{"backend":"blob"\|"s3","s3":{...}}}` | 201 `{"ok":true,"db":"demo"}` | 400 `invalid_name`, `bad_att_opts` |
 | `GET /db/:db` | read | none | 200 info: `name`, `config`, `read_only`, `db_path`, `keyspace`, `retention_period`, `history_floor`, `att_floor`, `write_groups`, `embedder` | 400, 500 |
 | `DELETE /db/:db` | server only | `?purge=true` also deletes the files | 200 `{"ok":true,"db":"demo"}`, plus `"purged":true` | 500 |
 
@@ -74,12 +76,12 @@ curl -X PUT localhost:8080/db/demo/doc/a \
 
 | Route | Auth | Request | Response | Errors |
 |---|---|---|---|---|
-| `POST /db/:db/find` | read | `where`, `limit`, `offset`, `include_docs`, `id_prefix`; any other key is refused | 200 `{"rows":[{id,doc}],"meta":{has_more,continuation?}}` | 400 `invalid_query` + `reason` |
+| `POST /db/:db/find` | read | `where`, `limit`, `offset`, `include_docs`, `id_prefix`, `continuation`; any other key is refused | 200 `{"rows":[{id,doc}],"meta":{has_more,continuation?}}` | 400 `invalid_query` + `reason` |
 | `POST /db/:db/query` | read | raw BQL with a non-JSON content type, or `{query, params, continuation, max_rows, deadline_ms}` | 200 `application/x-ndjson`: `{"row":...}` lines, then `{"meta":{...}}` | 400 `invalid_query` + `message`, `line`, `column`; `missing_query`; `bad_json`; `invalid_max_rows`; `invalid_deadline_ms`; `subscribe_requires_sse` |
 | `GET /db/:db/query` | read | `?q=`, `?max_rows=`, `?deadline_ms=` (for EventSource) | as for POST | as for POST |
 
 - `where` items are arrays in the replication-filter form, such as `["path",["kind"],"note"]`.
-- `/find` returns `meta.continuation` when there are more rows, but refuses it as input; page with `offset`. It returns `doc` in every row, with or without `include_docs`.
+- `/find` returns `meta.continuation` when there are more rows. To read the next page, send it back as `continuation` in the body with the same query; a malformed one answers 400 `invalid_query`. It returns `doc` in every row, with or without `include_docs`.
 - `max_rows` is at most 1000 and `deadline_ms` at most 300000. The final `meta` line carries `has_more`, `bound` (`limit_reached` or `exhausted`), `count`, `continuation`, `instance_id`, `last_seq` and, for search, `embedding`. An error after rows were sent arrives as a last line `{"error":"deadline"}` or another reason.
 - A `SUBSCRIBE` statement needs `Accept: text/event-stream` or `?feed=sse`, and streams the events `row`, `ready`, `change`, `error` and `ping` (every 30 s).
 

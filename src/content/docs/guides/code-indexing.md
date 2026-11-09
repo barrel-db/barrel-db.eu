@@ -35,7 +35,7 @@ Open a record-mode database. The `embedding` policy names the field to embed (th
 - `{local, #{}}` runs `BAAI/bge-base-en-v1.5` (768 dimensions) through Python; any [embedding provider](/docs/search/embedding-providers) works. Set `dimensions` to the model's size.
 - Record mode turns on a disk BM25 index, so `bm25_top_k` and `hybrid_top_k` work without more options.
 - `barrel_dbs:ensure/2` gives you a supervised, shared handle. If barrel_server runs in the same node, the server reuses this open database instead of opening a plain one.
-- Set `db_path`: without it the vector store goes to `./priv` under the working directory.
+- `db_path` places the vector store where you want it. Without it the store goes next to the documents, in `<data_dir>/code_index.vectordb`.
 
 ## Index a file
 

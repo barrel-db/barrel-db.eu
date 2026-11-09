@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/start/install.md
-source_hash: "f50cc3dfbea8dd42"
+source_hash: "991b1d373b65776c"
 title: Installer
 description: Ajoutez Barrel à un projet Erlang depuis Hex, compilez le serveur depuis l’umbrella, ou compilez barrel-lite pour le navigateur.
 ---
@@ -131,6 +131,7 @@ l’utilise.
 ## Notes
 
 - Sans `vectordb => #{db_path => ...}`, une base place son stockage
-  vectoriel dans `./priv/barrel_vectordb_<name>` sous le répertoire
-  courant, et non sous `data_dir`. Définissez `db_path` pour chaque base
-  qui a des vecteurs.
+  vectoriel à côté de ses documents, dans `<data_dir>/<name>.vectordb`.
+  Un stockage créé avant barrel 1.13.0 dans
+  `./priv/barrel_vectordb_<name>` sous le répertoire courant y reste ;
+  définissez `db_path` pour le déplacer.

@@ -1,22 +1,23 @@
 ---
 translation_of: src/content/docs/reference/rest-api.mdx
-source_hash: "96b46fbffd90be02"
+source_hash: "dfcab1e543021e0d"
 title: API REST
 description: Chaque route HTTP de barrel_server avec sa méthode, son chemin, sa classe d’authentification, sa requête, sa réponse et ses erreurs, vérifiées contre la table des routes et un serveur en marche.
 ---
 import Callout from '../../../../components/Callout.astro';
 
-Voici la liste de toutes les routes que sert barrel_server, avec qui peut les appeler, quoi envoyer et ce qui revient. Utilisez-la quand vous écrivez un client à la main ou vérifiez ce que fait une route ; le [guide du serveur](/fr/docs/guides/rest-server) montre les mêmes routes dans une session complète. Elle est construite à partir de la table des routes de `barrel_server_api.erl` (barrel_server 1.13.0), et les réponses d’exemple ont été capturées sur un serveur en marche.
+Voici la liste de toutes les routes que sert barrel_server, avec qui peut les appeler, quoi envoyer et ce qui revient. Utilisez-la quand vous écrivez un client à la main ou vérifiez ce que fait une route ; le [guide du serveur](/fr/docs/guides/rest-server) montre les mêmes routes dans une session complète. Elle est construite à partir de la table des routes de `barrel_server_api.erl` (barrel_server 1.14.0), et les réponses d’exemple ont été capturées sur un serveur en marche.
 
-<Callout label="Pas à jour" kind="limit">
-<p>Le fichier OpenAPI [/openapi.yaml](/openapi.yaml) (version de spécification 0.2.0) s’est écarté du serveur. Ne générez pas de client à partir de lui sans vérifier cette page.</p>
-<p>Écarts connus : il n’a aucune des 16 routes de contextes et d’ensembles de travail ; il dit que `GET /` est public, mais la route demande une authentification quand `auth` est configuré ; il renvoie `{id, _rev}` depuis `PUT /db/:db/doc/:id`, le serveur renvoie `{id, ok, rev}` ; il type les éléments `where` de `/find` comme des objets, ce sont des tableaux comme `["path",["kind"],"note"]`, et il autorise des clés supplémentaires que le serveur refuse ; il omet `max_rows`, `deadline_ms`, `?conflicts=true`, les en-têtes d’écriture, et les erreurs 501, 503 et 500 sur les pièces jointes et la recherche.</p>
+<Callout label="Vérifiez les détails" kind="limit">
+<p>Le fichier OpenAPI [/openapi.yaml](/openapi.yaml) liste toutes les routes de cette page, et un test de barrel échoue quand les deux diffèrent. Certains détails de requêtes et de réponses diffèrent encore du serveur : vérifiez cette page avant de générer un client à partir de lui.</p>
+<p>Écarts connus : il dit que `GET /` est public, mais la route demande une authentification quand `auth` est configuré ; il renvoie `{id, _rev}` depuis `PUT /db/:db/doc/:id`, le serveur renvoie `{id, ok, rev}` ; il type les éléments `where` de `/find` comme des objets, ce sont des tableaux comme `["path",["kind"],"note"]`, et il autorise des clés supplémentaires que le serveur refuse ; il omet `max_rows`, `deadline_ms`, `?conflicts=true`, les en-têtes d’écriture, et les erreurs 501, 503 et 500 sur les pièces jointes et la recherche ; les routes de contextes et d’ensembles de travail sont listées avec des corps peu précis.</p>
 </Callout>
 
 ## Conventions
 
 - Les corps sont en JSON sauf mention contraire de la route. Les erreurs sont `{"error": "<code>"}` ; voir [Codes d’erreur](/fr/docs/reference/errors).
-- Chaque route `/db/:db/...` crée la base si elle n’existe pas, sauf les routes `_sync`. Les noms doivent respecter `[A-Za-z0-9_-]`, et docdb les veut aussi en minuscules.
+- Seul `PUT /db/:db` crée une base. Toute autre route `/db/:db/...` répond 404 `{"error":"db_not_found"}` quand la base n’existe pas.
+- Les noms utilisent des lettres minuscules, des chiffres, `_` et `-`, de 1 à 63 octets, et ne commencent pas par `_` ; tout autre nom répond 400 `invalid_name`. La base interne `_barrel_system` n’est pas accessible en REST.
 - Les révisions ressemblent à `000001a1b876972d00000000@w78160d59891ba7d7`. Envoyez la révision courante dans `_rev` pour mettre à jour.
 - Les écritures acceptent les en-têtes `x-barrel-actor`, `x-barrel-session` et `x-barrel-source`, enregistrés comme provenance (256 octets chacun).
 - Les curseurs du flux de changements sont des HLC en base64 sûr pour les URL, comme `AAABobh2tYwAAAAB`.
@@ -38,13 +39,14 @@ Un serveur sans `auth` configuré saute toutes les vérifications. Voir [Authent
 | Route | Auth | Requête | Réponse | Erreurs |
 |---|---|---|---|---|
 | `GET /` | server | aucune | 200 texte `barrel edge database` | 401 |
-| `GET /health` | public | aucune | 200 `{"status":"ok"}` ; ne vérifie aucune base | aucune |
+| `GET /health` | public | aucune | 200 `{"status":"ok"}` ; ne vérifie aucune base | aucune |
+| `GET /ready` | public | aucune | 200 `{"status":"ready"}` quand les processus des bases et de la réplication tournent | 503 `{"status":"not_ready","failed":[...]}`, `failed` parmi `databases`, `stores`, `replication` |
 
 ## Bases
 
 | Route | Auth | Requête | Réponse | Erreurs |
 |---|---|---|---|---|
-| `PUT /db/:db` | server only | facultatif `{"att_opts":{"backend":"blob"\|"s3","s3":{...}}}` | 201 `{"ok":true,"db":"demo"}` | 400 `invalid_name`, `bad_att_opts` ; 500 `invalid_db_name` |
+| `PUT /db/:db` | server only | facultatif `{"att_opts":{"backend":"blob"\|"s3","s3":{...}}}` | 201 `{"ok":true,"db":"demo"}` | 400 `invalid_name`, `bad_att_opts` |
 | `GET /db/:db` | read | aucune | 200 infos : `name`, `config`, `read_only`, `db_path`, `keyspace`, `retention_period`, `history_floor`, `att_floor`, `write_groups`, `embedder` | 400, 500 |
 | `DELETE /db/:db` | server only | `?purge=true` supprime aussi les fichiers | 200 `{"ok":true,"db":"demo"}`, plus `"purged":true` | 500 |
 
@@ -76,12 +78,12 @@ curl -X PUT localhost:8080/db/demo/doc/a \
 
 | Route | Auth | Requête | Réponse | Erreurs |
 |---|---|---|---|---|
-| `POST /db/:db/find` | read | `where`, `limit`, `offset`, `include_docs`, `id_prefix` ; toute autre clé est refusée | 200 `{"rows":[{id,doc}],"meta":{has_more,continuation?}}` | 400 `invalid_query` + `reason` |
+| `POST /db/:db/find` | read | `where`, `limit`, `offset`, `include_docs`, `id_prefix`, `continuation` ; toute autre clé est refusée | 200 `{"rows":[{id,doc}],"meta":{has_more,continuation?}}` | 400 `invalid_query` + `reason` |
 | `POST /db/:db/query` | read | du BQL brut avec un content type non JSON, ou `{query, params, continuation, max_rows, deadline_ms}` | 200 `application/x-ndjson` : des lignes `{"row":...}`, puis `{"meta":{...}}` | 400 `invalid_query` + `message`, `line`, `column` ; `missing_query` ; `bad_json` ; `invalid_max_rows` ; `invalid_deadline_ms` ; `subscribe_requires_sse` |
 | `GET /db/:db/query` | read | `?q=`, `?max_rows=`, `?deadline_ms=` (pour EventSource) | comme pour POST | comme pour POST |
 
 - Les éléments `where` sont des tableaux sous la forme des filtres de réplication, comme `["path",["kind"],"note"]`.
-- `/find` renvoie `meta.continuation` quand il reste des lignes, mais le refuse en entrée ; paginez avec `offset`. Il renvoie `doc` dans chaque ligne, avec ou sans `include_docs`.
+- `/find` renvoie `meta.continuation` quand il reste des lignes. Pour lire la page suivante, renvoyez-la dans le corps sous `continuation`, avec la même requête ; une continuation mal formée répond 400 `invalid_query`. Il renvoie `doc` dans chaque ligne, avec ou sans `include_docs`.
 - `max_rows` vaut 1000 au plus et `deadline_ms` 300000 au plus. La dernière ligne `meta` porte `has_more`, `bound` (`limit_reached` ou `exhausted`), `count`, `continuation`, `instance_id`, `last_seq` et, pour la recherche, `embedding`. Une erreur survenue après l’envoi de lignes arrive dans une dernière ligne `{"error":"deadline"}` ou avec une autre raison.
 - Une instruction `SUBSCRIBE` demande `Accept: text/event-stream` ou `?feed=sse`, et diffuse les événements `row`, `ready`, `change`, `error` et `ping` (toutes les 30 s).
 

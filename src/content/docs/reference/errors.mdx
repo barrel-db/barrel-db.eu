@@ -33,10 +33,10 @@ An error the server does not map becomes a 500 with the Erlang term printed as t
 
 | Status | error | Meaning and fix |
 |---|---|---|
-| 400 | `invalid_name` | The name has characters other than letters, digits, `_` and `-`. |
-| 500 | `invalid_db_name` | The name has uppercase letters. Use lowercase, starting with a letter or digit, at most 63 bytes. |
+| 400 | `invalid_name` | The name breaks the rule: use lowercase letters, digits, `_` and `-`, 1 to 63 bytes, not starting with `_`. barrel_server before 1.14.0 answered `500 invalid_db_name` for uppercase names. |
+| 404 | `db_not_found` | The database does not exist. Only `PUT /db/:db` (or the MCP tool `db_create`) creates one; create it first. |
 | 400 | `bad_att_opts` + `reason` | Bad `att_opts` in the body of `PUT /db/:db`. |
-| 404 | `not_found` | The document, version or attachment does not exist. The database itself is created by the request. |
+| 404 | `not_found` | The document, version or attachment does not exist. |
 | 409 | `conflict` | The `_rev` you sent is not current. Read again and retry with the new `_rev`. |
 | 400 | `bad_json` | The body is not JSON. |
 | 400 | `invalid_provenance` | An `x-barrel-actor`, `x-barrel-session` or `x-barrel-source` header is too long (256 bytes each, 1 KiB together). |
@@ -49,7 +49,7 @@ An error the server does not map becomes a 500 with the Erlang term printed as t
 | Status | error | Meaning and fix |
 |---|---|---|
 | 400 | `invalid_query` + `message`, `line`, `column` | BQL syntax error. BQL has no `COUNT` or `GROUP BY`. |
-| 400 | `invalid_query` + `reason` | An unknown key in a `/find` body, `continuation` included. Page with `offset`. |
+| 400 | `invalid_query` + `reason` | An unknown key in a `/find` body, or a malformed `continuation`. Send back the `continuation` from `meta` as it came. |
 | 400 | `missing_query` | A JSON body without `query`. |
 | 400 | `invalid_max_rows`, `invalid_deadline_ms` | Not a positive integer (at most 1000 rows, 300000 ms). |
 | 400 | `subscribe_requires_sse` | A `SUBSCRIBE` statement without `Accept: text/event-stream` or `?feed=sse`. |
@@ -138,7 +138,7 @@ A request without a token on a locked server is HTTP 401. Tool errors come back 
 | Return | Meaning and fix |
 |---|---|
 | `{error, already_exists}` | `create_db` on an open database. Use `open_db/1`. |
-| `{error, invalid_db_name}` | Lowercase letters, digits, `_` and `-`; first character a letter or digit; 1 to 63 bytes. |
+| `{error, invalid_db_name}` | Lowercase letters, digits, `_` and `-`, 1 to 63 bytes. A leading `_` is reserved for barrel's own databases. |
 | `{error, not_found}` | A missing document, or a database that is not running. |
 | `{error, {db_failed, Reason}}` | The database's writer crashed 3 times in 60 seconds. Fix `Reason`, then `reopen_db/1`. |
 | `{error, conflict}` | A stale `_rev`. |
@@ -201,7 +201,7 @@ A request without a token on a locked server is HTTP 401. Tool errors come back 
 | `{error, {checkpoint_failed, target, not_found}}` | The local target database does not exist. Create it first. |
 | `{error, not_found}` | The remote database does not exist (HTTP 404). |
 | `{error, unauthorized}` | The remote answered 401. |
-| `{error, clock_skew}` | The remote answered 409. Every 409 is reported this way. |
+| `{error, clock_skew}` | The remote answered 409 with `{"error":"clock_skew"}`. Any other 409 comes back as `{error, {http, 409, Body}}`. |
 | `{error, too_large}`, `{error, {http, Status, Body}}` | The remote answered 413, or another status. |
 | `{error, {inline_credentials, Keys}}` | Move credentials from the task to `sync_auth`, `sync_signing` or `sync_ssl`. |
 | `{error, att_flush_unsupported}` | The target cannot make attachment writes durable; upgrade it or pass `att_durability => best_effort`. |

@@ -82,7 +82,7 @@ export const barrel: ComponentContent = {
     { title: 'barrel:open/2 options', rows: [
       { key: 'docdb', def: '#{}', meaning: 'Options passed to `barrel_docdb:create_db/2`' },
       { key: 'vectordb', def: 'a vector store', meaning: 'Store config map, or `none` for documents only' },
-      { key: 'vectordb.db_path', def: './priv/barrel_vectordb_<name>', meaning: 'Relative to the current directory. Always set it.' },
+      { key: 'vectordb.db_path', def: '<data_dir>/<name>.vectordb', meaning: 'Next to the documents. A store created before 1.13.0 in `./priv/barrel_vectordb_<name>` stays there.' },
       { key: 'embedding', def: 'none', meaning: 'Record-mode policy map, or `stored` to reuse the saved one' },
       { key: 'encryption', def: 'disabled', meaning: '`default` or `#{provider => Mod}`' },
       { key: 'read_only', def: 'false', meaning: 'Writes return `{error, read_only}`' },
@@ -134,7 +134,7 @@ export const barrel: ComponentContent = {
     { title: 'Documents, vectors, BM25 and BQL in one database', intro: 'From a verified run. `kb_embed` is a 64-dimension demo provider written for the run (feature hashing: it matches shared words, it is not semantic). Any [barrel_embed](/product/embed) provider works in its place.', label: 'Erlang shell', code, output, outputLabel: 'Output, from a run on barrel 1.12.0 (trimmed)' },
   ],
   limits: [
-    'With no `db_path`, the vector store goes to `./priv/barrel_vectordb_<name>` under the current directory, not next to the docdb data. A backup of `data_dir` alone misses it.',
+    'A vector store created before barrel 1.13.0 without `db_path` stays in `./priv/barrel_vectordb_<name>` under the current directory, with a notice in the log. A backup of `data_dir` alone misses it; new stores go to `<data_dir>/<name>.vectordb`.',
     'The vector store is linked to the process that opened it. Use `barrel_dbs` or `store_supervised => true` for long-lived owners.',
     'In plain mode, `put_doc` and `vector_add` are separate writes. Record mode is the atomic path.',
     'Changing a record-mode policy on reopen logs a warning and does not reindex existing documents.',

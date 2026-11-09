@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/operate/backups.mdx
-source_hash: "20bcb7e7c916b2ca"
+source_hash: "addb09f2e6d93cdf"
 title: Sauvegarde et restauration
 description: Comment garder une copie de vos données Barrel et la récupérer, ce que couvre chaque méthode, et ce qui n’est pas encore pris en charge.
 ---
@@ -101,7 +101,7 @@ Le rapport liste `docs_checked`, `bodies_repaired`, `atts_resent`, `doc_failures
 Fermez d’abord la base. Copiez ensuite chaque emplacement qu’elle utilise ; le répertoire de données seul ne suffit pas.
 
 - Le dossier de la base sous le `data_dir` de barrel_docdb (par défaut `data/barrel_docdb` sous le répertoire de travail) : documents, pièces jointes, et les fichiers `CRYPTO` et `TIMELINE`.
-- Le dossier du magasin de vecteurs : son `db_path`, ou `./priv/barrel_vectordb_<name>` sous le répertoire de travail si aucun n’a été défini. C’est vrai même sous barrel_server avec un `data_dir`.
+- Le dossier du magasin de vecteurs : son `db_path`, ou `<name>.vectordb` à côté du dossier de la base sous `data_dir` si aucun n’a été défini. Un magasin créé avant barrel 1.13.0 dans `./priv/barrel_vectordb_<name>` sous le répertoire de travail continue d’y être utilisé ; copiez aussi ce dossier.
 - Pour les espaces, le magasin de vecteurs de l’espace dans `<data_dir>/<id>_vec` et la base de registre `_barrel_spaces`.
 - Si vous les utilisez, les bases `_barrel_catalog` et `_barrel_worksets` et le `data_dir` de barrel_ngram (par défaut `data/barrel_ngram`).
 

@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/reference/configuration.md
-source_hash: "5b22b4a3d3c27803"
+source_hash: "2e2a7e72e1bead58"
 title: Configuration
 description: Les options que vous passez à l’ouverture d’une base, et les clés d’environnement de chaque application Barrel avec leurs valeurs par défaut.
 ---
@@ -69,7 +69,7 @@ Les principales clés de `store_opts`. Chacune s’applique à toutes les famill
 
 | Clé | Défaut | Signification |
 |---|---|---|
-| `db_path` (ou `path`) | `priv/barrel_vectordb_<name>` sous le répertoire de travail | Emplacement du magasin. Définissez-le toujours. |
+| `db_path` (ou `path`) | `<data_dir>/<name>.vectordb`, à côté des documents | Emplacement du magasin. Un magasin créé avant barrel 1.13.0 dans `priv/barrel_vectordb_<name>` sous le répertoire de travail continue d’y être utilisé. |
 | `dimensions` (ou `dimension`) | `768` | Taille des vecteurs |
 | `embedder` | aucun | Un fournisseur barrel_embed, comme `{ollama, #{model => <<"nomic-embed-text">>}}`. Sans lui, les appels texte renvoient `embedder_not_configured`. |
 | `backend` | `hnsw` | `hnsw`, `diskann`, ou `faiss` (demande barrel_faiss) |
@@ -103,7 +103,7 @@ Définissez ces clés dans `sys.config`. Les chemins sont relatifs au répertoir
 | `http_port` | `8080` | Port de l’écoute HTTP en clair, quand `listeners` n’est pas défini |
 | `listeners` | une écoute HTTP/1.1 | `#{http => ..., https => ..., http3 => ...}` |
 | `tls` | aucun | `#{certfile, keyfile, cacertfile, verify, ssl_opts}` |
-| `data_dir` | celui de barrel_docdb | Copié dans le `data_dir` de barrel_docdb au démarrage. Les magasins de vecteurs vont toujours par défaut dans `./priv`. |
+| `data_dir` | celui de barrel_docdb | Copié dans le `data_dir` de barrel_docdb au démarrage. Les magasins de vecteurs le suivent, dans `<data_dir>/<name>.vectordb`. |
 | `open_opts` | `#{}` | Options de `barrel:open/2` pour chaque base que le serveur ouvre |
 | `auth` | aucun (serveur ouvert) | `#{tokens => [...]}`, ou `#{accept => [bearer, signed, mtls], signers => ..., skew_ms => 300000, require_nonce => ...}`. Voir [Authentification](/fr/docs/security/authentication). |
 | `cors` | aucun | `#{origins, expose, max_age}` ; nécessaire pour [barrel-lite](/fr/docs/guides/barrel-lite) |
@@ -196,7 +196,7 @@ Voir [Supervision](/fr/docs/operate/monitoring) pour les exporters.
 
 | Clé | Défaut | Signification |
 |---|---|---|
-| `venv_path` | `undefined` | Réglez-le sur un chemin absolu avant le démarrage de l’application ; laissé à `undefined`, un venv est créé dans un dossier nommé `undefined` |
+| `venv_path` | `undefined`, c’est-à-dire `priv/.venv` de l’application | Emplacement du virtualenv. Réglez-le après `application:load/1` et avant le démarrage de l’application. |
 
 ### barrel_vectordb
 

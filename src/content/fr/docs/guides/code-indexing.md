@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/guides/code-indexing.md
-source_hash: "3bdf63cbd35bed32"
+source_hash: "802f89935471def4"
 title: Indexer une base de code pour un agent
 description: Construire un index de recherche qu’un agent de code interroge par le sens et par mots-clés. Barrel garde un enregistrement par fragment, calcule son embedding pour vous, et répond aux requêtes par mots-clés, sémantiques et hybrides en un seul appel BQL.
 ---
@@ -37,7 +37,7 @@ Ouvrez une base en mode enregistrement. La politique `embedding` nomme le champ 
 - `{local, #{}}` exécute `BAAI/bge-base-en-v1.5` (768 dimensions) via Python ; n’importe quel [fournisseur d’embeddings](/fr/docs/search/embedding-providers) convient. Réglez `dimensions` sur la taille du modèle.
 - Le mode enregistrement active un index BM25 sur disque : `bm25_top_k` et `hybrid_top_k` fonctionnent sans autre option.
 - `barrel_dbs:ensure/2` vous donne un handle supervisé et partagé. Si barrel_server tourne dans le même nœud, le serveur réutilise cette base ouverte au lieu d’en ouvrir une simple.
-- Définissez `db_path` : sans lui, le magasin de vecteurs va dans `./priv` sous le répertoire de travail.
+- `db_path` place le magasin de vecteurs où vous le voulez. Sans lui, le magasin va à côté des documents, dans `<data_dir>/code_index.vectordb`.
 
 ## Indexer un fichier
 

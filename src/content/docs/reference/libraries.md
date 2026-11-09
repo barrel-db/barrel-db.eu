@@ -9,15 +9,15 @@ Barrel is one database made of independent Apache 2.0 libraries in one umbrella 
 
 | Library | Version | Role | Reference |
 |---|---|---|---|
-| `barrel` | 1.12.0 | The database: documents, attachments and vectors under one id, BQL, record mode, timeline, contexts | [/docs/lib/barrel/](/docs/lib/barrel/) |
-| `barrel_docdb` | 2.2.1 | Documents, versions, queries, attachments, replication | [/docs/lib/docdb/](/docs/lib/docdb/) |
-| `barrel_vectordb` | 2.5.2 | Vector index (HNSW, DiskANN, FAISS), BM25, hybrid search | [/docs/lib/vectordb/](/docs/lib/vectordb/) |
+| `barrel` | 1.13.0 | The database: documents, attachments and vectors under one id, BQL, record mode, timeline, contexts | [/docs/lib/barrel/](/docs/lib/barrel/) |
+| `barrel_docdb` | 2.3.0 | Documents, versions, queries, attachments, replication | [/docs/lib/docdb/](/docs/lib/docdb/) |
+| `barrel_vectordb` | 2.5.3 | Vector index (HNSW, DiskANN, FAISS), BM25, hybrid search | [/docs/lib/vectordb/](/docs/lib/vectordb/) |
 | `barrel_ngram` | 0.11.4 | Exact substring and regex search over a docdb database | [source](https://github.com/barrel-db/barrel/tree/main/apps/barrel_ngram) |
 | `barrel_embed` | 2.6.1 | Embedding providers, local or cloud | [/docs/lib/embed/](/docs/lib/embed/) |
-| `barrel_rerank` | 1.0.2 | Cross-encoder reranking | [/docs/lib/rerank/](/docs/lib/rerank/) |
+| `barrel_rerank` | 1.0.3 | Cross-encoder reranking | [/docs/lib/rerank/](/docs/lib/rerank/) |
 | `barrel_crypto` | 1.0.0 | Encryption-at-rest primitives and key providers | [/docs/lib/crypto/](/docs/lib/crypto/) |
 | `barrel_spaces` | 1.3.1 | Spaces, capability tokens, sessions, handoffs | [/docs/lib/spaces/](/docs/lib/spaces/) |
-| `barrel_server` | 1.13.0 | REST and MCP over HTTP | [/docs/lib/server/](/docs/lib/server/) |
+| `barrel_server` | 1.14.0 | REST and MCP over HTTP | [/docs/lib/server/](/docs/lib/server/) |
 | `barrel_att_s3` | 0.1.5 | Attachments in S3-compatible storage | [source](https://github.com/barrel-db/barrel/tree/main/apps/barrel_att_s3) |
 | `barrel_faiss` | 1.0.1 | NIF bindings to FAISS | [HexDocs](https://hexdocs.pm/barrel_faiss) |
 | `barrel-lite` | 0.1.0 | TypeScript client with a copy in the browser; not published to npm | [guide](/docs/guides/barrel-lite) |

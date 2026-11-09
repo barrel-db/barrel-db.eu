@@ -1,6 +1,6 @@
 import type { ComponentContent } from './types';
 
-const code = `%% set venv_path after load and before start (see the gap)
+const code = `%% optional: set venv_path after load and before start
 ok = application:load(barrel_rerank),
 ok = application:set_env(barrel_rerank, venv_path,
                          "/abs/path/to/.venv"),
@@ -44,7 +44,7 @@ export const rerank: ComponentContent = {
       { key: 'timeout', def: '120000 ms', meaning: 'Per request' },
     ] },
     { title: 'App env (barrel_rerank)', rows: [
-      { key: 'venv_path', def: 'undefined', meaning: 'Set it to an absolute path (see the gap below)' },
+      { key: 'venv_path', def: 'undefined (priv/.venv)', meaning: 'Where the virtualenv lives; unset means `priv/.venv` of the app' },
     ] },
   ],
   api: [
@@ -64,9 +64,6 @@ export const rerank: ComponentContent = {
     'Scores are raw cross-encoder logits (9.58, -5.25 above), not values between 0 and 1.',
     'If the venv setup fails, `start_link/1` opens `"python3"` by name and fails with `{error, {port_open_failed, enoent}}`. Pass an absolute `python` or a working `venv_path`.',
     'The model downloads from HuggingFace on first use.',
-  ],
-  gaps: [
-    'The `venv_path` default is broken: the app declares it as `undefined`, and once the app is loaded the code uses that value as a path. On start it creates a venv in a directory named `undefined` under the current directory. Set `venv_path` with `application:set_env/3` after `application:load/1` and before starting the app.',
   ],
   guides: [
     { label: 'Reranking', href: '/docs/search/reranking' },

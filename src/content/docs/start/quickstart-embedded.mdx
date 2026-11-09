@@ -182,8 +182,9 @@ cloud API with a key. See [Choose an embedding
 provider](/docs/search/embedding-providers).
 </Callout>
 
-Set `db_path` as above. Without it the vector store goes to
-`./priv/barrel_vectordb_kb_search` under the current directory.
+Set `db_path` as above to choose where the vector store lives. Without
+it the store goes next to the documents, in
+`<data_dir>/kb_search.vectordb`.
 
 ## 6. Close it
 

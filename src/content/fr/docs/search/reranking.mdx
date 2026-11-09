@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/search/reranking.mdx
-source_hash: "5fe827e634e139c8"
+source_hash: "ec4d1fab9c1f54cb"
 title: Reranking
 description: Réordonnez les résultats de recherche avec un cross-encoder via barrel_rerank, une seconde étape que vous lancez après une recherche vectorielle, par mot-clé ou hybride.
 status: optional
@@ -41,12 +41,13 @@ ok = application:set_env(barrel_rerank, venv_path,
 `start_link/1` prend `python`, `model` et `timeout` (120000 ms). Chaque
 appel démarre son propre serveur ; gardez le pid.
 
-<Callout kind="limit" label="Défaut connu">
-Si `venv_path` n’est pas défini, barrel_rerank 1.0.2 crée son virtualenv
-dans un répertoire nommé `undefined` sous le répertoire courant. Si
-l’installation échoue ensuite, `start_link/1` renvoie
-`{error, {port_open_failed, enoent}}`. Définissez toujours `venv_path`, ou
-passez un `python` absolu.
+<Callout label="Note">
+Si `venv_path` n’est pas défini, barrel_rerank crée son virtualenv dans
+`priv/.venv` de l’application (depuis 1.0.3 ; la 1.0.2 utilisait un
+répertoire nommé `undefined` sous le répertoire courant). Si
+l’installation échoue, `start_link/1` renvoie
+`{error, {port_open_failed, enoent}}` : passez un `python` absolu, ou un
+`venv_path` qui fonctionne.
 </Callout>
 
 ## Reclasser

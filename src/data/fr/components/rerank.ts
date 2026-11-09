@@ -1,4 +1,4 @@
-// translation_of: src/data/components/rerank.ts source_hash: bcddc27c723535d3
+// translation_of: src/data/components/rerank.ts source_hash: a03dff0d21855a7b
 // French text for the barrel_rerank library page. Code, calls and outputs come from the English file.
 import { overlay } from '../../overlay';
 import { rerank as en } from '../../components/rerank';
@@ -25,7 +25,7 @@ export const rerank = overlay(en, {
       { meaning: 'Par requête' },
     ] },
     { title: 'Environnement de l’application (barrel_rerank)', rows: [
-      { meaning: 'Fixez-le à un chemin absolu (voir le défaut connu plus bas)' },
+      { meaning: 'Emplacement du virtualenv ; sans valeur, `priv/.venv` de l’application' },
     ] },
   ],
   api: [
@@ -45,9 +45,6 @@ export const rerank = overlay(en, {
     'Les scores sont des logits bruts du cross-encoder (9.58, -5.25 ci-dessus), pas des valeurs entre 0 et 1.',
     'Si l’installation du venv échoue, `start_link/1` lance `"python3"` par son nom et échoue avec `{error, {port_open_failed, enoent}}`. Passez un `python` absolu ou un `venv_path` qui fonctionne.',
     'Le modèle est téléchargé depuis HuggingFace à la première utilisation.',
-  ],
-  gaps: [
-    'La valeur par défaut de `venv_path` est cassée : l’application la déclare à `undefined`, et une fois l’application chargée le code utilise cette valeur comme chemin. Au démarrage, il crée un venv dans un répertoire nommé `undefined` sous le répertoire courant. Fixez `venv_path` avec `application:set_env/3` après `application:load/1` et avant de démarrer l’application.',
   ],
   guides: [
     { label: 'Reclassement' },

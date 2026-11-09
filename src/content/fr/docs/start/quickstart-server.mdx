@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/start/quickstart-server.mdx
-source_hash: "fd87392af5868887"
+source_hash: "e2f3d4e456dba14d"
 title: "Démarrage rapide : serveur"
 description: Compilez et démarrez barrel_server, créez une base, écrivez et lisez des documents, lancez une requête BQL, et appelez un outil via MCP.
 ---
@@ -72,7 +72,9 @@ curl localhost:8080/health
 
 <Callout kind="happened">
 Le serveur tourne et écoute sur le port 8080. `/health` indique seulement
-que l’écouteur HTTP répond ; il ne vérifie pas les bases.
+que l’écouteur HTTP répond ; il ne vérifie pas les bases. `GET /ready`
+répond `{"status":"ready"}` dès que les processus des bases et de la
+réplication tournent.
 </Callout>
 
 <Callout kind="limit" label="Limite">
@@ -99,8 +101,11 @@ curl -X PUT localhost:8080/db/demo
 maintenant.
 </Callout>
 
-Utilisez des noms en minuscules. Toute route `/db/:db/...` crée la base
-si elle n’existe pas : une faute de frappe en crée donc une vide.
+Les noms utilisent des lettres minuscules, des chiffres, `_` et `-`,
+jusqu’à 63 octets, et ne commencent pas par `_` ; tout autre nom répond
+400 `invalid_name`. Seul `PUT /db/:db` crée une base : toute autre route
+`/db/:db/...` répond 404 `{"error":"db_not_found"}` pour une base qui
+n’existe pas.
 
 ## 4. Écrire et lire un document
 
@@ -277,14 +282,18 @@ pour y brancher un agent.
 
 ## Notes
 
-- Les stockages vectoriels vont dans `./priv/` sous le répertoire depuis
-  lequel vous démarrez le serveur, et non sous `data_dir`. Démarrez-le
-  depuis un répertoire que vous conservez.
+- Les stockages vectoriels vont à côté des documents sous `data_dir`,
+  dans `<data_dir>/<name>.vectordb`. Un stockage créé avant barrel 1.13.0
+  dans `./priv/` sous le répertoire depuis lequel vous avez démarré le
+  serveur continue d’y être utilisé.
 - Les bases par défaut ont un stockage vectoriel de dimension 768, aucun
   embedder et BM25 désactivé : `/search/bm25` et `/search/hybrid`
   répondent donc 500 tant que vous ne les configurez pas. Voir [Faire
   tourner le serveur](/fr/docs/guides/rest-server).
-- `/health` renvoie ok sans rien vérifier.
+- `/health` renvoie ok sans rien vérifier. Pointez plutôt un répartiteur
+  de charge ou un orchestrateur sur `/ready` : il répond 503
+  `{"status":"not_ready","failed":[...]}` quand un processus des bases ou
+  de la réplication est arrêté.
 
 <NextSteps steps={[
   { href: '/docs/security/authentication', label: 'Authentification', why: 'Verrouillez le serveur avant que d’autres puissent atteindre son port.' },

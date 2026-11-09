@@ -39,14 +39,14 @@ export const capabilities: Capability[] = [
 ];
 
 export const components: Component[] = [
-  { slug: 'barrel', name: 'barrel', group: 'The database', version: '1.12.0', status: 'today', body: 'Records: document, files and vector under one id', app: 'apps/barrel' },
-  { slug: 'docdb', name: 'barrel_docdb', group: 'Data', version: '2.2.1', status: 'today', body: 'Documents, versions, queries, replication', app: 'apps/barrel_docdb' },
-  { slug: 'vectordb', name: 'barrel_vectordb', group: 'Data', version: '2.5.2', status: 'today', body: 'Vector index, BM25, hybrid search', app: 'apps/barrel_vectordb' },
+  { slug: 'barrel', name: 'barrel', group: 'The database', version: '1.13.0', status: 'today', body: 'Records: document, files and vector under one id', app: 'apps/barrel' },
+  { slug: 'docdb', name: 'barrel_docdb', group: 'Data', version: '2.3.0', status: 'today', body: 'Documents, versions, queries, replication', app: 'apps/barrel_docdb' },
+  { slug: 'vectordb', name: 'barrel_vectordb', group: 'Data', version: '2.5.3', status: 'today', body: 'Vector index, BM25, hybrid search', app: 'apps/barrel_vectordb' },
   { slug: 'ngram', name: 'barrel_ngram', group: 'Data', version: '0.11.4', status: 'today', body: 'Substring and regex search', app: 'apps/barrel_ngram' },
   { slug: 'embed', name: 'barrel_embed', group: 'Models', version: '2.6.1', status: 'today', body: 'Embedding providers, local or cloud', app: 'apps/barrel_embed' },
-  { slug: 'rerank', name: 'barrel_rerank', group: 'Models', version: '1.0.2', status: 'optional', body: 'Rerank search results', app: 'apps/barrel_rerank' },
+  { slug: 'rerank', name: 'barrel_rerank', group: 'Models', version: '1.0.3', status: 'optional', body: 'Rerank search results', app: 'apps/barrel_rerank' },
   { slug: 'spaces', name: 'barrel_spaces', group: 'Agents', version: '1.3.1', status: 'today', body: 'Spaces, tokens, sessions, handoffs', app: 'apps/barrel_spaces' },
-  { slug: 'server', name: 'barrel_server', group: 'Access', version: '1.13.0', status: 'today', body: 'REST and MCP over HTTP', app: 'apps/barrel_server' },
+  { slug: 'server', name: 'barrel_server', group: 'Access', version: '1.14.0', status: 'today', body: 'REST and MCP over HTTP', app: 'apps/barrel_server' },
   { slug: 'lite', name: 'barrel-lite', group: 'Access', version: '0.1.0', status: 'today', body: 'A copy in the browser, synced', app: 'clients/barrel-lite' },
   { slug: 'crypto', name: 'barrel_crypto', group: 'Storage and security', version: '1.0.0', status: 'today', body: 'Encryption keys and ciphers', app: 'apps/barrel_crypto' },
   { slug: 'att-s3', name: 'barrel_att_s3', group: 'Storage and security', version: '0.1.5', status: 'optional', body: 'Attachments in S3-compatible storage', app: 'apps/barrel_att_s3' },

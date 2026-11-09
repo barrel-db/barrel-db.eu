@@ -21,9 +21,11 @@ The document layer, barrel_docdb, records metrics on every node, whether or not 
 | `barrel_query_timeouts_total` | counter | Queries that hit their deadline |
 | `barrel_replication_docs_direction_total{direction}` | counter | Documents written by replication |
 | `barrel_replication_errors_task_id_total{task_id}` | counter | Replication errors, per replication id |
-| `barrel_db_size_bytes{db}` | gauge | Document store size on disk |
-| `barrel_db_pending_compaction_bytes{db}` | gauge | Bytes compaction still has to rewrite |
-| `barrel_db_compactions_running{db}`, `barrel_db_compactions_queued{db}` | gauge | Compactions running now, and waiting for a thread |
+| `barrel_replication_active_task_id{task_id}` | gauge | 1 while the task runs, 0 when it is paused, failed, completed or deleted |
+| `barrel_replication_lag_seconds_task_id{task_id}` | gauge | Seconds since the last copied change was written on the source; 0 once caught up |
+| `barrel_db_size_bytes_db{db}` | gauge | Document store size on disk |
+| `barrel_db_pending_compaction_bytes_db{db}` | gauge | Bytes compaction still has to rewrite |
+| `barrel_db_compactions_running_db{db}`, `barrel_db_compactions_queued_db{db}` | gauge | Compactions running now, and waiting for a thread |
 | `barrel_db_stubs_total`, `barrel_db_stubs_bytes` | gauge | Deleted documents kept as stubs, per database, after each retention sweep |
 
 The size and compaction gauges refresh every minute (`stats_interval`), and once within a second of opening. A pending backlog that keeps growing, or queued compactions that stay above zero, means compaction is falling behind your writes.
@@ -31,7 +33,7 @@ The size and compaction gauges refresh every minute (`stats_interval`), and once
 Each declared metric is also printed once without labels; that copy stays at 0. Check `export_text/0` for the exact labeled name before you write an alert.
 
 <Callout label="Not recorded yet" kind="limit">
-`barrel_db_documents_total`, `barrel_db_attachments_total`, `barrel_replication_lag_seconds` and `barrel_replication_active` are declared but never set; they always read 0. Use the stats calls below instead.
+There is no document or attachment count metric yet; one is planned. barrel_docdb 2.3.0 removed `barrel_db_documents_total` and `barrel_db_attachments_total`, which never had values. Use the stats calls below instead.
 </Callout>
 
 barrel_vectordb, barrel, barrel_server, barrel_spaces and barrel_embed record no metrics.
@@ -111,7 +113,13 @@ A continuous task keeps the status `running` while it retries, with exponential 
 curl -s localhost:8080/health
 ```
 
-For a deeper check, read `GET /db/:db` on a database you care about, with a token. Note that this creates the database if it does not exist.
+`GET /ready` is the readiness check. It also needs no token. It answers `200 {"status":"ready"}` when the database and replication processes run, and `503 {"status":"not_ready","failed":[...]}` otherwise, where `failed` names the checks that are down among `databases`, `stores` and `replication`. Point a load balancer or orchestrator at it.
+
+```shell
+curl -s localhost:8080/ready
+```
+
+For a check on one database, read `GET /db/:db` with a token. It answers 404 `db_not_found` when the database does not exist; it does not create it.
 
 ```shell
 curl -s -H "authorization: Bearer $TOKEN" \
@@ -119,5 +127,5 @@ curl -s -H "authorization: Bearer $TOKEN" \
 ```
 
 <Callout label="Known gap" kind="limit">
-There is no readiness route and no HTTP request metrics in barrel_server yet.
+barrel_server records no HTTP request metrics and serves no `/metrics` route yet.
 </Callout>
