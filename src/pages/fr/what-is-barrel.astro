@@ -1,0 +1,188 @@
+---
+// translation_of: src/pages/what-is-barrel.astro source_hash: 1ee2d3b94df78481
+import Base from '../../layouts/Base.astro';
+import AssistantDemo from '../../components/demos/AssistantDemo.astro';
+import RecordFigure from '../../components/RecordFigure.astro';
+import { localize } from '../../i18n';
+
+const L = (p: string) => localize(p, 'fr');
+
+const builds = [
+  { title: 'Un assistant qui se souvient de vos clients', body: 'Il retrouve les conversations passées et les informations du compte au lieu de redemander, et trouve le bon article d’aide même quand le client emploie d’autres mots.', href: '/use-cases/agent-memory' },
+  { title: 'Une recherche privée dans les documents de l’entreprise', body: 'Contrats, manuels et notes restent sur vos propres serveurs. Les équipes et les assistants y cherchent par le sens, et le modèle d’IA de votre choix répond à partir de ces documents.', href: '/use-cases/private-rag' },
+  { title: 'Des agents qui travaillent ensemble', body: 'Chaque agent a ses propres données et seulement les accès qu’on lui donne. L’un peut confier une tâche à un autre, avec ce qui est fait et ce qui reste à faire.', href: '/use-cases/database-per-agent' },
+  { title: 'Des applications qui fonctionnent hors ligne', body: 'Une application de terrain ou un site mal connecté continue de travailler sur sa propre copie et se remet à jour quand la connexion revient, sans perdre les modifications de personne.', href: '/use-cases/offline-first' },
+  { title: 'Plusieurs sites qui restent en phase', body: 'Bureaux, usines ou régions gardent chacun leurs données au plus près. Chaque copie accepte les modifications, et toutes se remettent d’accord dès qu’elles peuvent communiquer.', href: '/use-cases/write-on-every-node' },
+];
+
+const different = [
+  { title: 'Vos données restent là où vous le décidez', body: 'Barrel fonctionne à l’intérieur de votre application ou sur vos propres serveurs. Rien n’a besoin d’être envoyé à un service extérieur, et les données peuvent être chiffrées sur le disque.' },
+  { title: 'Il continue de fonctionner sans connexion', body: 'Chaque copie accepte des modifications de son côté, sur un serveur, un appareil ou dans un navigateur, et les copies se remettent d’accord plus tard. Aucune modification ne disparaît sans qu’on le sache.' },
+  { title: 'Un seul endroit au lieu de quatre', body: 'Les textes, les fichiers, les informations qui permettent de chercher par le sens et l’historique des modifications sont rangés ensemble. Moins de systèmes à faire tourner, rien à synchroniser à la main.' },
+  { title: 'Rien n’est écrasé sans laisser de trace', body: 'Les versions précédentes sont gardées aussi longtemps que vous le choisissez, et chaque modification peut indiquer qui l’a faite. Vous pouvez voir ce qu’un assistant savait à un moment donné, ou essayer un changement sur une copie avant de l’appliquer.' },
+  { title: 'L’accès se donne, il ne se suppose pas', body: 'Chaque agent ou chaque client peut avoir son propre espace, avec sa propre clé. L’accès est accordé en lecture ou en écriture, et peut être retiré à tout moment.' },
+  { title: 'Open source', body: 'Barrel est gratuit, sous licence Apache 2.0. Vous pouvez l’utiliser, le modifier et continuer à vous en servir sans dépendre d’un fournisseur.' },
+];
+---
+
+<Base title="Qu’est-ce que Barrel ?" description="Barrel est une base de données qui aide les applications d’IA à retenir, retrouver et exploiter l’information : documents, fichiers, recherche, mémoire et historique au même endroit, sur votre propre infrastructure.">
+  <section class="wrap wb-hero">
+    <div>
+      <h1 class="display">Qu’est-ce que Barrel ?</h1>
+      <p class="lead">Une base de données qui aide les applications d’IA à retenir, retrouver et exploiter l’information.</p>
+      <p>Les modèles d’IA savent rédiger des réponses, mais une vraie application doit aussi se souvenir de ce qui s’est passé, consulter des informations fiables, suivre les modifications et partager les données entre les différents agents qui font le travail. Barrel est l’endroit où tout cela est conservé.</p>
+      <p class="muted small">Environ quatre minutes de lecture. Les développeurs peuvent passer directement à la <a href={L('/docs/start/what-is-barrel')}>présentation technique</a>.</p>
+    </div>
+    <RecordFigure plain id="article-142" caption="Chaque information dans Barrel forme un seul enregistrement : le texte, les fichiers qui l’accompagnent, et ce qui permet de le retrouver par le sens." />
+  </section>
+
+  <section class="section">
+    <div class="wrap wb-narrow">
+      <h2 class="h2">L’IA a besoin de mémoire</h2>
+      <p>Un modèle de langage sait ce qu’il a appris pendant son entraînement. Il ne connaît ni vos clients, ni vos documents, ni la décision prise hier par votre équipe, et chaque conversation repart de zéro. À lui seul, il ne peut ni se souvenir, ni rechercher une information, ni garder la trace de ce qu’il a fait.</p>
+      <p>Toute application d’IA sérieuse a donc besoin d’un endroit où ranger l’information et la retrouver : les faits sur lesquels elle s’appuie, ce que chaque utilisateur lui a dit, le travail en cours et l’historique de ce qui a changé. Cet endroit, c’est une base de données.</p>
+      <details class="wb-more">
+        <summary>Une base de données, qu’est-ce que c’est exactement ?</summary>
+        <p>Une base de données est un logiciel qui conserve l’information pour qu’elle ne se perde pas, permet à plusieurs programmes de la lire et de la modifier en même temps sans se gêner, et retrouve rapidement ce que vous demandez. Votre banque, votre messagerie et la plupart des sites web en utilisent une. Barrel est une base de données conçue pour les applications où des agents d’IA lisent et écrivent l’information.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Un seul endroit pour l’information</h2>
+      <p class="section-intro">Aujourd’hui, une application d’IA est souvent assemblée à partir de plusieurs systèmes séparés, et c’est à l’application de les garder cohérents. Barrel garde ensemble tout ce qui va ensemble.</p>
+      <div class="wb-compare">
+        <figure class="wb-fig">
+          <figcaption><strong>D’habitude</strong> <span class="muted">quatre systèmes, reliés par votre code</span></figcaption>
+          <div class="wb-app">Votre application</div>
+          <div class="wb-arrows" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+          <div class="wb-many">
+            <div>Documents</div><div>Fichiers</div><div>Recherche par le sens</div><div>Mémoire des conversations</div>
+          </div>
+          <p class="small muted">Quand un document change, chaque système doit être mis à jour, et ils finissent par diverger.</p>
+        </figure>
+        <figure class="wb-fig">
+          <figcaption><strong>Avec Barrel</strong> <span class="muted">une seule base de données</span></figcaption>
+          <div class="wb-app">Votre application</div>
+          <div class="wb-arrows" aria-hidden="true"><span></span></div>
+          <div class="wb-one">Barrel<span>documents, fichiers, recherche, mémoire et historique, sous un seul nom par enregistrement</span></div>
+          <p class="small muted">Modifiez un document, ses informations de recherche suivent. Copiez-le ailleurs, ses fichiers partent avec lui.</p>
+        </figure>
+      </div>
+      <details class="wb-more wb-narrow">
+        <summary>Pour les curieux de technique</summary>
+        <p>Chaque enregistrement contient un document JSON, ses pièces jointes et un embedding vectoriel sous un même identifiant. Barrel peut calculer l’embedding à l’écriture du document, avec le modèle de votre choix, et cherche par similarité vectorielle, par classement de mots-clés (BM25), ou les deux combinés. Chaque version est conservée dans un journal d’historique pendant une durée de rétention. Lisez <a href={L('/docs/concepts/record')}>l’enregistrement</a> et <a href={L('/product/search')}>la recherche</a>.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Voyez-le fonctionner</h2>
+      <p class="section-intro">Un assistant de support répond à une cliente. Choisissez une question, puis posez la question suivante : la deuxième réponse est meilleure parce que Barrel s’est souvenu de la première conversation.</p>
+      <AssistantDemo />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Ce que vous pouvez construire</h2>
+      <div class="wb-builds">
+        {builds.map((b) => (
+          <a href={L(b.href)} class="wb-build">
+            <span class="wb-build-t">{b.title}</span>
+            <span class="muted">{b.body}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Ce qui rend Barrel différent</h2>
+      <div class="wb-diff">
+        {different.map((d) => (
+          <div>
+            <h3 class="wb-diff-t">{d.title}</h3>
+            <p class="muted">{d.body}</p>
+          </div>
+        ))}
+      </div>
+      <details class="wb-more wb-narrow">
+        <summary>Pour les curieux de technique</summary>
+        <p>Barrel est écrit en Erlang/OTP et stocke ses données dans RocksDB. Il peut être intégré comme bibliothèque, fonctionner comme serveur avec une API REST et un point d’accès MCP pour les agents d’IA, ou être gardé dans un navigateur avec le client barrel-lite. La réplication est active-active, et les conflits sont conservés plutôt qu’écartés ; les agents reçoivent des jetons de capacité limités à un espace. Voir <a href={L('/product/replication')}>la réplication</a>, <a href={L('/product/agents')}>la couche agents</a> et <a href={L('/product/deployments')}>les déploiements</a>.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap wb-two">
+      <div>
+        <h2 class="h3">Ce que Barrel n’est pas</h2>
+        <ul class="wb-not">
+          <li><strong>Pas un modèle d’IA.</strong> Il ne rédige pas de texte et ne prend pas de décisions. Vous utilisez le modèle de votre choix, chez un fournisseur cloud ou sur vos propres machines.</li>
+          <li><strong>Pas un chatbot.</strong> C’est la mémoire et les connaissances qui se trouvent derrière.</li>
+          <li><strong>Pas un framework d’agents complet.</strong> Votre application ou votre framework fait tourner les agents ; Barrel leur donne un endroit fiable où ranger et retrouver l’information.</li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="h3">Barrel et Enki Bridge</h2>
+        <p>Barrel est open source et gratuit. Enki Bridge, l’entreprise européenne qui le développe, propose son aide aux équipes qui le souhaitent : projets pilotes, accompagnement du développement et hébergement géré de Barrel dans l’UE. Utiliser Barrel ne l’exige jamais.</p>
+        <p><a href={L('/commercial')}>Ce que propose Enki Bridge</a></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Pour aller plus loin</h2>
+      <div class="wb-next">
+        <a href={L('/use-cases')} class="wb-next-a"><strong>Voir ce que les équipes construisent</strong><span class="muted">Huit cas d’usage, chacun avec son fonctionnement</span></a>
+        <a href={L('/examples')} class="wb-next-a"><strong>Lancer un exemple</strong><span class="muted">Des projets complets à télécharger et à exécuter</span></a>
+        <a href={L('/docs')} class="wb-next-a"><strong>Lire la documentation</strong><span class="muted">Démarrez en dix minutes, intégré ou en serveur</span></a>
+        <a href={L('/commercial')} class="wb-next-a"><strong>Parler à Enki Bridge</strong><span class="muted">Pilotes, support et hébergement géré</span></a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .wb-hero { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 48px; align-items: center; padding-top: 88px; padding-bottom: 64px; }
+  .wb-hero .display { margin-bottom: 24px; }
+  .wb-hero .lead { font-size: 1.6rem; font-stretch: 106%; margin: 0 0 20px; }
+  .wb-hero p { max-width: 36em; }
+  .wb-narrow { max-width: 760px; }
+  .wb-more { margin-top: 24px; border-top: 1px solid var(--rule); padding-top: 12px; }
+  .wb-more summary { cursor: pointer; font-weight: 600; color: var(--teal); }
+  .wb-more p { margin: 12px 0 0; }
+  .wb-compare { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; }
+  .wb-fig { margin: 0; padding: 24px; border: 1px solid var(--rule); border-radius: 12px; background: var(--card); display: flex; flex-direction: column; align-items: stretch; }
+  .wb-fig figcaption { margin-bottom: 16px; }
+  .wb-app { padding: 12px; border: 1.5px solid var(--ink); border-radius: 6px; text-align: center; font-weight: 600; }
+  .wb-arrows { display: flex; justify-content: space-around; height: 32px; }
+  .wb-arrows span { width: 1.5px; background: var(--teal); }
+  .wb-many { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .wb-many div { padding: 12px 6px; border: 1.5px dashed var(--ink-2); border-radius: 6px; text-align: center; font-size: 14px; }
+  .wb-one { padding: 14px; border-radius: 6px; background: var(--coral); color: var(--on-coral); text-align: center; font-weight: 650; font-size: 19px; }
+  .wb-one span { display: block; font-weight: 400; font-size: 14px; }
+  .wb-fig > p { margin: 16px 0 0; }
+  .wb-builds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 48px; }
+  .wb-build { display: block; padding: 16px 0; border-top: 1px solid var(--rule); text-decoration: none; color: var(--ink); }
+  .wb-build-t { display: block; font-weight: 620; font-size: 19px; margin-bottom: 4px; color: var(--teal); }
+  .wb-build span:last-child { display: block; }
+  .wb-diff { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px 40px; }
+  .wb-diff-t { font-size: 19px; margin: 0 0 6px; }
+  .wb-diff p { margin: 0; }
+  .wb-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; }
+  .wb-not { padding-left: 20px; }
+  .wb-not li { margin-bottom: 10px; }
+  .wb-next { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; }
+  .wb-next-a { display: flex; flex-direction: column; gap: 4px; padding-top: 14px; border-top: 3px solid var(--ink); text-decoration: none; color: var(--ink); }
+  @media (max-width: 900px) {
+    .wb-hero, .wb-compare, .wb-builds, .wb-diff, .wb-two, .wb-next { grid-template-columns: minmax(0, 1fr); }
+    .wb-hero { padding-top: 48px; }
+    .wb-many { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>

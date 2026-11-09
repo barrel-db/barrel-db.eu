@@ -1,0 +1,146 @@
+---
+translation_of: src/content/docs/store/attachments.mdx
+source_hash: "fb8afdc28e2ebf78"
+title: Pièces jointes
+description: Stockez des fichiers avec un document, relisez-les en entier ou en flux, gardez-les dans S3, et sachez comment ils se répliquent.
+---
+import CodeBlock from '../../../../components/CodeBlock.astro';
+import CodeTabs from '../../../../components/CodeTabs.astro';
+import Callout from '../../../../components/Callout.astro';
+
+Une pièce jointe est un blob binaire nommé stocké avec un document : un
+PDF, une image, un journal. Elle appartient à l’id du document,
+l’accompagne lors de la réplication, et est stockée à part du JSON, dans
+les fichiers blob de RocksDB par défaut ou dans un bucket S3. Utilisez
+les pièces jointes quand un enregistrement a besoin de fichiers et que
+vous les voulez sous le même id, synchronisés par la même réplication.
+
+## Écrire et lire
+
+<CodeTabs tabs={[
+  { label: 'Erlang', lang: 'erlang', code: `{ok, Info} = barrel:put_attachment(Db, <<"rb:pg">>,
+    <<"diagram.txt">>, <<"primary -> replica">>),
+barrel:get_attachment(Db, <<"rb:pg">>, <<"diagram.txt">>).` },
+  { label: 'REST', lang: 'shell', code: `curl -X PUT localhost:8080/db/demo/doc/a/att/hello.txt \\
+  -H 'content-type: text/plain' \\
+  --data-binary 'hello attachment'
+curl localhost:8080/db/demo/doc/a/att/hello.txt` },
+]} />
+
+<CodeBlock output label="Sortie d’une exécution sur barrel 1.12.0 (Erlang)" code={`{ok,#{name => <<"diagram.txt">>,length => 18,
+      digest => <<"sha256-1a8b09f8050eb8c57268d69a...">>,
+      content_type => <<"text/plain">>,chunked => false}}
+{ok,<<"primary -> replica">>}`} />
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_server 1.13.0 (REST)" code={`HTTP/1.1 201 Created
+{"name":"hello.txt","length":16,
+ "digest":"sha256-7fa36b95d5c98859ed72b4787f3c28b2...",
+ "content_type":"text/plain","chunked":false}
+
+HTTP/1.1 200 OK
+content-type: text/plain
+hello attachment`} />
+
+Les empreintes sont raccourcies ci-dessus. Écrire une pièce jointe ne
+change pas le `_rev` du document.
+
+## Lister, inspecter, supprimer
+
+<CodeTabs tabs={[
+  { label: 'Erlang', lang: 'erlang', code: `barrel:list_attachments(Db, <<"rb:pg">>),
+barrel:attachment_info(Db, <<"rb:pg">>, <<"diagram.txt">>),
+ok = barrel:delete_attachment(Db, <<"rb:pg">>,
+                              <<"diagram.txt">>).` },
+  { label: 'REST', lang: 'shell', code: `curl -X DELETE localhost:8080/db/demo/doc/a/att/hello.txt` },
+]} />
+
+## Diffuser les gros fichiers en flux
+
+Un writer envoie un fichier par morceaux ; rien ne garde le fichier
+entier en mémoire.
+
+```erlang
+{ok, W0} = barrel:open_attachment_writer(Db, <<"rb:pg">>,
+                                         <<"log.txt">>,
+                                         <<"text/plain">>),
+{ok, W1} = barrel:write_attachment(W0, <<"line 1\n">>),
+{ok, W2} = barrel:write_attachment(W1, <<"line 2\n">>),
+barrel:finish_attachment(W2).
+```
+
+<CodeBlock output label="Sortie d’une exécution sur barrel 1.12.0, empreinte raccourcie" code={`{ok,#{name => <<"log.txt">>,length => 14,chunk_size => 65536,
+      digest => <<"sha256-9060554863a62b9db5f72621...">>,
+      content_type => <<"text/plain">>,chunked => true,
+      chunk_count => 1}}`} />
+
+`abort_attachment/1` abandonne un envoi inachevé. Pour lire par
+morceaux, utilisez `open_attachment_reader/3` et `read_attachment/1`, et
+fermez le reader si vous vous arrêtez avant la fin : il retient cette
+version jusque-là. Les lectures par plage d’octets
+(`open_attachment_stream/4`, `read_attachment_range/5`) n’existent que
+dans `barrel_docdb`.
+
+Un envoi reste invisible tant qu’il n’est pas terminé. Un envoi laissé
+inachevé plus longtemps que `att_upload_timeout` (3600 s par défaut) est
+supprimé.
+
+## Écrire seulement si
+
+| Option Erlang | En-tête REST | Effet |
+|---------------|-------------|--------|
+| `create_only => true` | `If-None-Match: *` | Échoue si la pièce jointe existe |
+| `expected_etag => Etag` | `If-Match: Etag` | Échoue sauf si c’est toujours cette version |
+| `expected_digest => Digest` | | Échoue si les octets ne correspondent pas |
+
+Une condition non remplie répond 409. Un backend qui ne sait pas faire
+d’écritures conditionnelles répond 501 `conditional_writes_unsupported`.
+
+## Garder les pièces jointes dans S3
+
+<span class="mark mark--optional">Optionnel, demande une configuration</span>
+
+`barrel_att_s3` stocke les octets dans un bucket compatible S3. Le
+bucket doit exister. Passez le backend à la création de la base :
+
+```erlang
+{ok, _} = barrel_docdb:create_db(<<"s3db">>, #{
+    att_opts => #{backend => s3,
+                  s3 => #{
+                      bucket => <<"barrel-files">>,
+                      endpoint => <<"http://127.0.0.1:9000">>,
+                      region => <<"us-east-1">>,
+                      access_key_id => <<"...">>,
+                      secret_access_key => <<"...">>}}}).
+```
+
+En REST, `PUT /db/:db` prend les mêmes options en JSON :
+`{"att_opts":{"backend":"s3","s3":{...}}}`.
+
+<Callout kind="limit" label="Limite">
+Les pièces jointes dans S3 ne sont pas chiffrées, même dans une base
+chiffrée. Le backend est testé avec RustFS et Garage ; Garage ne peut pas
+appliquer les écritures conditionnelles.
+</Callout>
+
+Pour ne stocker aucune pièce jointe, passez
+`att_opts => #{backend => none}`.
+
+## Comment elles se répliquent
+
+Chaque exécution de réplication a une phase pièces jointes après les
+documents. Elle compare les empreintes, n’envoie que ce qui manque à la
+cible, et résout les écritures concurrentes par la dernière écriture
+selon leur horodatage. Il n’y a pas de versions sœurs pour les pièces
+jointes.
+
+- Un document peut arriver avant sa pièce jointe ; la pièce jointe
+  répond 404 jusqu’à ce que la phase aboutisse.
+- Par défaut, une exécution attend que la cible ait rendu durables les
+  écritures de pièces jointes avant d’avancer son point de reprise. Une
+  cible qui ne sait pas le faire échoue avec `att_flush_unsupported` ;
+  passez `att_durability => best_effort` pour répliquer vers elle malgré
+  tout.
+- Une réplication filtrée n’envoie que les pièces jointes des documents
+  qui passent le filtre.
+
+Voir [Synchronisation](/fr/docs/guides/synchronization).

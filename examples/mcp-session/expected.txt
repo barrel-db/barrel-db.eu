@@ -1,0 +1,106 @@
+--> {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"curl","version":"0"}}}
+{"protocolVersion":"2025-06-18","serverInfo":{"name":"barrel","version":"4.4.1"}}
+mcp-session-id: mcp_07e8b892aebc73ad4d6ae187860202d9
+
+--> {"jsonrpc":"2.0","method":"notifications/initialized"}
+HTTP/1.1 202 Accepted
+
+--> {"jsonrpc":"2.0","id":2,"method":"tools/list"}
+39 tools:
+branch_create, branch_list, changes, context_attach
+context_capabilities, context_detach, context_discover, context_import
+context_inspect, context_list, context_materialize, context_offline
+context_query, context_working_set_delete, context_working_sets, db_create
+db_info, db_list, doc_delete, doc_get
+doc_put, handoff_accept, handoff_complete, handoff_create
+handoff_list, merge, ngram_search, query
+query_subscribe, query_unsubscribe, search, session_add_message
+session_create, session_get_messages, session_touch, space_create
+space_grant, space_info, space_revoke
+
+--> {"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"db_create","arguments":{"db":"mcp_demo"}}}
+{
+  "isError": false,
+  "result": {
+    "ok": true,
+    "db": "mcp_demo"
+  }
+}
+
+--> {"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"doc_put","arguments":{"db":"mcp_demo","doc":{"id":"note-1","title":"stored over MCP","tags":["mcp"]}}}}
+{
+  "isError": false,
+  "result": {
+    "id": "note-1",
+    "ok": true,
+    "rev": "000001a1ba5581d600000000@w9c81a31430ff0acd"
+  }
+}
+
+--> {"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"doc_put","arguments":{"db":"mcp_demo","doc":{"id":"note-2","title":"release checklist","tags":["ops"]}}}}
+{
+  "isError": false,
+  "result": {
+    "id": "note-2",
+    "ok": true,
+    "rev": "000001a1ba55822000000000@w9c81a31430ff0acd"
+  }
+}
+
+--> {"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"doc_get","arguments":{"db":"mcp_demo","id":"note-1"}}}
+{
+  "isError": false,
+  "result": {
+    "_rev": "000001a1ba5581d600000000@w9c81a31430ff0acd",
+    "id": "note-1",
+    "tags": [
+      "mcp"
+    ],
+    "title": "stored over MCP"
+  }
+}
+
+--> {"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"query","arguments":{"db":"mcp_demo","query":"SELECT id, title FROM c WHERE 'ops' IN tags LIMIT 5"}}}
+{
+  "isError": false,
+  "result": {
+    "count": 1,
+    "rows": [
+      {
+        "id": "note-2",
+        "title": "release checklist"
+      }
+    ],
+    "has_more": false
+  }
+}
+
+--> {"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"ngram_search","arguments":{"db":"mcp_demo","query":"over MCP"}}}
+{
+  "isError": false,
+  "result": {
+    "count": 1,
+    "hits": [
+      {
+        "id": "note-1",
+        "spans": [
+          [
+            7,
+            8
+          ]
+        ]
+      }
+    ]
+  }
+}
+
+--> {"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"doc_get","arguments":{"db":"mcp_demo","id":"missing"}}}
+{
+  "isError": true,
+  "result": {
+    "error": "not_found"
+  }
+}
+
+--> DELETE /mcp
+204

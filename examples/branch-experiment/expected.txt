@@ -1,0 +1,40 @@
+
+main, initial:
+  plan:free  0
+  plan:pro   20
+  plan:team  50
+
+main, pro raised to 25:
+  plan:free  0
+  plan:pro   25
+  plan:team  50
+
+branches of pricing: [<<"pricing_exp">>]
+
+branch:
+  plan:edu   5
+  plan:pro   25
+  plan:team  45
+
+main, unchanged:
+  plan:free  0
+  plan:pro   25
+  plan:team  50
+
+plan:team versions on the branch:
+  current price 45
+  superseded price 50
+
+merge: #{docs_read => 3,docs_written => 3,failed => []}
+
+main, after merge:
+  plan:edu   5
+  plan:pro   25
+  plan:team  45
+
+branch at the first cursor:
+  plan:free  0
+  plan:pro   20
+  plan:team  50
+
+branch of a branch: {error,cannot_branch_a_branch}

@@ -1,0 +1,135 @@
+---
+import UseCasePage from '../../components/usecase/UseCasePage.astro';
+import type { ArchColumn, Step } from '../../components/usecase/types';
+
+const arch: ArchColumn[] = [
+  { who: 'Your application', boxes: [
+    { name: 'Ingest', note: 'writes documents' },
+    { name: 'Answer', note: 'prompt and LLM call: your code' } ] },
+  { who: 'Barrel, on your node', boxes: [
+    { name: 'kb, record mode', note: 'documents with their vectors', rec: true },
+    { name: 'Hybrid search', note: 'vector and BM25, fused' } ] },
+  { who: 'Models on your machines', boxes: [
+    { name: 'Embedder', note: 'barrel_embed: Ollama or local' },
+    { name: 'Reranker', note: 'barrel_rerank, optional' } ] },
+];
+
+const steps: Step[] = [
+  { title: 'Run an embedding model locally',
+    body: 'Ollama keeps the model on your machine. The `local` provider (sentence-transformers in a managed Python virtualenv) works too; it installs packages and downloads the model on first use.',
+    status: 'optional',
+    label: 'Shell', lang: 'bash',
+    code: `ollama pull nomic-embed-text
+ollama serve` },
+  { title: 'Open a record-mode database',
+    body: 'The policy names the fields to embed and the fields to return as metadata. `mode => sync` embeds before the write returns. Set `db_path` so the vector store does not land in the current directory.',
+    label: 'Erlang', lang: 'erlang',
+    code: `{ok, _} = application:ensure_all_started(barrel),
+{ok, Db} = barrel:open(kb, #{
+    embedding => #{
+        fields => [<<"title">>, <<"body">>],
+        mode => sync,
+        dimensions => 768,
+        embedder => {ollama,
+            #{model => <<"nomic-embed-text">>}},
+        metadata_fields => [<<"product">>, <<"status">>]},
+    vectordb => #{db_path => "data/kb_vec"}}).` },
+  { title: 'Write your documents',
+    body: 'Write plain documents. Updates re-embed; deletes remove the vector.',
+    label: 'Erlang', lang: 'erlang',
+    code: `barrel:put_docs(Db, [
+  #{<<"id">> => <<"kb:101">>,
+    <<"title">> => <<"Reset a forgotten password">>,
+    <<"body">> => <<"Open the login page and choose "
+                    "forgot password to receive a link">>,
+    <<"product">> => <<"portal">>,
+    <<"status">> => <<"published">>},
+  #{<<"id">> => <<"kb:201">>,
+    <<"title">> => <<"Export invoices">>,
+    <<"body">> => <<"Billing admins can export invoices "
+                    "as CSV from the reports tab">>,
+    <<"product">> => <<"billing">>,
+    <<"status">> => <<"published">>}]).` },
+  { title: 'Search by meaning and keyword together',
+    body: '`hybrid_top_k` runs vector and BM25 search and fuses the two rankings. A `WHERE` on metadata filters in the same query.',
+    label: 'Erlang', lang: 'erlang',
+    code: `{ok, Rows, _} = barrel:query(Db,
+    <<"SELECT h.id, h._score, title "
+      "FROM hybrid_top_k('login reset', k => 3) AS h "
+      "WHERE h.status = 'published'">>).`,
+    outLabel: 'From a recorded run that used an offline test embedder in place of Ollama (trimmed)',
+    out: `{ok,[#{<<"_score">> => 0.01639344262295082,
+        <<"id">> => <<"kb:101">>,
+        <<"title">> => <<"Reset a forgotten password">>},
+      #{<<"_score">> => 0.008408206049715483,
+        <<"id">> => <<"kb:201">>,
+        <<"title">> => <<"Export invoices">>}], ...}` },
+  { title: 'Rerank the top hits',
+    body: 'A cross-encoder reads the query and each passage together and orders them again. It returns `{Index, Score}` pairs, best first, where the index points into the list you passed. Set `venv_path` after loading the app and before starting it.',
+    status: 'optional',
+    label: 'Erlang', lang: 'erlang',
+    code: `ok = application:load(barrel_rerank),
+ok = application:set_env(barrel_rerank, venv_path,
+                         "/opt/barrel/venv"),
+{ok, _} = application:ensure_all_started(barrel_rerank),
+{ok, R} = barrel_rerank:start_link(#{}),
+{ok, Hits} = barrel:search_hybrid(Db, Question, #{k => 20}),
+Texts = [maps:get(text, H) || H <- Hits],
+{ok, Ranked} = barrel_rerank:rerank(R, Question, Texts,
+                                    #{top_k => 5}).`,
+    outLabel: 'Result shape, from a recorded run on three passages',
+    out: `{ok,[{0,9.581769943237305},
+     {2,-5.255744457244873},
+     {1,-9.625640869140625}]}` },
+  { title: 'Hand the passages to your model',
+    body: 'This step is your application, not Barrel. Barrel never calls an LLM. If the model you call is a cloud API, this is where your data leaves your network.',
+    label: 'Erlang, your code', lang: 'erlang',
+    code: `Context = [lists:nth(I + 1, Texts) || {I, _} <- Ranked],
+Prompt = my_app:build_prompt(Question, Context),
+%% your LLM client, local or remote
+{ok, Answer} = my_llm:complete(Prompt).` },
+];
+---
+
+<UseCasePage
+  title="Private knowledge search"
+  lead="Search your own documents by meaning and by keyword on machines you run, then give the best passages to the model you choose. Barrel stores, embeds and searches; your application makes the model call."
+  sub="Built from barrel record mode, barrel_embed and, if you want it, barrel_rerank. One Erlang node, no separate vector database."
+  problem="Retrieval usually means a document store, a vector database and an embedding service kept in step by your code, with your documents sent to a third party to be embedded. Every update risks a vector that no longer matches its text."
+  arch={arch}
+  edges={['put_docs, query', 'embed on write and query']}
+  archNote="The document and its vector live under one id, so an update or delete changes both. Embedding and reranking run on models you host. The only call that leaves Barrel for an LLM is the one your application makes in step 6."
+  stepsIntro="Six steps in an Erlang application. Steps 1 and 5 need setup outside Barrel."
+  steps={steps}
+  barrel={[
+    'Stores the documents and keeps one vector per document in step with it',
+    'Calls the embedding provider you configure, on write and for each query',
+    'Answers vector, keyword (BM25) and hybrid queries, with metadata filters',
+    'Runs the reranker model process when you use barrel_rerank',
+  ]}
+  app={[
+    'Chooses and runs the embedding model',
+    'Splits large documents into passages before writing them',
+    'Builds the prompt and calls the LLM',
+    'Decides which passages a user may see before they reach the prompt',
+  ]}
+  limits={[
+    'Hybrid scores come from rank fusion (about 0.016 for a first place); compare them within one query only.',
+    'Reranker scores are raw cross-encoder logits, not values between 0 and 1.',
+    'Changing the policy applies to new writes only; existing documents are not re-embedded.',
+    'Vector indexes do not replicate; each node rebuilds its own from the documents.',
+    'Pass `dimensions` to match your model; the provider’s own size is not read back.',
+    'Contexts can query several knowledge bases at once, but they do not merge BM25 or hybrid scores across them.',
+  ]}
+  links={[
+    { label: 'Example: private RAG', href: '/examples/private-rag' },
+    { label: 'Example: query several datasets with BQL', href: '/examples/contexts-bql' },
+    { label: 'Record mode', href: '/docs/guides/record-mode' },
+    { label: 'Vector, keyword and hybrid', href: '/docs/search/hybrid' },
+    { label: 'Reranking', href: '/docs/search/reranking' },
+    { label: 'Choose an embedding provider', href: '/docs/search/embedding-providers' },
+    { label: 'barrel_embed', href: '/product/embed' },
+    { label: 'barrel_rerank', href: '/product/rerank' },
+    { label: 'Search', href: '/product/search' },
+  ]}
+/>

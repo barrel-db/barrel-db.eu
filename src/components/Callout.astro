@@ -1,0 +1,21 @@
+---
+interface Props {
+  /** Short bold label: Note, Limit, Planned, Known gap. */
+  label?: string;
+  kind?: 'note' | 'limit' | 'planned';
+}
+const { label = 'Note', kind = 'note' } = Astro.props;
+---
+
+<div class:list={['callout', `callout--${kind}`]} role="note">
+  <span class="callout-l">{label}</span>
+  <div class="callout-b"><slot /></div>
+</div>
+
+<style>
+  .callout { display: flex; gap: 14px; padding: 14px 18px; border-radius: var(--radius); background: var(--paper-2); margin: 0 0 20px; }
+  .callout--planned { background: transparent; border: 1.5px dashed var(--ink-2); }
+  .callout-l { font-weight: 650; white-space: nowrap; }
+  .callout-b :global(p) { margin: 0; }
+  .callout-b :global(p + p) { margin-top: 8px; }
+</style>

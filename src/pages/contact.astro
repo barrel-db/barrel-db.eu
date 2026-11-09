@@ -1,127 +1,44 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import Base from '../layouts/Base.astro';
+import { GITHUB } from '../data/site';
 ---
 
-<Layout title="Contact" description="Get in touch with the barrel-db team">
-  <section class="py-20 px-4">
-    <div class="container mx-auto max-w-4xl">
-      <div class="text-center mb-16">
-        <h1 class="text-4xl md:text-5xl font-bold mb-4">Let's Talk</h1>
-        <p class="text-xl text-ink/60 max-w-2xl mx-auto">
-          Questions about Barrel? Need help with deployment? We'd love to hear from you.
-        </p>
+<Base title="Contact" description="Talk to the Barrel team: community chat on Matrix, GitHub issues, or email Enki Bridge about commercial support.">
+  <section class="wrap ct-top">
+    <h1 class="display ct-h1">Talk to us</h1>
+    <p class="lead">A question about Barrel, a bug, or help with a deployment: pick the channel that fits.</p>
+  </section>
+  <section class="section">
+    <div class="wrap ct-grid">
+      <div>
+        <h2 class="h3">Community</h2>
+        <dl class="ct-dl">
+          <dt>Matrix chat</dt>
+          <dd>Ask questions and follow development. <a href="https://matrix.to/#/#barrel-db:matrix.org">#barrel-db:matrix.org</a></dd>
+          <dt>GitHub issues</dt>
+          <dd>Report a bug or propose a feature. <a href={`${GITHUB}/issues`}>barrel-db/barrel issues</a></dd>
+          <dt>Email</dt>
+          <dd>For anything longer. <a href="mailto:hello@barrel-db.eu">hello@barrel-db.eu</a></dd>
+        </dl>
       </div>
-
-      <div class="grid md:grid-cols-2 gap-12">
-        <!-- Contact Options -->
-        <div class="space-y-8">
-          <div>
-            <h2 class="text-2xl font-bold mb-6">Get in Touch</h2>
-
-            <!-- Matrix Chat -->
-            <div class="bg-surface p-6 rounded-lg border border-line/30 mb-4">
-              <div class="flex items-start gap-4">
-                <div class="bg-coral p-3 rounded-lg">
-                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                  </svg>
-                </div>
-                <div>
-                  <h3 class="font-semibold text-ink mb-1">Matrix Chat</h3>
-                  <p class="text-ink/60 text-sm mb-3">Join our community chat room on Matrix.</p>
-                  <a
-                    href="https://matrix.to/#/#barrel-db:matrix.org"
-                    class="text-coral hover:text-coral-dark text-sm font-semibold"
-                  >
-                    Join #barrel-db:matrix.org &rarr;
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <!-- Email -->
-            <div class="bg-surface p-6 rounded-lg border border-line/30 mb-4">
-              <div class="flex items-start gap-4">
-                <div class="bg-line p-3 rounded-lg">
-                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                  </svg>
-                </div>
-                <div>
-                  <h3 class="font-semibold text-ink mb-1">Email</h3>
-                  <p class="text-ink/60 text-sm mb-3">For detailed inquiries or if you prefer email.</p>
-                  <a href="mailto:hello@barrel-db.eu" class="text-coral hover:text-coral-dark text-sm font-semibold">
-                    hello@barrel-db.eu
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <!-- GitHub -->
-            <div class="bg-surface p-6 rounded-lg border border-line/30">
-              <div class="flex items-start gap-4">
-                <div class="bg-accent p-3 rounded-lg">
-                  <svg class="w-6 h-6 text-surface" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                  </svg>
-                </div>
-                <div>
-                  <h3 class="font-semibold text-ink mb-1">GitHub Issues</h3>
-                  <p class="text-ink/60 text-sm mb-3">Report bugs or request features on GitHub.</p>
-                  <a href="https://github.com/barrel-db/barrel" class="text-coral hover:text-coral-dark text-sm font-semibold">
-                    View on GitHub &rarr;
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Sales CTA -->
-        <div>
-          <div class="bg-gradient-to-br from-line/30 to-surface p-8 rounded-xl border border-coral/30">
-            <h2 class="text-2xl font-bold mb-4">Enterprise Solutions</h2>
-            <p class="text-ink/80 mb-6">
-              Need custom SLAs, dedicated support, or help with large-scale deployments? Let's talk.
-            </p>
-            <ul class="space-y-3 mb-8">
-              <li class="flex items-start gap-2 text-ink/80">
-                <svg class="w-5 h-5 text-accent flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                <span>Custom SLAs and support contracts</span>
-              </li>
-              <li class="flex items-start gap-2 text-ink/80">
-                <svg class="w-5 h-5 text-accent flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                <span>Architecture consulting</span>
-              </li>
-              <li class="flex items-start gap-2 text-ink/80">
-                <svg class="w-5 h-5 text-accent flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                <span>Deployment assistance</span>
-              </li>
-              <li class="flex items-start gap-2 text-ink/80">
-                <svg class="w-5 h-5 text-accent flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                <span>Private cloud or on-premise options</span>
-              </li>
-            </ul>
-            <a
-              href="mailto:hello@barrel-db.eu?subject=Enterprise%20Solutions"
-              class="block w-full bg-coral hover:bg-coral-dark text-white py-3 rounded-lg transition font-semibold text-center"
-            >
-              Contact Sales
-            </a>
-          </div>
-
-          <!-- Company Info -->
-          <div class="mt-8 bg-surface p-6 rounded-lg border border-line/30">
-            <h3 class="font-semibold text-ink mb-4">Company Information</h3>
-            <div class="space-y-2 text-sm text-ink/60">
-              <p><strong class="text-ink/80">Built by:</strong> Enki Bridge</p>
-              <p><strong class="text-ink/80">Infrastructure:</strong> <a href="https://bgp.tools/as/209823" class="text-accent hover:underline">AS209823</a></p>
-              <p><strong class="text-ink/80">Location:</strong> European Union</p>
-              <p><strong class="text-ink/80">Data Centers:</strong> Paris, Amsterdam, Geneva, Lille</p>
-            </div>
-          </div>
-        </div>
+      <div>
+        <h2 class="h3">Commercial</h2>
+        <p>Talk to Enki Bridge about a private RAG pilot, agent memory and MCP integrations, edge sync, managed Barrel, backups and monitoring, custom SLAs or private support.</p>
+        <p class="ct-cta"><a class="button button--primary" href="mailto:hello@barrel-db.eu?subject=Commercial%20Barrel">Email Enki Bridge</a><a class="button" href="/commercial">See the offers</a></p>
+        <h3 class="ct-h">Company</h3>
+        <p class="small">Built by Enki Bridge, European Union. Infrastructure on <a href="https://bgp.tools/as/209823">AS209823</a>, data centers in Paris, Amsterdam, Geneva and Lille.</p>
       </div>
     </div>
   </section>
-</Layout>
+</Base>
+
+<style>
+  .ct-top { padding-top: 72px; padding-bottom: 48px; }
+  .ct-h1 { font-size: clamp(2.5rem, 5vw, 3.75rem); margin-bottom: 16px; }
+  .ct-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; }
+  .ct-dl dt { font-weight: 650; margin-top: 16px; }
+  .ct-dl dd { margin: 4px 0 0; }
+  .ct-cta { display: flex; flex-wrap: wrap; gap: 12px; }
+  .ct-h { font-size: 17px; margin: 32px 0 6px; }
+  @media (max-width: 820px) { .ct-grid { grid-template-columns: minmax(0, 1fr); } }
+</style>

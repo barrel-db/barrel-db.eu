@@ -1,0 +1,153 @@
+---
+// translation_of: src/pages/commercial.astro source_hash: 12c01bf8751d1789
+import Base from '../../layouts/Base.astro';
+import { localize } from '../../i18n';
+
+const offers = [
+  {
+    id: 'rag',
+    title: 'Pilote RAG privé',
+    accent: 'coral',
+    text: 'Déployez Barrel DB pour la recherche sémantique privée et le RAG sur vos propres données. Nous vous aidons sur l’ingestion, les embeddings, la recherche hybride, le filtrage par métadonnées, l’évaluation et le déploiement.',
+    bullets: [
+      'Barrel Vector et documents sous un même identifiant',
+      'embeddings locaux, Ollama ou compatibles OpenAI',
+      'recherche hybride vecteur/BM25',
+      'évaluation et réglage',
+    ],
+    cta: 'Discuter d’un pilote RAG',
+    subject: 'Pilote%20RAG%20priv%C3%A9',
+  },
+  {
+    id: 'agent-memory',
+    title: 'Pilote mémoire d’agent',
+    accent: 'accent',
+    text: 'Utilisez Barrel comme couche de mémoire persistante pour vos agents d’IA et vos outils MCP. Stockez documents, vecteurs, blobs, sessions et capacités derrière une seule API.',
+    bullets: [
+      'accès REST et MCP',
+      'espaces, sessions, passations',
+      'modèle de capacités sécurisé',
+      'déploiement prêt pour l’observabilité',
+    ],
+    cta: 'Discuter de la mémoire d’agent',
+    subject: 'Pilote%20m%C3%A9moire%20d%E2%80%99agent',
+  },
+  {
+    id: 'edge-sync',
+    title: 'Pilote synchronisation en périphérie / local-first',
+    accent: 'accent',
+    text: 'Construisez des déploiements hors ligne d’abord ou en périphérie, avec synchronisation, versions et recherche locale. Gardez les données près des utilisateurs et synchronisez dès que la connexion le permet.',
+    bullets: [
+      'synchronisation des documents et gestion des conflits',
+      'recherche vectorielle locale',
+      'modèles de déploiement navigateur/périphérie',
+      'stockage local chiffré',
+    ],
+    cta: 'Discuter de la synchronisation en périphérie',
+    subject: 'Pilote%20synchronisation%20en%20p%C3%A9riph%C3%A9rie',
+  },
+  {
+    id: 'managed',
+    title: 'Barrel DB géré',
+    accent: 'coral',
+    text: 'Faites tourner Barrel DB avec l’aide opérationnelle d’Enki Bridge. Disponible pour des partenaires de conception sélectionnés et des utilisateurs en production.',
+    bullets: [
+      'déploiement et mises à jour',
+      'supervision et sauvegardes',
+      'revue de sécurité',
+      'canal de support privé',
+      'SLA sur mesure',
+    ],
+    cta: 'Se renseigner sur Barrel géré',
+    subject: 'Barrel%20DB%20g%C3%A9r%C3%A9',
+  },
+];
+
+const audience = [
+  'les équipes européennes qui construisent des systèmes d’IA privés',
+  'les équipes Erlang/Elixir qui veulent un stockage de vecteurs et de documents intégré',
+  'les entreprises qui ne peuvent pas envoyer leurs données à un service vectoriel SaaS tiers',
+  'les applications en périphérie ou local-first',
+  'les équipes qui exposent des données aux agents en REST ou en MCP',
+];
+
+const steps = [
+  {
+    n: '1',
+    title: 'Un appel d’architecture',
+    text: 'Un court appel pour comprendre ce que vous construisez, vos données et vos contraintes. Sans frais ni engagement.',
+  },
+  {
+    n: '2',
+    title: 'Un pilote à périmètre fixe ou une revue de production',
+    text: 'Une mission de partenaire de conception avec un livrable clair : un pilote RAG, une couche de mémoire pour agents, un déploiement en périphérie, ou la revue d’une installation déjà en production.',
+  },
+  {
+    n: '3',
+    title: 'Déploiement, support ou service géré',
+    text: 'Un support commercial dans la durée, de l’aide pour votre propre déploiement, ou un déploiement Barrel géré par Enki Bridge, pour des clients sélectionnés.',
+  },
+];
+---
+
+<Base title="Offre commerciale et Barrel géré" description="Pilotes, hébergement géré et support commercial pour l’IA privée, le RAG, la mémoire des agents et les systèmes en périphérie ou local-first construits sur Barrel, par Enki Bridge.">
+  <section class="wrap cm-top">
+    <h1 class="display cm-h1">Faites tourner Barrel en production avec Enki Bridge</h1>
+    <p class="lead">Pilotes à périmètre fixe, hébergement géré et support pour l’IA privée, le RAG, la mémoire des agents et les systèmes en périphérie ou local-first construits sur Barrel.</p>
+    <p class="cm-cta"><a class="button button--primary" href="mailto:hello@barrel-db.eu?subject=Barrel%20commercial">Contacter Enki Bridge</a><a class="button" href={localize('/docs', 'fr')}>Lire la documentation</a></p>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Offres</h2>
+      <p class="section-intro">Construites sur la base de données open source. Commencez par une offre, élargissez ensuite.</p>
+      <div class="cm-offers">
+        {offers.map((o) => (
+          <section id={o.id} class="cm-offer">
+            <h3 class="h3">{o.title}</h3>
+            <p>{o.text}</p>
+            <ul>{o.bullets.map((b) => <li>{b}</li>)}</ul>
+            <a href={`mailto:hello@barrel-db.eu?subject=${o.subject}`}>{o.cta}</a>
+          </section>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap cm-two">
+      <div>
+        <h2 class="h3">Un cœur open source</h2>
+        <p>Barrel est sous licence Apache 2.0. Vous pouvez l’héberger vous-même, l’intégrer, le forker et le faire tourner sans frais d’utilisation. Le support commercial s’adresse aux équipes qui veulent de l’aide sur l’architecture de production, le déploiement, l’exploitation ou un support dédié.</p>
+      </div>
+      <div>
+        <h2 class="h3">Pour qui</h2>
+        <ul>{audience.map((a) => <li>{a}</li>)}</ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Comment cela se passe</h2>
+      <ol class="cm-steps">
+        {steps.map((s) => (
+          <li><h3 class="cm-step-t">{s.title}</h3><p class="muted">{s.text}</p></li>
+        ))}
+      </ol>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .cm-top { padding-top: 72px; padding-bottom: 48px; }
+  .cm-h1 { font-size: clamp(2.5rem, 5vw, 3.75rem); margin-bottom: 20px; max-width: 16em; }
+  .cm-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+  .cm-offers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px 48px; }
+  .cm-offer { border-top: 2px solid var(--ink); padding-top: 14px; scroll-margin-top: 24px; }
+  .cm-offer ul { padding-left: 20px; }
+  .cm-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; }
+  .cm-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; padding-left: 20px; }
+  .cm-step-t { font-size: 19px; margin: 0 0 6px; }
+  @media (max-width: 820px) { .cm-offers, .cm-two, .cm-steps { grid-template-columns: minmax(0, 1fr); } }
+</style>

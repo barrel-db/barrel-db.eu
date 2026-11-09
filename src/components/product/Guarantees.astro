@@ -1,0 +1,28 @@
+---
+import Rich from './Rich.astro';
+import { langOf } from '../../i18n';
+
+interface Item { title: string; body: string; check?: string }
+interface Props { items: Item[] }
+const { items } = Astro.props;
+const checked = { en: 'Checked by', fr: 'Vérifié par' }[langOf(Astro.url)];
+---
+
+<div class="gu">
+  {items.map((g) => (
+    <div class="gu-i">
+      <h3 class="gu-t">{g.title}</h3>
+      <p class="gu-b"><Rich text={g.body} /></p>
+      {g.check && <p class="gu-c small muted">{checked} <Rich text={g.check} /></p>}
+    </div>
+  ))}
+</div>
+
+<style>
+  .gu { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 48px; }
+  .gu-i { border-top: 2px solid var(--ink); padding-top: 14px; min-width: 0; }
+  .gu-t { margin: 0 0 6px; font-size: var(--step-1); font-stretch: 106%; }
+  .gu-b { margin: 0 0 10px; }
+  .gu-c { margin: 0; }
+  @media (max-width: 820px) { .gu { grid-template-columns: minmax(0, 1fr); } }
+</style>

@@ -1,0 +1,89 @@
+---
+title: Reranking
+description: Reorder search results with a cross-encoder through barrel_rerank, a second stage you run after vector, keyword or hybrid search.
+status: optional
+---
+import CodeBlock from '../../../components/CodeBlock.astro';
+import Callout from '../../../components/Callout.astro';
+
+Reranking is a second search stage. A first search (vector, BM25 or
+hybrid) returns candidates fast; a cross-encoder then reads the query and
+each candidate together and scores how well they match, which is slower
+but more precise. `barrel_rerank` runs that model through a Python
+process. Use it when the order of the top results matters more than the
+extra time per query, for example before you pass results to an LLM.
+
+## What you need
+
+- `barrel_rerank` (`{barrel_rerank, "~> 1.0"}`, built by default in the
+  umbrella).
+- Python 3 with `transformers` and `torch`, about 2 GB. The default
+  model, `cross-encoder/ms-marco-MiniLM-L-6-v2`, downloads from Hugging
+  Face on first use.
+
+## Start a reranker
+
+Point the app at a virtualenv before it starts. Load the app first:
+loading it resets its environment.
+
+```erlang
+ok = application:load(barrel_rerank),
+ok = application:set_env(barrel_rerank, venv_path,
+                         "/opt/barrel/venv"),
+{ok, _} = application:ensure_all_started(barrel_rerank),
+{ok, R} = barrel_rerank:start_link(#{}).
+```
+
+`start_link/1` takes `python`, `model` and `timeout` (120000 ms). Each
+call starts its own server; keep the pid.
+
+<Callout kind="limit" label="Known gap">
+If `venv_path` is not set, barrel_rerank 1.0.2 creates its virtualenv in
+a directory named `undefined` under the current directory. If the setup
+then fails, `start_link/1` returns `{error, {port_open_failed, enoent}}`.
+Always set `venv_path`, or pass an absolute `python`.
+</Callout>
+
+## Rerank
+
+Give it the query and the candidate texts. It returns `{Index, Score}`
+pairs, best first, with `Index` counting from 0 in your list.
+
+```erlang
+Docs = [<<"Machine learning is a subset of AI.">>,
+        <<"Python is a programming language.">>,
+        <<"Deep learning uses neural networks.">>],
+barrel_rerank:rerank(R, <<"What is machine learning?">>, Docs),
+barrel_rerank:rerank(R, <<"What is machine learning?">>, Docs,
+                     #{top_k => 1}).
+```
+
+<CodeBlock output label="Output from a run on barrel_rerank 1.0.2" code={`{ok,[{0,9.581769943237305},
+     {2,-5.255744457244873},
+     {1,-9.625640869140625}]}
+{ok,[{0,9.581769943237305}]}`} />
+
+Scores are the model's raw logits. Compare them within one call only.
+
+## After a search
+
+Fetch more candidates than you need, rerank, keep the top:
+
+```erlang
+{ok, Hits} = barrel:search_hybrid(Db, Query, #{k => 20}),
+Texts = [maps:get(text, H) || H <- Hits],
+{ok, Ranked} = barrel_rerank:rerank(R, Query, Texts,
+                                    #{top_k => 5}),
+Top = [lists:nth(I + 1, Hits) || {I, _Score} <- Ranked].
+```
+
+Search and rerank are separate calls. BQL, the REST search routes and
+context queries do not rerank; a context query with `merge => rerank` is
+refused.
+
+## Notes
+
+- `barrel_rerank:info/1` returns the model; `available/1` checks that the
+  Python side answers; `stop/1` ends it.
+- Concurrent calls share one Python process, which serves them in
+  parallel.

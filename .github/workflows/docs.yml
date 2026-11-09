@@ -3,6 +3,7 @@ name: Build Site
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
   repository_dispatch:
     types: [docs-update]
@@ -22,21 +23,41 @@ jobs:
         with:
           repository: barrel-db/barrel
           path: repos/barrel
-          token: ${{ secrets.DOCS_TOKEN }}
+          token: ${{ secrets.DOCS_TOKEN || github.token }}
 
       - name: Install build tools
-        # barrel_vectordb builds a NIF through CMake; the Astro site needs Node.
+        # CMake builds the NIFs; rocksdb links the system compression libraries.
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends cmake nodejs npm
+          apt-get install -y --no-install-recommends cmake libsnappy-dev liblz4-dev libzstd-dev
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - name: Install dependencies
         run: npm ci
 
-      # Runs scripts/build-docs.sh (ex_doc -> public/docs/lib), then astro
-      # build, then the pagefind index.
+      # ex_doc reference, guides synced from the umbrella, astro build, search index.
       - name: Build the site
         run: BARREL_DIR="$GITHUB_WORKSPACE/repos/barrel" npm run build
+
+      - name: Type check
+        run: npm run check
+
+      # Every English page has a French translation made from its current version.
+      # A change to an English page or an upstream guide fails here until the French
+      # file is updated and stamped (npm run i18n:stamp <file>).
+      - name: Translations up to date
+        run: npm run i18n
+
+      - name: Unit tests (demo logic)
+        run: npm test
+
+      # Every nav entry has a page, versions match the umbrella, internal links
+      # resolve, house style holds.
+      - name: Check the built site
+        run: BARREL_DIR="$GITHUB_WORKSPACE/repos/barrel" npm run check:site
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -45,21 +66,30 @@ jobs:
           path: dist
           retention-days: 7
 
-  # Optional: deploy to GitHub Pages
-  # deploy:
-  #   needs: build
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     pages: write
-  #     id-token: write
-  #   environment:
-  #     name: github-pages
-  #   steps:
-  #     - uses: actions/download-artifact@v4
-  #       with:
-  #         name: site
-  #         path: dist
-  #     - uses: actions/upload-pages-artifact@v3
-  #       with:
-  #         path: dist
-  #     - uses: actions/deploy-pages@v4
+  examples:
+    # Every example under examples/ runs against the umbrella and its output is
+    # compared with the expected.txt shown on the site.
+    runs-on: ubuntu-latest
+    container:
+      image: erlang:28
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout the barrel umbrella
+        uses: actions/checkout@v4
+        with:
+          repository: barrel-db/barrel
+          path: repos/barrel
+          token: ${{ secrets.DOCS_TOKEN || github.token }}
+
+      - name: Install build tools
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends cmake curl jq libsnappy-dev liblz4-dev libzstd-dev
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run the examples
+        run: BARREL_DIR="$GITHUB_WORKSPACE/repos/barrel" npm run verify:examples

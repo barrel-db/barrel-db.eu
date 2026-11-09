@@ -1,0 +1,184 @@
+---
+import Base from '../layouts/Base.astro';
+import AssistantDemo from '../components/demos/AssistantDemo.astro';
+import RecordFigure from '../components/RecordFigure.astro';
+
+const builds = [
+  { title: 'An assistant that remembers your customers', body: 'It recalls past conversations and account details instead of asking again, and finds the right help article even when the customer uses different words.', href: '/use-cases/agent-memory' },
+  { title: 'Private search over company documents', body: 'Contracts, manuals and notes stay on your own servers. People and assistants search them by meaning, and the AI model of your choice answers from them.', href: '/use-cases/private-rag' },
+  { title: 'Agents that work together', body: 'Each agent gets its own data and only the access it is given. One can hand a task to another, with what is done and what is left.', href: '/use-cases/database-per-agent' },
+  { title: 'Applications that work offline', body: 'A field app or a site with a poor connection keeps working on its own copy and catches up when the connection returns, without losing anyone’s changes.', href: '/use-cases/offline-first' },
+  { title: 'Several sites that stay in step', body: 'Offices, factories or regions each keep their data close. Every copy accepts changes and they agree again as soon as they can talk to each other.', href: '/use-cases/write-on-every-node' },
+];
+
+const different = [
+  { title: 'Your data stays where you decide', body: 'Barrel runs inside your application or on your own servers. Nothing has to be sent to an outside service, and data can be encrypted on disk.' },
+  { title: 'It keeps working without a connection', body: 'Each copy accepts changes on its own, on a server, a device or in a browser, and copies bring themselves back into agreement later. No change is silently lost.' },
+  { title: 'One place instead of four', body: 'Text, files, the information needed to search by meaning, and the history of changes live together. Fewer systems to run, nothing to keep in sync by hand.' },
+  { title: 'Nothing is overwritten without a trace', body: 'Past versions are kept for as long as you choose, and each change can record who made it. You can see what an assistant knew at a given moment, or try a change on a copy before applying it.' },
+  { title: 'Access is given, not assumed', body: 'Each agent or customer can have its own space with its own key. Access is granted for reading or writing, and taken back at any time.' },
+  { title: 'Open source', body: 'Barrel is free under the Apache 2.0 license. You can run it, change it and keep using it without depending on a vendor.' },
+];
+---
+
+<Base title="What is Barrel?" description="Barrel is a database that helps AI applications remember, find and work with information: documents, files, search, memory and history in one place, on your own infrastructure.">
+  <section class="wrap wb-hero">
+    <div>
+      <h1 class="display">What is Barrel?</h1>
+      <p class="lead">A database that helps AI applications remember, find and work with information.</p>
+      <p>AI models can write answers, but a real application also has to remember what happened, look up reliable information, keep track of changes and share data between the different agents that do the work. Barrel is the place where all of that is kept.</p>
+      <p class="muted small">About a four minute read. Developers can jump to the <a href="/docs/start/what-is-barrel">technical overview</a>.</p>
+    </div>
+    <RecordFigure plain id="article-142" caption="Every piece of information in Barrel is one record: the text, the files that go with it, and what makes it findable by meaning." />
+  </section>
+
+  <section class="section">
+    <div class="wrap wb-narrow">
+      <h2 class="h2">AI needs memory</h2>
+      <p>A language model knows what it learned during training. It does not know your customers, your documents, or the decision your team made yesterday, and every conversation starts empty. On its own it cannot remember, cannot look anything up, and cannot keep a record of what it did.</p>
+      <p>So every serious AI application needs somewhere to put information and find it again: the facts it relies on, what each user told it, the work in progress, and a history of what changed. That place is a database.</p>
+      <details class="wb-more">
+        <summary>What is a database, exactly?</summary>
+        <p>A database is software that stores information so it is not lost, lets several programs read and change it at the same time without stepping on each other, and finds what you ask for quickly. Your bank, your email and most websites rely on one. Barrel is a database designed for applications where AI agents read and write the information.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">One place for information</h2>
+      <p class="section-intro">Today an AI application is usually assembled from several separate systems, and the application has to keep them consistent. Barrel keeps everything that belongs together, together.</p>
+      <div class="wb-compare">
+        <figure class="wb-fig">
+          <figcaption><strong>Usually</strong> <span class="muted">four systems, glued together by your code</span></figcaption>
+          <div class="wb-app">Your application</div>
+          <div class="wb-arrows" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+          <div class="wb-many">
+            <div>Documents</div><div>Files</div><div>Search by meaning</div><div>Conversation memory</div>
+          </div>
+          <p class="small muted">When a document changes, each system has to be updated, and they drift apart.</p>
+        </figure>
+        <figure class="wb-fig">
+          <figcaption><strong>With Barrel</strong> <span class="muted">one database</span></figcaption>
+          <div class="wb-app">Your application</div>
+          <div class="wb-arrows" aria-hidden="true"><span></span></div>
+          <div class="wb-one">Barrel<span>documents, files, search, memory and history, under one name per record</span></div>
+          <p class="small muted">Change a document and its search information follows. Copy it elsewhere and its files go with it.</p>
+        </figure>
+      </div>
+      <details class="wb-more wb-narrow">
+        <summary>For the technically curious</summary>
+        <p>Each record holds a JSON document, its attachments and a vector embedding under one id. Barrel can compute the embedding when a document is written, using a model you choose, and searches by vector similarity, by keyword ranking (BM25), or both combined. Every version is kept in a history log within a retention window. Read <a href="/docs/concepts/record">the record</a> and <a href="/product/search">search</a>.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">See it work</h2>
+      <p class="section-intro">A support assistant answers a customer. Pick a question, then ask the follow-up: the second answer is better because Barrel remembered the first conversation.</p>
+      <AssistantDemo />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">What you can build</h2>
+      <div class="wb-builds">
+        {builds.map((b) => (
+          <a href={b.href} class="wb-build">
+            <span class="wb-build-t">{b.title}</span>
+            <span class="muted">{b.body}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Why Barrel is different</h2>
+      <div class="wb-diff">
+        {different.map((d) => (
+          <div>
+            <h3 class="wb-diff-t">{d.title}</h3>
+            <p class="muted">{d.body}</p>
+          </div>
+        ))}
+      </div>
+      <details class="wb-more wb-narrow">
+        <summary>For the technically curious</summary>
+        <p>Barrel is written in Erlang/OTP and stores data in RocksDB. It can be embedded as a library, run as a server with a REST API and an MCP endpoint for AI agents, or kept in a browser with the barrel-lite client. Replication is active-active, with conflicts kept rather than discarded; agents get capability tokens scoped to a space. See <a href="/product/replication">replication</a>, <a href="/product/agents">the agent layer</a> and <a href="/product/deployments">deployments</a>.</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap wb-two">
+      <div>
+        <h2 class="h3">What Barrel is not</h2>
+        <ul class="wb-not">
+          <li><strong>Not an AI model.</strong> It does not write text or make decisions. You use the model you choose, from a cloud provider or running on your own machines.</li>
+          <li><strong>Not a chatbot.</strong> It is the memory and knowledge behind one.</li>
+          <li><strong>Not a complete agent framework.</strong> Your application or framework runs the agents; Barrel gives them a reliable place to keep and find information.</li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="h3">Barrel and Enki Bridge</h2>
+        <p>Barrel is open source and free to use. Enki Bridge, the European company that builds it, offers help for teams that want it: pilot projects, development support, and managed hosting of Barrel in the EU. Using Barrel never requires it.</p>
+        <p><a href="/commercial">What Enki Bridge offers</a></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Where to go next</h2>
+      <div class="wb-next">
+        <a href="/use-cases" class="wb-next-a"><strong>See what teams build</strong><span class="muted">Eight use cases, each with how it works</span></a>
+        <a href="/examples" class="wb-next-a"><strong>Run an example</strong><span class="muted">Complete projects you can download and run</span></a>
+        <a href="/docs" class="wb-next-a"><strong>Read the documentation</strong><span class="muted">Start in ten minutes, embedded or as a server</span></a>
+        <a href="/commercial" class="wb-next-a"><strong>Talk to Enki Bridge</strong><span class="muted">Pilots, support and managed hosting</span></a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .wb-hero { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 48px; align-items: center; padding-top: 88px; padding-bottom: 64px; }
+  .wb-hero .display { margin-bottom: 24px; }
+  .wb-hero .lead { font-size: 1.6rem; font-stretch: 106%; margin: 0 0 20px; }
+  .wb-hero p { max-width: 36em; }
+  .wb-narrow { max-width: 760px; }
+  .wb-more { margin-top: 24px; border-top: 1px solid var(--rule); padding-top: 12px; }
+  .wb-more summary { cursor: pointer; font-weight: 600; color: var(--teal); }
+  .wb-more p { margin: 12px 0 0; }
+  .wb-compare { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; }
+  .wb-fig { margin: 0; padding: 24px; border: 1px solid var(--rule); border-radius: 12px; background: var(--card); display: flex; flex-direction: column; align-items: stretch; }
+  .wb-fig figcaption { margin-bottom: 16px; }
+  .wb-app { padding: 12px; border: 1.5px solid var(--ink); border-radius: 6px; text-align: center; font-weight: 600; }
+  .wb-arrows { display: flex; justify-content: space-around; height: 32px; }
+  .wb-arrows span { width: 1.5px; background: var(--teal); }
+  .wb-many { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .wb-many div { padding: 12px 6px; border: 1.5px dashed var(--ink-2); border-radius: 6px; text-align: center; font-size: 14px; }
+  .wb-one { padding: 14px; border-radius: 6px; background: var(--coral); color: var(--on-coral); text-align: center; font-weight: 650; font-size: 19px; }
+  .wb-one span { display: block; font-weight: 400; font-size: 14px; }
+  .wb-fig > p { margin: 16px 0 0; }
+  .wb-builds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 48px; }
+  .wb-build { display: block; padding: 16px 0; border-top: 1px solid var(--rule); text-decoration: none; color: var(--ink); }
+  .wb-build-t { display: block; font-weight: 620; font-size: 19px; margin-bottom: 4px; color: var(--teal); }
+  .wb-build span:last-child { display: block; }
+  .wb-diff { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px 40px; }
+  .wb-diff-t { font-size: 19px; margin: 0 0 6px; }
+  .wb-diff p { margin: 0; }
+  .wb-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; }
+  .wb-not { padding-left: 20px; }
+  .wb-not li { margin-bottom: 10px; }
+  .wb-next { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; }
+  .wb-next-a { display: flex; flex-direction: column; gap: 4px; padding-top: 14px; border-top: 3px solid var(--ink); text-decoration: none; color: var(--ink); }
+  @media (max-width: 900px) {
+    .wb-hero, .wb-compare, .wb-builds, .wb-diff, .wb-two, .wb-next { grid-template-columns: minmax(0, 1fr); }
+    .wb-hero { padding-top: 48px; }
+    .wb-many { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>

@@ -1,7 +1,10 @@
 ---
 import { Code } from 'astro:components';
+import { langOf, t } from '../i18n';
+const s = t(langOf(Astro.url));
 
 interface Tab {
+  /** Shown on the tab, and the key remembered across pages ("Erlang", "REST", "TypeScript"). */
   label: string;
   code: string;
   lang?: string;
@@ -9,80 +12,72 @@ interface Tab {
 
 interface Props {
   tabs: Tab[];
-  class?: string;
 }
 
-const { tabs, class: className = '' } = Astro.props;
-
-// Radio inputs drive the panels, so the tabs work with no JavaScript and the
-// first panel is already correct on first paint. The group needs a name that is
-// unique per instance; the build is static, so a random suffix is stable in the
-// output.
-const gid = `ct-${Math.random().toString(36).slice(2, 9)}`;
-
-const themes = { light: 'github-light', dark: 'github-dark' };
+const { tabs } = Astro.props;
+const themes = { light: 'github-light', dark: 'github-dark' } as const;
+const id = `ct-${Math.random().toString(36).slice(2, 9)}`;
 ---
 
-<div class={`codetabs bg-surface rounded-lg border border-line/30 overflow-hidden ${className}`}>
-  {tabs.map((tab, i) => (
-    <input
-      class="sr-only"
-      type="radio"
-      name={gid}
-      id={`${gid}-${i}`}
-      data-i={i}
-      checked={i === 0}
-    />
+<div class="ct" data-tabs>
+  <div class="ct-bar">
+    <div role="tablist" aria-label={s.language}>
+      {tabs.map((t, i) => (
+        <button type="button" role="tab" id={`${id}-t${i}`} aria-controls={`${id}-p${i}`} aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? 0 : -1} data-key={t.label}>{t.label}</button>
+      ))}
+    </div>
+    <button type="button" class="ct-copy" data-copy data-copied={s.copied} data-select={s.selectCopy}>{s.copy}</button>
+  </div>
+  {tabs.map((t, i) => (
+    <div role="tabpanel" id={`${id}-p${i}`} aria-labelledby={`${id}-t${i}`} data-key={t.label} hidden={i !== 0}>
+      <Code code={t.code} lang={(t.lang ?? 'erlang') as any} themes={themes} defaultColor={false} />
+    </div>
   ))}
-
-  <div class="flex border-b border-line/30 bg-surface/80" role="tablist">
-    {tabs.map((tab, i) => (
-      <label
-        for={`${gid}-${i}`}
-        data-i={i}
-        class="cursor-pointer select-none px-4 py-2 text-sm text-ink/60 border-b-2 border-transparent transition hover:text-ink"
-      >
-        {tab.label}
-      </label>
-    ))}
-  </div>
-
-  <div class="panels">
-    {tabs.map((tab, i) => (
-      <div class="panel" data-i={i}>
-        <Code code={tab.code} lang={tab.lang ?? 'erlang'} themes={themes} defaultColor={false} />
-      </div>
-    ))}
-  </div>
 </div>
 
-<style is:global>
-  /* :has lets one generic rule light up the panel and label whose index matches
-     the checked radio, instead of emitting a rule per instance. */
-  .codetabs .panel {
-    display: none;
-  }
-  .codetabs:has(input[data-i='0']:checked) .panel[data-i='0'],
-  .codetabs:has(input[data-i='1']:checked) .panel[data-i='1'],
-  .codetabs:has(input[data-i='2']:checked) .panel[data-i='2'],
-  .codetabs:has(input[data-i='3']:checked) .panel[data-i='3'] {
-    display: block;
-  }
-
-  .codetabs:has(input[data-i='0']:checked) label[data-i='0'],
-  .codetabs:has(input[data-i='1']:checked) label[data-i='1'],
-  .codetabs:has(input[data-i='2']:checked) label[data-i='2'],
-  .codetabs:has(input[data-i='3']:checked) label[data-i='3'] {
-    color: var(--ink);
-    border-bottom-color: var(--color-coral);
-  }
-
-  /* Keyboard focus has to be visible: the radio itself is off-screen. */
-  .codetabs:has(input[data-i='0']:focus-visible) label[data-i='0'],
-  .codetabs:has(input[data-i='1']:focus-visible) label[data-i='1'],
-  .codetabs:has(input[data-i='2']:focus-visible) label[data-i='2'],
-  .codetabs:has(input[data-i='3']:focus-visible) label[data-i='3'] {
-    outline: 2px solid var(--color-coral);
-    outline-offset: -2px;
-  }
+<style>
+  .ct { border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; margin: 0 0 20px; background: var(--paper-2); }
+  .ct-bar { display: flex; justify-content: space-between; align-items: stretch; border-bottom: 1px solid var(--rule); background: var(--paper); }
+  [role='tablist'] { display: flex; overflow-x: auto; }
+  [role='tab'] { min-height: 44px; padding: 0 16px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--ink-2); font: inherit; font-size: 15px; cursor: pointer; white-space: nowrap; }
+  [role='tab'][aria-selected='true'] { color: var(--ink); font-weight: 650; border-bottom-color: var(--coral); }
+  .ct-copy { border: 0; background: transparent; color: var(--ink-2); font: inherit; font-size: 14px; padding: 0 14px; cursor: pointer; }
+  .ct :global(pre) { border-radius: 0; }
 </style>
+
+<script>
+  const KEY = 'barrel:code-tab';
+  function select(group: Element, key: string, focus = false) {
+    const tabs = group.querySelectorAll<HTMLButtonElement>('[role=tab]');
+    const match = Array.from(tabs).find((t) => t.dataset.key === key);
+    if (!match) return false;
+    tabs.forEach((t) => {
+      const on = t === match;
+      t.setAttribute('aria-selected', String(on));
+      t.tabIndex = on ? 0 : -1;
+      const p = document.getElementById(t.getAttribute('aria-controls')!);
+      if (p) p.hidden = !on;
+    });
+    if (focus) match.focus();
+    return true;
+  }
+  let saved: string | null = null;
+  try { saved = localStorage.getItem(KEY); } catch { saved = null; }
+  document.querySelectorAll('[data-tabs]').forEach((group) => {
+    if (saved) select(group, saved);
+    const tabs = Array.from(group.querySelectorAll<HTMLButtonElement>('[role=tab]'));
+    tabs.forEach((t, i) => {
+      t.addEventListener('click', () => {
+        const key = t.dataset.key!;
+        try { localStorage.setItem(KEY, key); } catch { /* per-page only */ }
+        document.querySelectorAll('[data-tabs]').forEach((g) => select(g, key));
+      });
+      t.addEventListener('keydown', (e) => {
+        const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (!d) return;
+        e.preventDefault();
+        select(group, tabs[(i + d + tabs.length) % tabs.length].dataset.key!, true);
+      });
+    });
+  });
+</script>

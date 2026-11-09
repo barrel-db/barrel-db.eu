@@ -1,0 +1,97 @@
+---
+translation_of: src/content/docs/search/reranking.mdx
+source_hash: "5fe827e634e139c8"
+title: Reranking
+description: Réordonnez les résultats de recherche avec un cross-encoder via barrel_rerank, une seconde étape que vous lancez après une recherche vectorielle, par mot-clé ou hybride.
+status: optional
+---
+import CodeBlock from '../../../../components/CodeBlock.astro';
+import Callout from '../../../../components/Callout.astro';
+
+Le reranking est une seconde étape de recherche. Une première recherche
+(vectorielle, BM25 ou hybride) renvoie vite des candidats ; un
+cross-encoder lit ensuite la requête et chaque candidat ensemble et note
+à quel point ils correspondent, ce qui est plus lent mais plus précis.
+`barrel_rerank` fait tourner ce modèle via un processus Python.
+Utilisez-le quand l’ordre des premiers résultats compte plus que le
+temps ajouté à chaque requête, par exemple avant de passer les résultats
+à un LLM.
+
+## Ce qu’il vous faut
+
+- `barrel_rerank` (`{barrel_rerank, "~> 1.0"}`, compilé par défaut dans
+  l’umbrella).
+- Python 3 avec `transformers` et `torch`, environ 2 Go. Le modèle par
+  défaut, `cross-encoder/ms-marco-MiniLM-L-6-v2`, se télécharge depuis
+  Hugging Face à la première utilisation.
+
+## Démarrer un reranker
+
+Indiquez un virtualenv à l’application avant son démarrage. Chargez
+d’abord l’application : la charger réinitialise son environnement.
+
+```erlang
+ok = application:load(barrel_rerank),
+ok = application:set_env(barrel_rerank, venv_path,
+                         "/opt/barrel/venv"),
+{ok, _} = application:ensure_all_started(barrel_rerank),
+{ok, R} = barrel_rerank:start_link(#{}).
+```
+
+`start_link/1` prend `python`, `model` et `timeout` (120000 ms). Chaque
+appel démarre son propre serveur ; gardez le pid.
+
+<Callout kind="limit" label="Défaut connu">
+Si `venv_path` n’est pas défini, barrel_rerank 1.0.2 crée son virtualenv
+dans un répertoire nommé `undefined` sous le répertoire courant. Si
+l’installation échoue ensuite, `start_link/1` renvoie
+`{error, {port_open_failed, enoent}}`. Définissez toujours `venv_path`, ou
+passez un `python` absolu.
+</Callout>
+
+## Reclasser
+
+Donnez-lui la requête et les textes candidats. Il renvoie des paires
+`{Index, Score}`, la meilleure d’abord, avec `Index` qui compte à partir
+de 0 dans votre liste.
+
+```erlang
+Docs = [<<"Machine learning is a subset of AI.">>,
+        <<"Python is a programming language.">>,
+        <<"Deep learning uses neural networks.">>],
+barrel_rerank:rerank(R, <<"What is machine learning?">>, Docs),
+barrel_rerank:rerank(R, <<"What is machine learning?">>, Docs,
+                     #{top_k => 1}).
+```
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_rerank 1.0.2" code={`{ok,[{0,9.581769943237305},
+     {2,-5.255744457244873},
+     {1,-9.625640869140625}]}
+{ok,[{0,9.581769943237305}]}`} />
+
+Les scores sont les logits bruts du modèle. Ne les comparez qu’au sein
+d’un même appel.
+
+## Après une recherche
+
+Récupérez plus de candidats que nécessaire, reclassez, gardez les
+premiers :
+
+```erlang
+{ok, Hits} = barrel:search_hybrid(Db, Query, #{k => 20}),
+Texts = [maps:get(text, H) || H <- Hits],
+{ok, Ranked} = barrel_rerank:rerank(R, Query, Texts,
+                                    #{top_k => 5}),
+Top = [lists:nth(I + 1, Hits) || {I, _Score} <- Ranked].
+```
+
+La recherche et le reranking sont des appels séparés. BQL, les routes de
+recherche REST et les requêtes de contexte ne font pas de reranking ; une
+requête de contexte avec `merge => rerank` est refusée.
+
+## Notes
+
+- `barrel_rerank:info/1` renvoie le modèle ; `available/1` vérifie que le
+  côté Python répond ; `stop/1` l’arrête.
+- Les appels concurrents partagent un seul processus Python, qui les sert
+  en parallèle.

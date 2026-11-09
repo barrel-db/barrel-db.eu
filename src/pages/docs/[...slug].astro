@@ -1,21 +1,19 @@
 ---
-import { getCollection, render } from 'astro:content';
-import DocsLayout from '../../layouts/DocsLayout.astro';
+import { render } from 'astro:content';
+import Docs from '../../layouts/Docs.astro';
+import { allDocs, siteFile } from '../../lib/docs';
 
 export async function getStaticPaths() {
-  const entries = await getCollection('docs');
-  return entries
-    .filter((entry) => !entry.id.startsWith('fr/'))
-    .map((entry) => ({
-      params: { slug: entry.id },
-      props: { entry },
-    }));
+  const entries = await allDocs();
+  return entries.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
 }
 
 const { entry } = Astro.props;
 const { Content, headings } = await render(entry);
+const d = entry.data;
 ---
 
-<DocsLayout title={entry.data.title} description={entry.data.description} slug={entry.id} headings={headings}>
+<Docs title={d.title} description={d.description} slug={entry.id} headings={headings}
+      source={d.source} commit={d.commit} updated={d.updated} status={d.status} file={siteFile(entry)}>
   <Content />
-</DocsLayout>
+</Docs>

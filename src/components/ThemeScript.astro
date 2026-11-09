@@ -17,9 +17,14 @@
       /* private mode: fall through to the system preference */
     }
 
+    // ?theme=dark or ?theme=light previews a theme without storing it.
+    var forced = null;
+    try { forced = new URLSearchParams(location.search).get('theme'); } catch (e) { forced = null; }
+    if (forced === 'light' || forced === 'dark') stored = forced;
+
     var theme = stored === 'light' || stored === 'dark'
       ? stored
-      : (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 
     document.documentElement.dataset.theme = theme;
 

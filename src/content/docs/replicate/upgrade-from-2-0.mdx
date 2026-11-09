@@ -1,0 +1,142 @@
+---
+title: Upgrade from 2.0
+description: Move replicas from barrel_docdb 2.0.0 to 2.1.0, what the first run after the upgrade does on its own, and how to repair a damaged replica once with reconcile.
+---
+import Callout from '../../../components/Callout.astro';
+
+barrel_docdb 2.1.0 fixes replication bugs in 2.0.0 that could leave a
+replica missing documents or attachments, or holding an empty body for a
+live version. Upgrading stops new damage but does not repair what is
+already wrong. Read this when you upgrade replicas that ran 2.0.0: the
+order to upgrade in, what changes in your configuration, and the one
+repair to run per replica.
+
+## What can be wrong on a 2.0 replica
+
+- A filtered replication skipped matching documents: with a small batch
+  size only the first pages arrived.
+- A channel filter with a query did not send deletes, so the replica
+  kept documents deleted on the source.
+- A state that named a version without its body stored an empty
+  document.
+- A failed attachment transfer was skipped for good: the checkpoint moved
+  past it.
+- A two-way task shared one attachment position between its directions
+  and could skip attachments.
+
+## 1. Upgrade servers before clients
+
+Signed replication requests now use signature v3, which older servers
+refuse. Upgrade every `barrel_server` to 1.13.0 first, then the
+replicating clients (barrel_docdb 2.1.0). While you roll, v1 and v2
+requests keep replicating documents but are refused with 401
+`signature_v3_required` when they write an attachment. See
+[Authentication](/docs/security/authentication).
+
+## 2. Move credentials out of task configs
+
+Replication tasks now refuse inline credentials: `auth`, `signing`,
+`ssl_options`, `headers`, or a user and password in the URL. A task
+config that has them fails with `{error, {inline_credentials, Keys}}`.
+Put them in the app env, keyed by origin or by database URL:
+
+```erlang
+{barrel_docdb, [
+  {sync_auth,
+     #{<<"https://node2:8080">> => <<"s3cret">>}},
+  {sync_signing,
+     #{<<"https://node2:8080/db/orders">> =>
+           #{key_id => <<"node1">>, priv_key => Priv32}}}
+]}
+```
+
+A one-shot replication also refuses a URL with a user and password.
+
+## 3. Check your attachment targets
+
+A run now waits for the target to make attachment writes durable before
+each checkpoint. A target that cannot do this fails with
+`att_flush_unsupported`. Upgrade that target, or replicate to it
+without the guarantee:
+
+```erlang
+barrel_rep:replicate(Source, Target,
+                     #{att_durability => best_effort}).
+```
+
+A filtered replication from a server that cannot filter attachments now
+fails with `att_filter_unsupported`. Upgrade the source.
+
+## 4. Let the first run reset its checkpoints
+
+You do nothing here; know what to expect. The first run after the
+upgrade:
+
+- resets, once, the filtered document checkpoints and every attachment
+  checkpoint written by 2.0, and walks the feed from the start;
+  documents and attachments the target already holds are compared, not
+  sent again;
+- keeps unfiltered document checkpoints and pending ids;
+- resets the same positions in replication tasks (`att_seq`, and
+  `last_seq` for filtered tasks, per direction);
+- logs which replication was reset and why.
+
+Checkpoints written from then on carry `vsn => 2` and are kept.
+
+## 5. Repair each replica once
+
+Run `barrel_rep:reconcile/3` once per replica, from a copy you trust:
+
+```erlang
+{ok, _} = barrel_rep:replicate(<<"healthy">>, <<"replica">>),
+{ok, #{docs_checked := Checked,
+       bodies_repaired := Repaired,
+       atts_resent := Resent,
+       doc_failures := [],
+       att_failures := []}} =
+    barrel_rep:reconcile(<<"healthy">>, <<"replica">>, #{}).
+```
+
+`reconcile/3` walks the whole source feed, with no checkpoint:
+
+- a version both sides hold, but the target stores with another body,
+  gets the source's body (an empty body is never written);
+- the source state is merged as in a normal run, which copies missing
+  documents;
+- every source attachment the target lacks, or holds with other bytes,
+  is sent again.
+
+Failures are listed in `doc_failures` and `att_failures`, and the walk
+goes on. Fix them and run it again.
+
+For a remote replica, pass the transport as for `replicate/3`. The
+target needs a write grant or a signing key, since the repair is a write
+(`PUT /db/:db/_sync/repair/:id`):
+
+```erlang
+Replica = barrel_rep_transport_http:endpoint(
+    <<"https://node2:8080/db/orders">>),
+{ok, _} = barrel_rep:reconcile(<<"orders">>, Replica,
+    #{target_transport => barrel_rep_transport_http}).
+```
+
+<Callout label="Note">
+Pass the same `filter` you replicate with to repair only that scope. A
+read-only target is refused with `{error, read_only}`. To restore one
+document or attachment, reconcile from a copy that holds it, or rewrite
+it on the healthy side so the next run sends it.
+</Callout>
+
+## Other changes in 2.1.0
+
+- A database whose writer crashed now restarts on its own, up to 3 times
+  in 60 seconds, then reports as failed; `barrel_docdb:reopen_db/1`
+  restarts it with its last config.
+- A replicated version too far ahead of the local clock is refused with
+  a clock skew error instead of being accepted.
+- An invalid query filter is now an error instead of being ignored.
+- Unfinished attachment uploads older than `att_upload_timeout` (default
+  3600 s) are removed.
+
+The full list is in the `apps/barrel_docdb/CHANGELOG.md` of the
+repository.

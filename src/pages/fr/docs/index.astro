@@ -1,30 +1,96 @@
 ---
-import DocsLayout from '../../../layouts/DocsLayout.astro';
-import { docsNavFr, docsOrderFr } from '../../../data/docs-nav';
+// translation_of: src/pages/docs/index.astro source_hash: 3bd353dfd214ea33
+import Base from '../../../layouts/Base.astro';
+import { navFor } from '../../../data/i18n';
+import { localize } from '../../../i18n';
 
-const cards = [
-  { title: "Demarrer", body: "Installez Barrel et stockez vos premiers documents en quelques minutes.", href: "/fr/docs/get-started/introduction", cta: "Introduction" },
-  { title: "Concepts", body: "Le modele a un enregistrement, les vecteurs de version, et la couche agent.", href: "/fr/docs/concepts/data-model", cta: "Modele de donnees" },
-  { title: "Guides", body: "Des tutoriels orientes taches : requetes, synchronisation, timeline, chiffrement, et plus.", href: "/fr/docs/guides/embedding", cta: "Guides" },
-  { title: "Serveur", body: "Lancez barrel_server pour une surface REST/JSON et MCP sur la meme base de donnees.", href: "/fr/docs/server/rest-server", cta: "Lancer le serveur" },
-  { title: "Reference", body: "L'API Barrel, la reference BQL, la configuration, et les docs par bibliotheque.", href: "/fr/docs/reference/barrel-api", cta: "API Barrel" },
+const { docsNav } = navFor('fr');
+const L = (p: string) => localize(p, 'fr');
+
+const starts = [
+  { title: 'Intégrée en Erlang', body: 'Ajoutez barrel à votre release et appelez-le directement. Pas de serveur.', cmd: '{deps, [{barrel, "~> 1.12"}]}.', href: '/docs/start/quickstart-embedded' },
+  { title: 'En serveur', body: 'Lancez barrel_server et accédez-y en REST ou en MCP.', cmd: 'curl -X PUT localhost:8080/db/notes', href: '/docs/start/quickstart-server' },
+  { title: 'Dans le navigateur', body: 'Gardez une copie dans une application web avec barrel-lite et synchronisez-la.', cmd: 'await Database.open("notes", { remote })', href: '/docs/start/quickstart-browser' },
 ];
 ---
 
-<DocsLayout title="Documentation" description="Tout ce qu'il faut pour construire avec Barrel, la base de donnees edge-AI pour les agents." slug="" contentClass="" lang="fr" base="/fr/docs" nav={docsNavFr} order={docsOrderFr}>
-  <p class="text-ink/70">
-    Nouveau ici ? Commencez par l'<a href="/fr/docs/get-started/introduction" class="text-coral hover:underline">Introduction</a>,
-    puis suivez le <a href="/fr/docs/get-started/quickstart" class="text-coral hover:underline">Demarrage rapide</a> pour stocker
-    et rechercher vos premiers documents.
-  </p>
+<Base title="Documentation" description="La documentation de Barrel, organisée par tâche : démarrer, stocker et interroger, chercher, répliquer, construire pour les agents, exploiter, et une référence générée depuis le code source.">
+  <section class="wrap dh-top">
+    <h1 class="display dh-h1">Documentation de Barrel</h1>
+    <p class="lead">Chaque page répond à une tâche. Choisissez où Barrel va tourner et commencez par là ; chaque page renvoie vers la référence qu’elle utilise.</p>
+    <button type="button" class="dh-search" data-open-search>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+      <span>Rechercher guides, fonctions, routes et outils MCP</span>
+      <kbd>⌘K</kbd>
+    </button>
+  </section>
 
-  <div class="grid sm:grid-cols-2 gap-4 mt-8">
-    {cards.map((c) => (
-      <a href={c.href} class="block bg-surface border border-line/30 hover:border-accent/50 rounded-xl p-5 transition no-underline">
-        <h3 class="text-lg font-bold text-accent mb-1">{c.title}</h3>
-        <p class="text-ink/60 text-sm mb-3">{c.body}</p>
-        <span class="text-coral text-sm font-semibold">{c.cta} &rarr;</span>
-      </a>
-    ))}
-  </div>
-</DocsLayout>
+  <section class="wrap dh-block">
+    <h2 class="h3">Commencez ici</h2>
+    <div class="dh-start">
+      {starts.map((s) => (
+        <a href={L(s.href)} class="dh-card">
+          <span class="dh-card-t">{s.title}</span>
+          <span class="muted small">{s.body}</span>
+          <code>{s.cmd}</code>
+        </a>
+      ))}
+    </div>
+    <p class="small muted">Vous hésitez ? <a href={L('/docs/start/choose-deployment')}>Choisir un déploiement</a> les compare dans un seul tableau.</p>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h3">Selon ce que vous voulez faire</h2>
+      <div class="dh-goals">
+        {docsNav.filter((s) => s.title !== 'Démarrer').map((s) => (
+          <div>
+            <h3 class="dh-g">{s.title}</h3>
+            {s.items.map((i) => <a href={L(`/docs/${i.slug}`)}>{i.label}</a>)}
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap dh-two">
+      <div>
+        <h2 class="h3">La référence, générée depuis le code</h2>
+        <p class="muted">Ces pages sont construites à partir du code source : elles correspondent à la version que vous utilisez.</p>
+        <ul>
+          <li><a href={L('/docs/reference/libraries')}>L’API de Barrel, par bibliothèque</a>, d’après la documentation des modules</li>
+          <li><a href={L('/docs/reference/mcp-tools')}>Outils MCP</a>, d’après la liste d’outils du serveur lui-même</li>
+          <li><a href={L('/docs/reference/rest-api')}>API REST</a> et <a href={L('/docs/reference/bql')}>BQL</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="h3">Pour les agents de développement</h2>
+        <p class="muted">Indiquez ces adresses à votre assistant plutôt que de le laisser deviner les noms de fonctions.</p>
+        <pre>https://barrel-db.eu/llms.txt
+https://barrel-db.eu/llms-full.txt
+https://barrel-db.eu/docs/guides/timeline.md
+https://barrel-db.eu/docs/reference/mcp-tools.json</pre>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .dh-top { padding-top: 64px; padding-bottom: 40px; }
+  .dh-h1 { font-size: clamp(2.5rem, 5vw, 3.5rem); margin-bottom: 16px; }
+  .dh-search { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 640px; height: 56px; padding: 0 18px; margin-top: 28px; border: 1.5px solid var(--ink); border-radius: 10px; background: var(--card); color: var(--ink-2); font: inherit; cursor: pointer; text-align: left; }
+  .dh-search span { flex: 1; }
+  .dh-search kbd { font-size: 13px; border: 1px solid var(--rule); border-radius: 4px; padding: 0 6px; }
+  .dh-block { padding-bottom: 56px; }
+  .dh-start { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-bottom: 16px; }
+  .dh-card { display: flex; flex-direction: column; gap: 6px; border-top: 3px solid var(--ink); padding-top: 14px; text-decoration: none; color: var(--ink); min-width: 0; }
+  .dh-card-t { font-weight: 620; font-size: 21px; }
+  .dh-card code { display: block; margin-top: 6px; padding: 10px 12px; overflow-x: auto; white-space: pre; }
+  .dh-goals { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 36px 32px; }
+  .dh-goals a { display: block; padding: 3px 0; font-size: 15px; text-decoration: none; }
+  .dh-g { font-size: 17px; margin: 0 0 6px; }
+  .dh-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; }
+  @media (max-width: 980px) { .dh-goals { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 820px) { .dh-start, .dh-goals, .dh-two { grid-template-columns: minmax(0, 1fr); } }
+</style>

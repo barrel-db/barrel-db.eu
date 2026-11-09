@@ -1,0 +1,123 @@
+---
+// translation_of: src/pages/use-cases/code-search.astro source_hash: 31e5bd9d619c56ed
+import UseCasePage from '../../../components/usecase/UseCasePage.astro';
+import type { ArchColumn, Step } from '../../../components/usecase/types';
+
+const arch: ArchColumn[] = [
+  { who: 'Agent de développement (client MCP)', boxes: [
+    { name: 'ngram_search', note: 'sous-chaîne exacte ou expression régulière' },
+    { name: 'search', note: 'par le sens, par mots-clés ou les deux' } ] },
+  { who: 'barrel_server', boxes: [
+    { name: '/mcp', note: 'vérifie le jeton, exécute l’outil' },
+    { name: 'Votre indexeur', note: 'écrit les morceaux via REST ou Erlang' } ] },
+  { who: 'La base code', boxes: [
+    { name: 'Un document par morceau', note: 'path, lang, symbol, text', rec: true },
+    { name: 'Index de trigrammes', note: 'barrel_ngram, alimenté par le flux des changements' } ] },
+];
+
+const steps: Step[] = [
+  { title: 'Stocker un document par morceau',
+    body: 'Un morceau est une fonction, une classe ou une plage de lignes. Donnez-lui un identifiant stable tiré de son chemin et de ses lignes, pour qu’une réindexation le remplace. Le mode enregistrement vectorise le champ `text` pour la recherche par le sens.',
+    status: 'optional',
+    label: 'Erlang', lang: 'erlang',
+    code: `{ok, Db} = barrel:open(code, #{
+    embedding => #{fields => [<<"text">>], mode => sync,
+                   embedder => {local, #{}},
+                   dimensions => 768,
+                   metadata_fields => [<<"path">>,
+                                       <<"lang">>]},
+    vectordb => #{db_path => "data/code_vec"}}),
+{ok, _} = barrel:put_doc(Db, #{
+    <<"id">> => <<"src/auth.py#40-88">>,
+    <<"path">> => <<"src/auth.py">>,
+    <<"lang">> => <<"python">>,
+    <<"text">> => Body}).` },
+  { title: 'Trouver des chaînes exactes et des motifs',
+    body: 'barrel_ngram tient un index de trigrammes sur les champs que vous choisissez et vérifie chaque candidat sur le texte réel : il n’y a donc pas de faux positifs. Chaque résultat porte ses plages d’octets. Cette exécution utilisait trois documents de runbook.',
+    label: 'Erlang', lang: 'erlang',
+    code: `ok = barrel_ngram:open(<<"rb_idx">>,
+    #{db => <<"runbooks">>,
+      fields => [<<"title">>, <<"body">>]}),
+barrel_ngram:search(<<"rb_idx">>, <<"ERR_CONN_TIMEOUT">>),
+barrel_ngram:regex(<<"rb_idx">>,
+                   <<"pg-(primary|replica)-\\\\d+">>),
+barrel_ngram:regex(<<"rb_idx">>, <<"\\\\w+_timeout">>).`,
+    outLabel: 'D’après une exécution enregistrée',
+    out: `{ok,[#{id => <<"rb:db">>,spans => [{11,16}]}]}
+{ok,[#{id => <<"rb:db">>,spans => [{35,13},{58,13}]}]}
+{ok,[#{id => <<"rb:api">>,spans => [{15,15},{35,12}]}]}` },
+  { title: 'Donner à l’agent la recherche exacte via MCP',
+    body: 'L’outil `ngram_search` ouvre un index de trigrammes pour la base à la première demande, le met à jour, puis cherche. `mode` vaut `literal` (par défaut) ou `regex` ; `limit` vaut 50 par défaut.',
+    label: 'Requête MCP, POST /mcp', lang: 'json',
+    code: `{"jsonrpc":"2.0","id":11,"method":"tools/call",
+ "params":{"name":"ngram_search",
+  "arguments":{"db":"mcpdemo","query":"over MCP"}}}`,
+    outLabel: 'D’après une exécution enregistrée (lignes repliées)',
+    out: `data: {"id":11,"jsonrpc":"2.0","result":{"content":[
+  {"text":"{\\"count\\":1,\\"hits\\":[{\\"id\\":\\"note-1\\",
+  \\"spans\\":[[7,8]]}]}","type":"text"}]}}` },
+  { title: 'Chercher par le sens dans la même base',
+    body: 'La recherche hybride fusionne les classements vectoriel et par mots-clés ; c’est celle qu’un agent doit utiliser quand il cherche une intention plutôt qu’une chaîne. Elle a besoin de l’embedder de l’étape 1.',
+    tabs: [
+      { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":12,"method":"tools/call",
+ "params":{"name":"search",
+  "arguments":{"db":"code","mode":"hybrid","k":10,
+   "query":"retry a failed request with backoff"}}}` },
+      { label: 'Erlang', lang: 'erlang', code: `{ok, Rows, _} = barrel:query(Db,
+    <<"SELECT id, path, h._score "
+      "FROM hybrid_top_k($q, k => 10) AS h "
+      "WHERE h.lang = 'python'">>,
+    #{params => #{<<"q">> => <<"validate the token">>}}).` } ] },
+  { title: 'Garder l’index à jour',
+    body: 'L’index de trigrammes suit le flux des changements de la base. Après `refresh/1`, il est entièrement à jour ; l’outil MCP l’appelle avant chaque recherche. Après une modification, l’ancienne chaîne a disparu.',
+    label: 'Erlang', lang: 'erlang',
+    code: `{ok, _} = barrel_docdb:put_doc(<<"runbooks">>,
+    D#{<<"body">> => <<"Check upstream keepalive_timeout "
+                        "in nginx.conf">>}),
+barrel_ngram:refresh(<<"rb_idx">>),
+barrel_ngram:search(<<"rb_idx">>, <<"connect_timeout">>).`,
+    outLabel: 'D’après une exécution enregistrée (watermark raccourci)',
+    out: `{ok,#{segments => 2,watermark => <<...>>}}
+{ok,[]}` },
+];
+---
+
+<UseCasePage
+  title="Recherche de code pour agents de développement"
+  lead="Donnez à un agent de développement des correspondances exactes (un code d’erreur, un symbole, un motif) et des réponses par le sens, depuis une seule base, sous forme d’outils MCP."
+  sub="Construit avec barrel_ngram pour les sous-chaînes et les expressions régulières, le mode enregistrement pour la recherche hybride, et barrel_server pour les outils MCP `ngram_search` et `search`."
+  problem="Un agent de développement a autant besoin de correspondances exactes que de réponses par le sens. La recherche sémantique rate des identifiants comme `ERR_CONN_TIMEOUT` ; grep rate l’intention ; faire tourner les deux implique d’ordinaire deux systèmes à garder synchronisés avec le dépôt."
+  arch={arch}
+  edges={['tools/call', 'lit et cherche']}
+  archNote="Votre indexeur écrit un document par morceau. L’index de trigrammes et l’index vectoriel suivent tous deux ces documents : l’agent cherche donc dans les mêmes morceaux dans les deux cas et récupère des identifiants qu’il peut ouvrir avec `doc_get`."
+  stepsIntro="Cinq étapes. L’étape 1 demande un fournisseur d’embeddings pour la recherche par le sens ; la recherche exacte fonctionne sans."
+  steps={steps}
+  barrel={[
+    'Garde un index de trigrammes synchronisé avec les documents grâce au flux des changements',
+    'Répond aux requêtes par sous-chaîne, insensibles à la casse et par expression régulière, avec les plages des correspondances',
+    'Vectorise les morceaux et répond aux requêtes vectorielles, BM25 et hybrides',
+    'Sert les deux sous forme d’outils MCP, contrôlés par le jeton de l’appelant',
+  ]}
+  app={[
+    'Découpe les fichiers en morceaux, par fonction ou par classe',
+    'Calcule des identifiants stables et réindexe les fichiers modifiés',
+    'Supprime les morceaux du code retiré ou réécrit',
+    'Laisse l’agent choisir entre recherche exacte et recherche hybride',
+  ]}
+  limits={[
+    'L’index de trigrammes fait environ 34 fois la taille du texte qu’il couvre.',
+    'Les champs sont fixés pour toute la vie d’un index ; les changer implique `delete_corpus` et une reconstruction. L’outil MCP indexe tous les champs de la base.',
+    'Les plages sont des positions en octets dans les champs indexés, concaténés dans l’ordre trié des champs, pas des numéros de ligne.',
+    'La façade `barrel` et BQL n’exposent pas l’index de trigrammes ; utilisez `barrel_ngram` ou l’outil MCP.',
+    'Un index écrit par barrel_ngram 0.10 ou plus ancien demande `on_legacy => reindex` (l’outil MCP le positionne).',
+  ]}
+  links={[
+    { label: 'Indexer une base de code', href: '/docs/guides/code-indexing' },
+    { label: 'Sous-chaîne et expression régulière', href: '/docs/search/substring-regex' },
+    { label: 'Vectorielle, mots-clés et hybride', href: '/docs/search/hybrid' },
+    { label: 'Outils MCP', href: '/docs/reference/mcp-tools' },
+    { label: 'barrel_ngram', href: '/product/ngram' },
+    { label: 'Recherche', href: '/product/search' },
+    { label: 'Exemple : une session MCP', href: '/examples/mcp-session' },
+  ]}
+/>

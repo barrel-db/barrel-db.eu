@@ -1,0 +1,120 @@
+---
+import UseCasePage from '../../components/usecase/UseCasePage.astro';
+import type { ArchColumn, Step } from '../../components/usecase/types';
+
+const arch: ArchColumn[] = [
+  { who: 'In the browser', boxes: [
+    { name: 'Your web app', note: 'TypeScript, reads and writes locally' },
+    { name: 'barrel-lite', note: 'the local copy, stored in OPFS', rec: true } ] },
+  { who: 'barrel_server', boxes: [
+    { name: '/db/:db/_sync', note: 'the replication wire, with CORS' },
+    { name: 'Space sp_…', note: 'the server copy', rec: true } ] },
+  { who: 'Other copies', boxes: [
+    { name: 'Other devices', note: 'their own barrel-lite copy' },
+    { name: 'Erlang nodes', note: 'embedded Barrel, same wire' } ] },
+];
+
+const steps: Step[] = [
+  { title: 'Build barrel-lite',
+    body: 'barrel-lite 0.1.0 is not on npm yet. Build it from the barrel repository and install it into your app from the local path.',
+    label: 'Shell', lang: 'bash',
+    code: `cd barrel/clients/barrel-lite
+npm install && npm run build
+cd ../../../my-app
+npm install ../barrel/clients/barrel-lite` },
+  { title: 'Open the server to the browser',
+    body: 'Allow your origin with CORS and expose `x-barrel-hlc`, which carries the clock. Keep the global token on the server side.',
+    label: 'sys.config', lang: 'erlang',
+    code: `[{barrel_server, [
+   {cors, #{origins => [<<"https://app.example">>],
+            expose => [<<"x-barrel-hlc">>]}},
+   {auth, #{tokens => [<<"global-token">>]}}
+ ]}].` },
+  { title: 'Give each device a token for one space',
+    body: 'Your backend creates a space and grants a token: `read` covers pulling, `write` covers pushing. The browser only ever holds that token.',
+    label: 'REST, from your backend', lang: 'bash',
+    code: `curl -X POST host:8080/spaces \\
+  -H 'authorization: Bearer global-token' \\
+  -H 'content-type: application/json' \\
+  -d '{"label":"field-visits"}'
+curl -X POST host:8080/spaces/sp_…/grants \\
+  -H 'authorization: Bearer global-token' \\
+  -H 'content-type: application/json' \\
+  -d '{"rights":["read","write"],"subject":"tablet-7"}'` },
+  { title: 'Open the local copy and write, online or not',
+    body: 'Writes land in the local store at once and are pushed on the next sync. Storage is OPFS when the browser has it, memory otherwise.',
+    label: 'TypeScript', lang: 'ts',
+    code: `import { Database } from "barrel-lite";
+
+const db = await Database.open("visits", {
+  remote: { url: "https://hub.example:8080",
+            db: "sp_…", token: "bsp_…" },
+  multiTab: true,
+});
+await db.put({ id: "v-311", site: "Lyon 2" });
+const visit = await db.get("v-311");` },
+  { title: 'Sync while the network is there',
+    body: 'Live sync polls 500 ms after activity and backs off to 30 s when idle; a local write wakes it, and errors back off from 1 s to 60 s. `continuous: true` adds a server-sent event stream.',
+    label: 'TypeScript', lang: 'ts',
+    code: `const live = db.liveSync({ continuous: true });
+db.onStatus((s) => setBadge(s.state)); // idle, syncing…
+db.onChange((c) => render(c.id, c.source));
+// later
+live.stop();` },
+  { title: 'Resolve conflicts on the device',
+    body: 'If the device and another copy edited the same document apart, both versions are kept, on the device and on the server, and every copy shows the same winner. `resolve` replaces the winner and every conflict.',
+    label: 'TypeScript', lang: 'ts',
+    code: `const db = await Database.open("visits", {
+  remote,
+  onConflict: (e) => console.warn("conflict on", e.id),
+});
+await db.sync();
+const current = await db.get("v-311");
+const others = await db.conflicts("v-311");
+if (others.length > 0) {
+  await db.resolve("v-311", merge(current, others));
+  await db.push();
+}` },
+];
+---
+
+<UseCasePage
+  title="Offline-first apps"
+  lead="Keep a copy of the data in the browser, so a field app reads and writes without a connection and syncs both ways when the network comes back."
+  sub="Built from barrel-lite, a TypeScript client that speaks the same `_sync` wire as Barrel nodes, and barrel_server. barrel-lite is not on npm yet."
+  problem="A field app has to keep working in a basement or a train and catch up later without losing edits. Request-per-action apps stop working offline, and hand-written sync queues lose one side of every concurrent edit."
+  arch={arch}
+  edges={['push and pull over HTTPS', 'replication']}
+  archNote="The browser copy is a full replica: it stamps its writes with its own source id and keeps its own checkpoints, so the server needs no per-client state. Only one tab per origin syncs; other tabs go through it."
+  stepsIntro="Six steps: build the client, open the server to the browser, then the code in your app."
+  steps={steps}
+  barrel={[
+    'Keeps the local copy in OPFS and answers reads and local BQL from it',
+    'Pushes and pulls over `/db/:db/_sync`, resuming from its checkpoints',
+    'Keeps concurrent versions as conflicts and picks the same winner as the server',
+    'Elects one leader tab with Web Locks and relays the others over BroadcastChannel',
+    'Syncs attachments, deduplicated by digest',
+  ]}
+  app={[
+    'Issues a capability token per device or user from your backend',
+    'Shows sync status and offline state in the UI',
+    'Merges conflicting versions in a way that fits your data',
+    'Pulls a subset with a filter or a channel when a device should not hold everything',
+  ]}
+  limits={[
+    'Not on npm yet: build it from `clients/barrel-lite` in the repository.',
+    'The local store is a cache. Writes not yet flushed are lost on a crash, and the browser may evict the store (Safari does); the server copy is the source of truth.',
+    'The `offline` status is never emitted: detect offline in your app, for example with `navigator.onLine`.',
+    'Vector, keyword and hybrid search and `SUBSCRIBE` run on the server only. There is no local full-text search; local vector search ranks the synced embeddings by brute force.',
+    'Bearer tokens only: no signed requests from the browser.',
+  ]}
+  links={[
+    { label: 'Example: a local-first app', href: '/examples/local-first' },
+    { label: 'barrel-lite guide', href: '/docs/guides/barrel-lite' },
+    { label: 'Quickstart: browser', href: '/docs/start/quickstart-browser' },
+    { label: 'Conflicts', href: '/docs/replicate/conflicts' },
+    { label: 'barrel-lite', href: '/product/lite' },
+    { label: 'Replication', href: '/product/replication' },
+    { label: 'Use case: write on every node', href: '/use-cases/write-on-every-node' },
+  ]}
+/>

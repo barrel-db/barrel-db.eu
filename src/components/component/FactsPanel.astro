@@ -1,0 +1,66 @@
+---
+// Side panel of a library page: status, version, install, builds on, standalone, links.
+import { inline } from './inline';
+import { GITHUB, type Component } from '../../data/site';
+import { siteFor } from '../../data/i18n';
+import { langOf, localize } from '../../i18n';
+import type { ComponentContent } from '../../data/components/types';
+
+interface Props { content: ComponentContent; meta: Component; }
+const { content: c, meta } = Astro.props;
+const lang = langOf(Astro.url);
+const { components, statusLabel } = siteFor(lang);
+const L = {
+  en: {
+    glance: (n: string) => `${n} at a glance`, status: 'Status', version: 'Version', install: 'Install',
+    fromRepo: 'From the repository, not npm.', howBuild: 'How to build it', buildsOn: 'Builds on',
+    liteDep: 'barrel_server, over HTTP', noDep: 'No other Barrel library', standalone: 'Used standalone',
+    reached: 'Reached through', apiRef: 'API reference', source: 'Source on GitHub',
+  },
+  fr: {
+    glance: (n: string) => `${n} en bref`, status: 'État', version: 'Version', install: 'Installation',
+    fromRepo: 'Depuis le dépôt, pas npm.', howBuild: 'Comment la construire', buildsOn: 'Repose sur',
+    liteDep: 'barrel_server, en HTTP', noDep: 'Aucune autre bibliothèque Barrel', standalone: 'Utilisable seule',
+    reached: 'Accessible par', apiRef: 'Référence de l’API', source: 'Code source sur GitHub',
+  },
+}[lang];
+const nameOf = (slug: string) => components.find((m) => m.slug === slug)?.name ?? slug;
+const oneLine = !c.install.code.includes('\n');
+---
+
+<aside class="fp" aria-label={L.glance(meta.name)}>
+  <dl>
+    <div><dt>{L.status}</dt><dd><span class={`mark mark--${meta.status}`}>{statusLabel[meta.status]}</span></dd></div>
+    <div><dt>{L.version}</dt><dd class="fp-strong">{meta.version}</dd></div>
+    <div><dt>{L.install}</dt><dd>{oneLine ? <code>{c.install.code}</code> : <span>{L.fromRepo} <a href="#install">{L.howBuild}</a></span>}</dd></div>
+    <div><dt>{L.buildsOn}</dt><dd>
+      {c.dependsOn.length
+        ? c.dependsOn.map((s, i) => <>{i > 0 && ', '}<a href={localize(`/product/${s}`, lang)}>{nameOf(s)}</a></>)
+        : <span>{c.slug === 'lite' ? L.liteDep : L.noDep}</span>}
+    </dd></div>
+    <div><dt>{L.standalone}</dt><dd>{c.standalone.short}</dd></div>
+    <div><dt>{L.reached}</dt><dd><ul>{c.reachedThrough.map((r) => <li set:html={inline(r, lang)} />)}</ul></dd></div>
+  </dl>
+  <ul class="fp-links">
+    {c.guides.map((g) => <li><a href={localize(g.href, lang)}>{g.label}</a></li>)}
+    {c.apiRef && <li><a href={c.apiRef}>{L.apiRef}</a></li>}
+    <li><a href={`${GITHUB}/tree/main/${meta.app}`}>{L.source}</a></li>
+  </ul>
+</aside>
+
+<style>
+  .fp { grid-area: facts; border-top: 3px solid var(--ink); padding-top: 16px; font-size: 15px; margin-bottom: 40px; min-width: 0; }
+  dl { margin: 0; display: flex; flex-direction: column; gap: 16px; }
+  dt { color: var(--ink-2); }
+  dd { margin: 0; overflow-wrap: anywhere; }
+  dd code { font-size: 13px; }
+  dd ul { margin: 0; padding: 0; list-style: none; }
+  .fp-strong { font-weight: 600; }
+  .fp-links { list-style: none; margin: 18px 0 0; padding: 14px 0 0; border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: 6px; }
+  @media (max-width: 960px) {
+    dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; }
+  }
+  @media (max-width: 520px) {
+    dl { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

@@ -4,17 +4,34 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "astro dev",
-    "build": "bash scripts/build-docs.sh && astro build && pagefind --site dist",
+    "sync": "node scripts/sync-guides.mjs",
+    "build:docs": "bash scripts/build-docs.sh",
+    "build": "bash scripts/build-docs.sh && node scripts/sync-guides.mjs && astro build && pagefind --site dist",
+    "build:site": "node scripts/sync-guides.mjs && astro build && pagefind --site dist",
     "preview": "astro preview",
+    "check": "astro check",
+    "check:site": "node scripts/check-site.mjs",
+    "verify:examples": "bash scripts/verify-examples.sh",
     "astro": "astro",
-    "build:docs": "bash scripts/build-docs.sh"
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "i18n": "node scripts/i18n.mjs",
+    "i18n:status": "node scripts/i18n.mjs status",
+    "i18n:stamp": "node scripts/i18n.mjs stamp"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.1.18",
-    "astro": "^5.17.1",
-    "tailwindcss": "^4.1.18"
+    "@astrojs/mdx": "^4.3.13",
+    "@astrojs/sitemap": "^3.7.4",
+    "@fontsource-variable/archivo": "^5.3.0",
+    "@fontsource/fragment-mono": "^5.3.0",
+    "astro": "^5.17.1"
   },
   "devDependencies": {
-    "pagefind": "^1.5.2"
+    "@astrojs/check": "^0.9.12",
+    "linkinator": "^8.1.0",
+    "pagefind": "^1.5.2",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=22.6"
   }
 }

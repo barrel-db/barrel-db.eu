@@ -1,25 +1,37 @@
 ---
 import { Code } from 'astro:components';
+import { langOf, t } from '../i18n';
+const s = t(langOf(Astro.url));
 
 interface Props {
   code: string;
   lang?: string;
+  /** Shown above the block: a file name, "Output", "Erlang shell"... */
   label?: string;
-  class?: string;
+  /** Output blocks get a plain, bordered look and no highlighting. */
+  output?: boolean;
 }
 
-const { code, lang = 'erlang', label, class: className = '' } = Astro.props;
-
-// Same dual-theme setup as markdown, so a highlighted block on a page and one
-// in a doc look identical and both follow the theme toggle.
-const themes = { light: 'github-light', dark: 'github-dark' };
+const { code, lang = 'erlang', label, output = false } = Astro.props;
+const themes = { light: 'github-light', dark: 'github-dark' } as const;
 ---
 
-<div class={`bg-surface rounded-lg border border-line/30 overflow-hidden ${className}`}>
-  {label && (
-    <div class="bg-surface/80 px-4 py-2 border-b border-line/30">
-      <span class="text-ink/60 text-sm">{label}</span>
+<div class:list={['cb', { 'cb--out': output }]}>
+  {(label || !output) && (
+    <div class="cb-bar">
+      <span>{label}</span>
+      <button type="button" class="cb-copy" data-copy data-copied={s.copied} data-select={s.selectCopy}>{s.copy}</button>
     </div>
   )}
-  <Code code={code} lang={lang} themes={themes} defaultColor={false} />
+  {output
+    ? <pre><code>{code}</code></pre>
+    : <Code code={code} lang={lang as any} themes={themes} defaultColor={false} />}
 </div>
+
+<style>
+  .cb { margin: 0 0 20px; }
+  .cb-bar { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; color: var(--ink-2); margin-bottom: 6px; min-height: 22px; }
+  .cb-copy { border: 0; background: transparent; color: var(--ink-2); font: inherit; font-size: 14px; cursor: pointer; padding: 2px 4px; }
+  .cb-copy:hover { color: var(--ink); }
+  .cb--out pre { background: var(--card); border: 1px solid var(--rule); }
+</style>

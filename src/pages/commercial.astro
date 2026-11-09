@@ -1,0 +1,151 @@
+---
+import Base from '../layouts/Base.astro';
+
+const offers = [
+  {
+    id: 'rag',
+    title: 'Private RAG Pilot',
+    accent: 'coral',
+    text: 'Deploy Barrel DB for private semantic search and RAG over your own data. We help with ingestion, embeddings, hybrid search, metadata filtering, evaluation, and deployment.',
+    bullets: [
+      'Barrel Vector + documents under one id',
+      'local, Ollama, or OpenAI-compatible embeddings',
+      'hybrid vector/BM25 search',
+      'evaluation and tuning',
+    ],
+    cta: 'Discuss a RAG pilot',
+    subject: 'Private%20RAG%20Pilot',
+  },
+  {
+    id: 'agent-memory',
+    title: 'Agent Memory Pilot',
+    accent: 'accent',
+    text: 'Use Barrel as a persistent memory layer for AI agents and MCP tools. Store documents, vectors, blobs, sessions, and capabilities behind one API.',
+    bullets: [
+      'REST and MCP access',
+      'spaces, sessions, handoffs',
+      'secure capability model',
+      'observability-ready deployment',
+    ],
+    cta: 'Discuss agent memory',
+    subject: 'Agent%20Memory%20Pilot',
+  },
+  {
+    id: 'edge-sync',
+    title: 'Edge Sync / Local-first Pilot',
+    accent: 'accent',
+    text: 'Build offline-first or edge deployments with sync, versioning, and local search. Keep data close to users and sync when connectivity allows.',
+    bullets: [
+      'document sync and conflict handling',
+      'local vector search',
+      'browser/edge deployment patterns',
+      'encrypted local storage',
+    ],
+    cta: 'Discuss edge sync',
+    subject: 'Edge%20Sync%20Pilot',
+  },
+  {
+    id: 'managed',
+    title: 'Managed Barrel DB',
+    accent: 'coral',
+    text: 'Run Barrel DB with operational help from Enki Bridge. Available for selected design partners and production users.',
+    bullets: [
+      'deployment and upgrades',
+      'monitoring and backups',
+      'security review',
+      'private support channel',
+      'custom SLAs',
+    ],
+    cta: 'Ask about managed Barrel',
+    subject: 'Managed%20Barrel%20DB',
+  },
+];
+
+const audience = [
+  'European teams building private AI systems',
+  'Erlang/Elixir teams that want embedded vector/document storage',
+  'companies that cannot send data to a third-party vector SaaS',
+  'edge/local-first applications',
+  'teams exposing data to agents through REST or MCP',
+];
+
+const steps = [
+  {
+    n: '1',
+    title: 'Architecture call',
+    text: 'A short call to understand what you are building, your data, and your constraints. No cost, no obligation.',
+  },
+  {
+    n: '2',
+    title: 'Fixed-scope pilot or production review',
+    text: 'A design-partner engagement with a clear deliverable: a RAG pilot, an agent memory layer, an edge deployment, or a review of an existing production setup.',
+  },
+  {
+    n: '3',
+    title: 'Deployment, support, or managed service',
+    text: 'Ongoing commercial support, help with your own deployment, or a selected managed Barrel deployment run by Enki Bridge.',
+  },
+];
+---
+
+<Base title="Commercial support and managed Barrel" description="Commercial pilots, managed hosting and support for private AI, RAG, agent memory and edge or local-first systems built on Barrel, from Enki Bridge.">
+  <section class="wrap cm-top">
+    <h1 class="display cm-h1">Run Barrel in production with Enki Bridge</h1>
+    <p class="lead">Fixed-scope pilots, managed hosting and support for private AI, RAG, agent memory and edge or local-first systems built on Barrel.</p>
+    <p class="cm-cta"><a class="button button--primary" href="mailto:hello@barrel-db.eu?subject=Commercial%20Barrel">Contact Enki Bridge</a><a class="button" href="/docs">Read the docs</a></p>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Offers</h2>
+      <p class="section-intro">Built on the open source database. Start with one, grow into the rest.</p>
+      <div class="cm-offers">
+        {offers.map((o) => (
+          <section id={o.id} class="cm-offer">
+            <h3 class="h3">{o.title}</h3>
+            <p>{o.text}</p>
+            <ul>{o.bullets.map((b) => <li>{b}</li>)}</ul>
+            <a href={`mailto:hello@barrel-db.eu?subject=${o.subject}`}>{o.cta}</a>
+          </section>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap cm-two">
+      <div>
+        <h2 class="h3">Open source core</h2>
+        <p>Barrel is Apache 2.0 licensed. You can self-host it, embed it, fork it and run it without usage fees. Commercial support is for teams that want help with production architecture, deployment, operations or dedicated support.</p>
+      </div>
+      <div>
+        <h2 class="h3">Who this is for</h2>
+        <ul>{audience.map((a) => <li>{a}</li>)}</ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">How it works</h2>
+      <ol class="cm-steps">
+        {steps.map((s) => (
+          <li><h3 class="cm-step-t">{s.title}</h3><p class="muted">{s.text}</p></li>
+        ))}
+      </ol>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .cm-top { padding-top: 72px; padding-bottom: 48px; }
+  .cm-h1 { font-size: clamp(2.5rem, 5vw, 3.75rem); margin-bottom: 20px; max-width: 16em; }
+  .cm-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+  .cm-offers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px 48px; }
+  .cm-offer { border-top: 2px solid var(--ink); padding-top: 14px; scroll-margin-top: 24px; }
+  .cm-offer ul { padding-left: 20px; }
+  .cm-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; }
+  .cm-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; padding-left: 20px; }
+  .cm-step-t { font-size: 19px; margin: 0 0 6px; }
+  @media (max-width: 820px) { .cm-offers, .cm-two, .cm-steps { grid-template-columns: minmax(0, 1fr); } }
+</style>

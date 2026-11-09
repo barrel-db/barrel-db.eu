@@ -1,0 +1,74 @@
+---
+import { getEntry, render } from 'astro:content';
+import ProductFrame from '../../components/product/ProductFrame.astro';
+import { GITHUB } from '../../data/site';
+
+const entry = await getEntry('synced', 'features');
+if (!entry) throw new Error('status: src/content/synced/features.md is missing; run scripts/sync-guides.mjs');
+const { Content } = await render(entry);
+const { source, commit, updated } = entry.data;
+
+const marks = [
+  { kind: 'today', label: 'Works today', doc: 'Ready', body: 'Usable now with no extra setup, and covered by the test suites.' },
+  { kind: 'optional', label: 'Optional, needs setup', doc: 'Opt-in', body: 'Usable now, but off by default or behind a build profile: a backend to enable, a library to install, a key to provide.' },
+  { kind: 'planned', label: 'Planned', doc: 'Planned', body: 'Not built yet. Described so you can plan around it, never shown as working.' },
+];
+---
+
+<ProductFrame
+  title="Feature status"
+  description="What Barrel does today, what needs setup, and what is planned, capability by capability."
+  heading="What works today, and what doesn't yet."
+  lead="Every page on this site uses the same three marks. This page lists each capability with its mark, copied from the feature table in the Barrel repository."
+>
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h3">The three marks</h2>
+      <dl class="st-marks">
+        {marks.map((m) => (
+          <div>
+            <dt class={`mark mark--${m.kind}`}>{m.label}</dt>
+            <dd>{m.body} <span class="muted">In the table below: {m.doc}.</span></dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap pf-narrow st-prose" data-status-table>
+      <Content />
+      {source && (
+        <p class="small muted st-src">
+          From <a href={`${GITHUB}/blob/main/${source}`}><code>{source}</code></a>{commit && <> at commit <code>{commit}</code></>}{updated && <>, updated {updated}</>}. Corrections go to the repository.
+        </p>
+      )}
+    </div>
+  </section>
+</ProductFrame>
+
+<style>
+  .st-marks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 40px; margin: 0; }
+  .st-marks div { border-top: 1px solid var(--rule); padding-top: 14px; }
+  .st-marks dt { font-size: 17px; margin-bottom: 6px; }
+  .st-marks dd { margin: 0; font-size: 15px; }
+  .st-prose :global(h2) { font-size: var(--step-2); font-stretch: 108%; letter-spacing: -0.015em; margin: 44px 0 12px; }
+  .st-prose :global(h2:first-child) { margin-top: 0; }
+  .st-prose :global(p), .st-prose :global(ul) { margin: 0 0 16px; }
+  .st-prose :global(table) { width: 100%; border-collapse: collapse; font-size: 15px; margin: 0 0 20px; display: block; overflow-x: auto; }
+  .st-prose :global(th) { text-align: left; font-weight: 650; background: var(--paper-2); padding: 8px 12px; border-bottom: 1px solid var(--rule); }
+  .st-prose :global(td) { padding: 8px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  .st-prose :global(td.mark) { display: table-cell; white-space: nowrap; }
+  .st-prose :global(td.mark::before) { display: inline-block; margin-right: 8px; vertical-align: -1px; }
+  .st-src { margin-top: 32px; }
+  @media (max-width: 820px) { .st-marks { grid-template-columns: minmax(0, 1fr); } }
+</style>
+
+<script>
+  // Show the site's marks next to the repository's status words.
+  const KIND: Record<string, string> = { Ready: 'today', 'Opt-in': 'optional', Planned: 'planned' };
+  document.querySelectorAll('[data-status-table] td').forEach((td) => {
+    const kind = KIND[(td.textContent || '').trim()];
+    if (kind) td.classList.add('mark', `mark--${kind}`);
+  });
+</script>

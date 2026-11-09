@@ -1,0 +1,42 @@
+---
+// translation_of: src/pages/examples/index.astro source_hash: f11f46925e998785
+import Base from '../../../layouts/Base.astro';
+import { examples } from '../../../data/fr/examples';
+---
+
+<Base title="Exemples" description="Des projets Barrel exécutables : Erlang intégré, mémoire d’agent, recherche privée, passations entre agents, branches, TypeScript local-first, contextes et MCP. Chacun est exécuté et sa sortie vérifiée.">
+  <section class="wrap exi-top">
+    <h1 class="display exi-h1">Exemples</h1>
+    <p class="lead">Des projets complets à télécharger et à exécuter. Chaque dossier contient un README, le code source et la sortie d’une exécution réelle dans <code>expected.txt</code>. <code>scripts/verify-examples.sh</code> les exécute tous sur le code source de Barrel et échoue à la moindre différence.</p>
+  </section>
+
+  <section class="wrap exi-list" aria-label="Exemples">
+    {examples.map((e) => (
+      <a href={`/fr/examples/${e.slug}`} class="exi-card">
+        <span class="exi-t">{e.title}</span>
+        <span class="exi-s">{e.summary}</span>
+        <span class="small muted">{e.runs}</span>
+      </a>
+    ))}
+  </section>
+
+  <section class="wrap exi-run">
+    <h2 class="h3">Tous les exécuter</h2>
+    <p class="muted">Depuis une copie du dépôt du site, placée à côté d’une copie du dépôt barrel. Il vous faut Erlang/OTP 26 ou plus récent, rebar3, un compilateur C et CMake pour les dépendances natives, Node 22.6 ou plus récent, curl et jq.</p>
+    <pre>BARREL_DIR=../barrel scripts/verify-examples.sh</pre>
+  </section>
+</Base>
+
+<style>
+  .exi-top { padding-top: 64px; padding-bottom: 32px; }
+  .exi-h1 { font-size: clamp(2.5rem, 5vw, 3.5rem); margin-bottom: 16px; }
+  .exi-top .lead { max-width: 720px; }
+  .exi-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 16px; padding-bottom: 48px; }
+  .exi-card { display: flex; flex-direction: column; gap: 8px; padding: 20px 22px; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--card); color: var(--ink); text-decoration: none; }
+  .exi-card:hover { border-color: var(--ink); }
+  .exi-card:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+  .exi-t { font-weight: 650; font-size: 1.15rem; }
+  .exi-s { color: var(--ink-2); flex: 1; }
+  .exi-run { padding-bottom: 80px; }
+  .exi-run p { max-width: 720px; }
+</style>

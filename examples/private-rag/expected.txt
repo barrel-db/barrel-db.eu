@@ -1,0 +1,41 @@
+embedder: hash_embed hash-64, 64 dimensions
+ingested 10 articles
+
+question: A customer was charged twice this month. How do I
+refund one of the payments?
+
+bm25 "refund charged twice":
+  5.2942 kb:double-charge
+  2.2569 kb:refund
+
+hybrid, billing articles only:
+  0.0164 kb:double-charge
+  0.0161 kb:refund
+  0.0152 kb:export
+  0.0152 kb:tax
+
+rerank: skipped (set RERANK=1)
+
+--- prompt (printed, not sent) ---
+Answer the question using only the support articles below. Cite
+the article id for each step. If the articles do not cover it,
+say so.
+
+[kb:double-charge] A customer was charged twice
+A double charge usually comes from a retried checkout. Check
+Payments on the invoice: if two payments share the same amount
+and day, refund the second one. Pending duplicates drop off
+within 3 days without a refund.
+
+[kb:refund] Refund a payment
+Open the invoice, choose Payments, then Refund next to the
+payment. A full or partial refund goes back to the card used.
+Card refunds take 5 to 10 business days to appear.
+
+[kb:export] Export invoices as CSV
+Admins can export invoices from Reports, Export. Pick a date
+range and the CSV format. Exports over 10000 rows are sent by
+email.
+
+Question: A customer was charged twice this month. How do I
+refund one of the payments?

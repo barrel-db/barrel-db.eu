@@ -1,0 +1,184 @@
+---
+translation_of: src/content/docs/start/quickstart-browser.mdx
+source_hash: "e9f2f1f25b443609"
+title: "Démarrage rapide : navigateur"
+description: Compilez barrel-lite, ouvrez une base locale dans une application web, écrivez et lisez des documents, synchronisez-les avec barrel_server, et résolvez un conflit.
+---
+import CodeBlock from '../../../../components/CodeBlock.astro';
+import Callout from '../../../../components/Callout.astro';
+
+`barrel-lite` est un client TypeScript qui garde une copie d’une base
+Barrel dans le navigateur. Les lectures et les écritures sont locales et
+continuent de fonctionner hors ligne ; la synchronisation les envoie à un
+`barrel_server` et rapporte les modifications des autres copies. Dans ce
+démarrage rapide, vous le compilez, donnez un jeton au navigateur,
+écrivez et lisez des documents, synchronisez, et résolvez un conflit
+entre deux copies. Suivez ce parcours quand une application web a besoin
+de ses données hors ligne.
+
+## Avant de commencer
+
+- Un `barrel_server` joignable. Voir [Démarrage rapide :
+  serveur](/fr/docs/start/quickstart-server).
+- Node.js 20 ou plus récent, et npm.
+
+## 1. Obtenir barrel-lite
+
+`barrel-lite` 0.1.0 n’est pas sur npm. Compilez-le depuis l’umbrella et
+installez-le dans votre application depuis ce répertoire :
+
+```shell
+cd barrel/clients/barrel-lite
+npm ci
+npm run build
+cd /path/to/your-app
+npm install /path/to/barrel/clients/barrel-lite
+```
+
+## 2. Laisser entrer le navigateur
+
+Le navigateur a besoin de CORS et d’un jeton qu’il a le droit
+d’embarquer. Ajoutez les deux au `sys.config` du serveur et
+redémarrez-le :
+
+<CodeBlock label="sys.config" code={`[{barrel_server, [
+    {http_port, 8080},
+    {cors, #{origins => '*',
+             expose => [<<"x-barrel-hlc">>]}},
+    {auth, #{tokens => [<<"global-token">>]}}]}].`} />
+
+Ne mettez jamais le jeton global dans une page web. Créez un espace et
+émettez un jeton de capacité pour lui ; l’id de l’espace est le nom de
+base qu’utilise le navigateur :
+
+```shell
+curl -X POST localhost:8080/spaces \
+  -H 'authorization: Bearer global-token' \
+  -H 'content-type: application/json' -d '{"label":"app"}'
+curl -X POST localhost:8080/spaces/sp_7uitvqeved3z7seu/grants \
+  -H 'authorization: Bearer global-token' \
+  -H 'content-type: application/json' \
+  -d '{"rights":["read","write"]}'
+```
+
+<CodeBlock output label="Sortie d’une exécution sur barrel_server 1.13.0" code={`{"ok":true,"space":"sp_7uitvqeved3z7seu"}
+{"token":
+  "bsp_alrw6fxiqga5r47x_odwpp27li6m754pfsuhbwd2n2vxek3ox44hj3zxv",
+ "grant":{"rights":["read","write"],
+          "space":"sp_7uitvqeved3z7seu", ...}}`} />
+
+Le jeton n’est affiché qu’une fois. `read` couvre les pulls, `write`
+couvre les pushes.
+
+## 3. Ouvrir, écrire, lire
+
+```ts
+import { Database } from "barrel-lite";
+
+const remote = {
+  url: "http://localhost:8080",
+  db: "sp_7uitvqeved3z7seu",
+  token: "bsp_alrw6fxiqga5r47x_...",
+};
+const laptop = await Database.open("notes", { remote });
+
+await laptop.put({ id: "n1", title: "hello" });
+await laptop.get("n1");
+```
+
+<CodeBlock output label="Sortie d’une exécution de barrel-lite 0.1.0 dans Node 22" code={`{"id":"n1",
+ "version":"000001a1ba4159ea00000000@wd31d29e133c6788f"}
+{"title":"hello","id":"n1"}`} />
+
+Les écritures vont tout de suite dans le stockage local. Dans un
+navigateur, ce stockage est OPFS ; là où OPFS manque (Node, par exemple),
+il est en mémoire.
+
+## 4. Synchroniser
+
+```ts
+await laptop.sync();             // push, puis pull
+const live = laptop.liveSync();  // synchroniser en continu
+live.stop();
+```
+
+Ouvrez une deuxième copie de la même façon, sur un autre appareil ou dans
+un autre navigateur. Sa première synchronisation fait entrer le document,
+et le BQL local le lit :
+
+```ts
+const phone = await Database.open("notes", { remote });
+await phone.sync();
+await phone.get("n1");
+await phone.query(
+  "SELECT id, title FROM db WHERE title = 'hello'");
+```
+
+<CodeBlock output label="Sortie d’une exécution de barrel-lite 0.1.0 dans Node 22 contre barrel_server 1.13.0" code={`{"push":{"pushed":1,"skipped":0,"conflicts":0},
+ "pull":{"scanned":1,"applied":0}}
+{"push":{"pushed":0,"skipped":0,"conflicts":0},
+ "pull":{"scanned":1,"applied":1}}
+{"id":"n1","title":"hello"}
+[{"id":"n1","title":"hello"}]`} />
+
+La première ligne est le `sync()` du portable, la deuxième celui du
+téléphone.
+
+## 5. Résoudre un conflit
+
+Modifiez le même document sur les deux copies avant qu’elles se
+synchronisent. Après une synchronisation, les deux versions sont gardées,
+chaque copie affiche le même gagnant, et l’autre version est un conflit :
+
+```ts
+await laptop.put({ id: "n1", title: "hello from the laptop" });
+await phone.put({ id: "n1", title: "hello from the phone" });
+await laptop.sync(); await phone.sync(); await laptop.sync();
+
+await laptop.get("n1");
+await phone.get("n1");
+await laptop.conflicts("n1");
+```
+
+<CodeBlock output label="Sortie d’une exécution de barrel-lite 0.1.0 dans Node 22 contre barrel_server 1.13.0" code={`{"id":"n1","title":"hello from the phone"}
+{"id":"n1","title":"hello from the phone"}
+[{"version":"000001a1ba415a1600000001@wd31d29e133c6788f",
+  "deleted":false,
+  "body":{"id":"n1","title":"hello from the laptop"}}]`} />
+
+`resolve` remplace le gagnant et chaque conflit par un seul corps.
+Poussez-le, et l’autre copie reçoit la résolution à son prochain pull :
+
+```ts
+await laptop.resolve("n1", { title: "hello from both" });
+await laptop.push();
+await phone.pull();
+await phone.get("n1");
+await phone.conflicts("n1");
+```
+
+<CodeBlock output label="Sortie d’une exécution de barrel-lite 0.1.0 dans Node 22 contre barrel_server 1.13.0" code={`{"id":"n1","title":"hello from both"}
+[]`} />
+
+`put` sur un document en conflit ne remplace que le gagnant ; les
+conflits restent. Passez `null` à `resolve` pour résoudre par une
+suppression.
+
+## Notes
+
+<Callout kind="limit" label="Limite">
+Le stockage local est un cache. Les écritures pas encore vidées sur
+disque sont perdues en cas de plantage, et le navigateur peut effacer
+tout le stockage. La copie du serveur fait foi : synchronisez souvent.
+</Callout>
+
+- La recherche vectorielle, par mot-clé et hybride (`vector_top_k`,
+  `bm25_top_k`, `hybrid_top_k`) et `SUBSCRIBE` ne s’exécutent que sur le
+  serveur ; utilisez `db.queryRemote`. En local, elles lèvent
+  `BqlServerOnlyError`.
+- barrel-lite s’authentifie uniquement avec des jetons bearer, globaux ou
+  de capacité. Il ne signe pas les requêtes.
+- Avec `multiTab: true`, un seul onglet synchronise et les autres passent
+  par lui.
+- Le client complet est décrit dans
+  [barrel-lite](/fr/docs/guides/barrel-lite).

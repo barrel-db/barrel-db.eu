@@ -1,0 +1,7 @@
+{application, contexts_bql, [
+    {description, "Query several Barrel databases as contexts"},
+    {vsn, "0.1.0"},
+    {registered, []},
+    {applications, [kernel, stdlib, barrel]},
+    {env, []}
+]}.

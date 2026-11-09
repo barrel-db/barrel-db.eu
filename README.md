@@ -1,131 +1,71 @@
 # barrel-db.eu
 
-Marketing website for Barrel DB open source databases.
+The Barrel website: product pages, use cases, examples and documentation, in
+one Astro site deployed as static files.
 
-## Overview
+## Run it
 
-- **Website and documentation**: https://barrel-db.eu (Astro + Tailwind CSS)
-
-The Barrel guides live at `/docs`, written as Astro content collections. The
-per-library API reference lives at `/docs/lib/<name>/`, generated with
-`rebar3 ex_doc` from the umbrella. One site, one deploy.
-
-## Website Setup
-
-### Prerequisites
-
-- Node.js 18+
-- npm
-
-### Development
+You need Node.js 20 or later, and for a full build Erlang/OTP with `rebar3`
+and CMake (the library reference is built with ex_doc from the umbrella).
+Keep a checkout of [barrel](https://github.com/barrel-db/barrel) next to this
+one, or point `BARREL_DIR` at it.
 
 ```bash
-# Install dependencies
-npm install
+npm ci
+npm run sync          # copy the guides from ../barrel into src/content/synced
+npm run dev           # http://localhost:4321
+```
 
-# Start dev server (http://localhost:4321)
-npm run dev
+Search (Cmd-K) uses the Pagefind index, which only exists after a build:
 
-# Build for production
-npm run build
-
-# Preview production build
+```bash
+npm run build:site    # guides + astro build + search index, no ex_doc
 npm run preview
 ```
 
-### Structure
+`npm run build` does the same plus the ex_doc reference under `/docs/lib/`.
 
-```
-src/
-├── layouts/
-│   ├── Layout.astro      # English layout
-│   └── LayoutFr.astro    # French layout
-├── pages/
-│   ├── index.astro       # Homepage
-│   ├── pricing.astro     # Open source page
-│   ├── contact.astro     # Contact page
-│   ├── opensource.astro  # OSS projects page
-│   └── fr/               # French translations
-│       ├── index.astro
-│       ├── pricing.astro
-│       ├── contact.astro
-│       └── opensource.astro
-├── styles/
-│   └── global.css        # Tailwind + custom styles
-└── products/
-    ├── vectordb.astro    # Barrel Vector page
-    └── docdb.astro       # Barrel Docs page
-```
-
-### Deployment
-
-Build and deploy the `dist/` folder to any static hosting (Caddy, nginx, Cloudflare Pages, etc.).
+## Check it
 
 ```bash
-npm run build
-# Deploy ./dist/
+npm run check         # astro check: types and templates
+npm run check:site    # after a build: pages in both languages, versions, links, house style
+npm run i18n          # every French file matches its current English source
+npm run verify:examples   # run every example against ../barrel
 ```
 
-## Library reference
+CI (`.github/workflows/docs.yml`) runs all three on every pull request.
 
-The per-library reference is ex_doc output for each app of the
-[barrel umbrella](https://github.com/barrel-db/barrel): the guides each app
-ships, plus an API reference generated from its modules, so it cannot drift from
-the source.
+## Where content lives
 
-| Path | Umbrella app |
-|------|--------------|
-| `/docs/lib/barrel/` | `apps/barrel` |
-| `/docs/lib/docdb/` | `apps/barrel_docdb` |
-| `/docs/lib/vectordb/` | `apps/barrel_vectordb` |
-| `/docs/lib/embed/` | `apps/barrel_embed` |
-| `/docs/lib/server/` | `apps/barrel_server` |
-| `/docs/lib/spaces/` | `apps/barrel_spaces` |
-| `/docs/lib/rerank/` | `apps/barrel_rerank` |
-| `/docs/lib/crypto/` | `apps/barrel_crypto` |
+| Content | Where | Notes |
+|---|---|---|
+| Guides, architecture notes, feature status | barrel repo `docs/` | Copied at build time by `scripts/sync-guides.mjs` into `src/content/synced/` (gitignored). Fix them upstream. |
+| Pages written for the site | `src/content/docs/` | Markdown or MDX; frontmatter `title`, `description`, optional `status`. |
+| Docs sidebar | `src/data/docs-nav.ts` | Organized by task. `check:site` fails if an entry has no page. |
+| Libraries, versions, capabilities, use cases | `src/data/site.ts`, `src/data/use-cases.ts` | `check:site` compares versions with the umbrella. |
+| Examples | `examples/<slug>/` | Runnable projects with `expected.txt`; their pages import the files, so the site shows the tested code. |
+| MCP tool reference | `src/data/mcp-tools.json` | Regenerate with `scripts/update-mcp-tools.mjs` against a running server. |
+| Library API reference | ex_doc output in `public/docs/lib/` | Built by `scripts/build-docs.sh`. |
+| French | `src/pages/fr`, `src/content/fr`, `src/data/fr`, `examples/*/README.fr.md` | Each file names its English source and hash; `npm run i18n` checks they match. See AGENTS.md. |
 
-`barrel_faiss` is not built here: it links against a system FAISS build. Its
-reference ships on [HexDocs](https://hexdocs.pm/barrel_faiss).
+Agents and tools can read every docs page as Markdown at `/docs/<page>.md`,
+and the whole set through `/llms.txt` and `/llms-full.txt`.
 
-### Prerequisites
+## Style
 
-Erlang/OTP with `rebar3` on your `PATH`, plus CMake (`barrel_vectordb` builds a
-NIF). Point `BARREL_DIR` at your umbrella checkout; it defaults to `../barrel`.
+- Design tokens and shared styles: `src/styles/site.css`. Components in
+  `src/components/`, layouts in `src/layouts/`.
+- Writing: second person, task first, one opening paragraph saying what the
+  page is and when you need it. No em dashes. Show output only from real runs.
+  Mark optional and planned features with the status marks.
 
-### Building
+## Deploy
 
-`npm run build` generates the reference before building the site, so you rarely
-need to run it directly:
-
-```bash
-BARREL_DIR=../barrel npm run build
-```
-
-To regenerate only the reference, into `public/docs/lib/`:
-
-```bash
-BARREL_DIR=../barrel npm run build:docs
-```
-
-The output is gitignored. Vite does not resolve a directory to its `index.html`,
-so a small dev-only middleware in `astro.config.mjs` rewrites `/docs/lib/<name>/`
-to `<name>/index.html`; the same URLs then work under `npm run dev`,
-`npm run preview`, and any static host.
-
-## Related Repositories
-
-| Repository | Description |
-|------------|-------------|
-| [barrel](https://github.com/barrel-db/barrel) | The Barrel umbrella: every library, one repository |
-
-## Branches
-
-| Branch | Description |
-|--------|-------------|
-| `main` | Production - pure OSS site |
-| `with-platform-links` | Includes Barrel Platform CTAs and links (for when barrel-platform.eu is ready) |
+`npm run build` writes a static site to `dist/`. Serve it from any static host
+(Caddy, nginx, Cloudflare Pages). Directory URLs resolve to `index.html`;
+`404.html` is the not-found page.
 
 ## License
 
-Website content: MIT
-Barrel DB projects: Apache 2.0
+Website content: MIT. Barrel: Apache 2.0.

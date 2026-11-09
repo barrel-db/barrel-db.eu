@@ -1,0 +1,99 @@
+---
+// translation_of: src/pages/docs/reference/mcp-tools.astro source_hash: b858fffed79cd457
+// Référence des outils MCP, produite à partir de la réponse tools/list du serveur
+// (src/data/mcp-tools.json). Les noms, descriptions et schémas restent en anglais.
+import Docs from '../../../../layouts/Docs.astro';
+import CodeBlock from '../../../../components/CodeBlock.astro';
+import Callout from '../../../../components/Callout.astro';
+import { groups, tools, meta } from './_mcp-tools';
+
+const title = 'Outils MCP';
+const description = `Les ${tools.length} outils que barrel_server enregistre sur son point d’accès MCP, avec leurs arguments, produits à partir de la réponse tools/list du serveur.`;
+const headings = [
+  { depth: 2, slug: 'call-a-tool', text: 'Appeler un outil' },
+  ...groups.map((g) => ({ depth: 2, slug: g.slug, text: g.title })),
+];
+const server = meta.barrelServer ? `barrel_server ${meta.barrelServer}` : 'barrel_server';
+
+const callExample = `curl -X POST localhost:8080/mcp \\
+  -H 'content-type: application/json' \\
+  -H 'accept: application/json, text/event-stream' \\
+  -H "mcp-session-id: $SID" \\
+  -H 'mcp-protocol-version: ${meta.protocolVersion}' \\
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call",
+       "params":{"name":"doc_get",
+       "arguments":{"db":"notes","id":"note-1"}}}'`;
+---
+
+<Docs title={title} description={description} slug="reference/mcp-tools" headings={headings}>
+  <p>
+    Voici tous les outils que barrel_server enregistre sur son point d’accès <code>/mcp</code>, avec les arguments de chacun.
+    Utilisez cette page quand vous écrivez un client ou un prompt qui appelle les outils Barrel et avez besoin des noms et des formes d’arguments exacts.
+    Elle est produite à partir de la réponse <code>tools/list</code> de {server} (protocole MCP {meta.protocolVersion},
+    moteur {meta.serverInfo.name} {meta.serverInfo.version}), capturée le {meta.generated} : elle correspond donc à ce que voit un client.
+  </p>
+  <p>
+    Les descriptions des outils et des arguments sont le texte du serveur lui-même, en anglais, tel qu’un client le reçoit.
+  </p>
+  <p>
+    La même liste est publiée en JSON à <a href="/docs/reference/mcp-tools.json"><code>/docs/reference/mcp-tools.json</code></a>.
+    Pour configurer le point d’accès, voir le <a href="/fr/docs/guides/mcp">guide MCP</a>.
+  </p>
+
+  <h2 id="call-a-tool">Appeler un outil</h2>
+  <p>
+    Envoyez d’abord <code>initialize</code> et gardez l’en-tête <code>mcp-session-id</code> qu’il renvoie,
+    puis <code>notifications/initialized</code>. Un <code>tools/call</code> répond en server-sent events
+    (trames <code>data:</code>) ; le résultat est un contenu texte JSON.
+  </p>
+  <CodeBlock code={callExample} lang="shell" label="Shell" />
+  <ul>
+    <li>Sur un serveur où <code>auth</code> est configuré, ajoutez <code>Authorization: Bearer</code> avec un token serveur ou un jeton de capacité <code>bsp_</code>. Le point d’accès n’accepte que des tokens bearer, ni requêtes signées ni mTLS.</li>
+    <li>Un jeton de capacité ne peut appeler un outil que dans son espace et selon ses droits ; un appel refusé renvoie un résultat avec <code>isError: true</code>, comme <code>{'{"error":"forbidden","db":"notes"}'}</code>.</li>
+    <li>Les annotations sont des indications du serveur : les outils en <em>lecture seule</em> ne modifient rien, les outils <em>destructifs</em> suppriment ou remplacent, les outils <em>idempotents</em> peuvent être répétés sans risque.</li>
+  </ul>
+
+  {groups.map((g) => (
+    <section>
+      <h2 id={g.slug}>{g.title}</h2>
+      {g.tools.map((t) => (
+        <div class="mt">
+          <h3 id={t.name}><code>{t.name}</code></h3>
+          {t.marks.length > 0 && (
+            <p class="mt-marks">{t.marks.map((m) => <span class="mt-mark">{m}</span>)}</p>
+          )}
+          <p lang="en">{t.description}</p>
+          {t.args.length === 0
+            ? <p class="muted small">Aucun argument.</p>
+            : (
+              <table>
+                <thead><tr><th scope="col">Argument</th><th scope="col">Type</th><th scope="col">Obligatoire</th><th scope="col">Description</th></tr></thead>
+                <tbody>
+                  {t.args.map((a) => (
+                    <tr>
+                      <td><code>{a.name}</code></td>
+                      <td>{a.type}</td>
+                      <td>{a.required ? 'oui' : 'non'}</td>
+                      <td lang="en">{a.description}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+        </div>
+      ))}
+    </section>
+  ))}
+
+  <Callout label="Remarque">
+    <p>Le schéma ne marque que <code>query</code> comme obligatoire pour <code>context_query</code> ; le serveur demande aussi l’un de <code>contexts</code> ou <code>working_set</code>. La description de <code>db_info</code> mentionne un nombre de documents, mais les infos renvoyées n’en contiennent pas.</p>
+  </Callout>
+</Docs>
+
+<style>
+  .mt { border-top: 1px solid var(--rule); padding-top: 4px; }
+  .mt h3 { overflow-wrap: anywhere; }
+  .mt-marks { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 8px; }
+  .mt-mark { font-size: var(--step--1); font-weight: 600; padding: 2px 8px; border: 1px solid var(--rule); border-radius: 6px; background: var(--paper-2); }
+  td:first-child code { white-space: nowrap; }
+</style>

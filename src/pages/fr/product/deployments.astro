@@ -1,0 +1,173 @@
+---
+// translation_of: src/pages/product/deployments.astro source_hash: 8ac103319976484d
+import ProductFrame from '../../../components/product/ProductFrame.astro';
+import FlowDiagram from '../../../components/product/FlowDiagram.astro';
+import Related from '../../../components/product/Related.astro';
+import Rich from '../../../components/product/Rich.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+
+const cols = [
+  { name: 'Intégrée', href: '/fr/docs/start/quickstart-embedded' },
+  { name: 'Serveur', href: '/fr/docs/start/quickstart-server' },
+  { name: 'Navigateur', href: '/fr/docs/start/quickstart-browser' },
+];
+
+const rows: [string, string, string, string][] = [
+  ['Choisissez-la quand', 'Vos agents et vos services sont des processus Erlang ou Elixir dans une même release.', 'Des clients dans d’autres langages, des agents en MCP ou d’autres nœuds doivent accéder aux données.', 'Une application web doit continuer à lire et écrire hors ligne.'],
+  ['Ce qui tourne', '`barrel` comme bibliothèque dans votre VM. Aucun protocole réseau.', '`barrel_server` : REST et MCP sur HTTP/1.1, HTTP/2 avec TLS, ou HTTP/3.', '`barrel-lite`, un client TypeScript qui garde une copie locale.'],
+  ['Il vous faut', 'OTP 26 ou plus récent, un compilateur C et CMake pour les NIF (RocksDB, l’index vectoriel, l’index de trigrammes).', 'La même chose, construite avec le profil `server` ; port 8080 par défaut.', 'Un barrel_server avec lequel synchroniser, CORS activé, et un jeton de capacité pour le navigateur.'],
+  ['Les données vivent dans', 'RocksDB sous le `data_dir` de docdb, les vecteurs sous le `db_path` du magasin.', 'Le `data_dir` du serveur. Les bases s’ouvrent au premier usage et se ferment quand elles sont inactives.', 'OPFS quand le navigateur le propose, sinon la mémoire. La copie du serveur fait foi.'],
+  ['Recherche', 'Tout : vectorielle, BM25, hybride, fonctions de table BQL, sous-chaîne et expression régulière.', 'Vectorielle, BM25 et hybride en REST et MCP ; sous-chaîne et expression régulière en MCP seulement.', 'BQL local sur les documents et recherche vectorielle exhaustive sur les vecteurs synchronisés. Mots-clés et hybride passent par le serveur.'],
+  ['Réplication', '`barrel_rep` et `barrel_rep_tasks` sur la base de documents, dans la VM ou sur HTTP.', 'Sert le protocole de synchronisation sur `/db/:db/_sync`, et lance des tâches vers d’autres nœuds.', 'Push, pull et synchronisation en direct avec un serveur, depuis l’onglet leader seulement.'],
+  ['Contrôle d’accès', 'Votre code. Le chiffrement par base est la frontière entre clients.', 'Bearer, jetons de capacité, requêtes signées, mTLS. Ouvert tant que vous ne fixez pas `auth`.', 'Bearer seulement : un jeton de capacité limité à un espace.'],
+  ['Attention à', 'Le chemin des vecteurs par défaut est relatif au répertoire courant ; fixez `db_path`. Le magasin de vecteurs est lié au processus qui l’a ouvert.', 'Les bases par défaut ont BM25 désactivé ; fixez `open_opts`. Les erreurs de configuration de la recherche répondent 500.', 'Les écritures non vidées sur disque sont perdues en cas de crash, et le navigateur peut évincer le stockage. Pas encore publié sur npm.'],
+];
+
+const stages = [
+  { boxes: [{ name: 'Onglet du navigateur', note: 'barrel-lite, OPFS', rec: true }], edge: '/db/:db/_sync, bearer' },
+  { boxes: [{ name: 'barrel_server', note: 'REST, MCP, synchronisation', rec: true }], edge: 'barrel_rep sur HTTP' },
+  { boxes: [{ name: 'Votre release', note: 'barrel intégré', rec: true }] },
+];
+
+const addons = [
+  { name: 'Embeddings, locaux ou dans le cloud', body: 'Un fournisseur de `barrel_embed` : Ollama, un virtualenv Python pour des modèles locaux, ou une clé d’API cloud.' },
+  { name: 'Reclassement', body: '`barrel_rerank` : Python 3 avec transformers et torch, environ 2 Go, modèle téléchargé au premier usage.' },
+  { name: 'Index FAISS', body: '`rebar3 as faiss compile` avec la bibliothèque C++ FAISS installée sur le système. Linux, macOS et BSD ; pas de build Windows.' },
+  { name: 'Pièces jointes S3', body: '`rebar3 as s3 compile`. Testé avec RustFS et Garage. Non couvert par le chiffrement au repos.' },
+];
+
+const embedded = `{deps, [{barrel, "~> 1.12"}]}.`;
+
+const embeddedRun = `{ok, _} = application:ensure_all_started(barrel),
+{ok, Db} = barrel:open(<<"kb">>, #{vectordb => #{
+    db_path => "data/kb_vec", dimensions => 768}}),
+{ok, _} = barrel:put_doc(Db, #{<<"id">> => <<"kb-142">>,
+    <<"title">> => <<"Reset a locked account">>}).`;
+
+const server = `rebar3 as server,prod release -n barrel_server
+cd _build/server+prod/rel/barrel_server
+bin/barrel_server foreground
+curl localhost:8080/health`;
+
+const serverOut = `{"status":"ok"}`;
+
+const browser = `import { Database } from "barrel-lite";
+
+const db = await Database.open("notes", {
+  remote: { url: "https://edge.example:8080",
+            db: "sp_...", token: "bsp_..." },
+  multiTab: true,
+});
+await db.put({ id: "n1", title: "hello" });
+await db.sync();   // push local writes, then pull`;
+---
+
+<ProductFrame
+  title="Déploiements"
+  description="Faites tourner Barrel intégrée dans une release Erlang, comme serveur REST et MCP, ou comme copie synchronisée dans le navigateur. Prérequis et limites de chacun, côte à côte."
+  heading="Intégrée, serveur ou navigateur : la même base."
+  lead="Barrel tourne dans votre release Erlang, derrière son propre serveur REST et MCP, ou comme copie locale dans une page web. L’enregistrement et le protocole de réplication sont les mêmes dans les trois cas, vous pouvez donc commencer par l’un et ajouter les autres."
+  sub="La plupart des déploiements les combinent : des agents sur un serveur, des nœuds en périphérie en mode intégré, des utilisateurs dans le navigateur, tous synchronisés."
+  ctas={[{ label: 'Choisir un déploiement', href: '/fr/docs/start/choose-deployment' }, { label: 'Installer', href: '/fr/docs/start/install' }]}
+>
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Comment ils se relient</h2>
+      <p class="section-intro">Un seul protocole de synchronisation les relie. Un navigateur se synchronise avec un serveur ; serveurs et nœuds intégrés se répliquent entre eux dans les deux sens.</p>
+      <FlowDiagram label="Navigateur, serveur et nœud intégré" stages={stages} />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Choisir</h2>
+      <p class="section-intro">Lisez une ligne pour comparer. Chaque colonne mène à son démarrage rapide.</p>
+      <div class="dp-tw">
+        <table class="dp-t">
+          <caption class="visually-hidden">Intégrée, serveur et navigateur comparés</caption>
+          <thead>
+            <tr><th scope="col"><span class="visually-hidden">Question</span></th>{cols.map((c) => <th scope="col"><a href={c.href}>{c.name}</a></th>)}</tr>
+          </thead>
+          <tbody>
+            {rows.map(([q, a, b, c]) => (
+              <tr><th scope="row">{q}</th><td><Rich text={a} /></td><td><Rich text={b} /></td><td><Rich text={c} /></td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Des pièces optionnelles, dans chacun d’eux</h2>
+      <p class="section-intro">Absentes du build par défaut. Ajoutez-les là où vous en avez besoin.</p>
+      <ul class="dp-add">
+        {addons.map((a) => (
+          <li>
+            <h3 class="mark mark--optional dp-at">{a.name}</h3>
+            <p><Rich text={a.body} /></p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap pf-narrow">
+      <h2 class="h2">Démarrer</h2>
+
+      <h3 class="pf-h3">Intégrée</h3>
+      <CodeBlock code={embedded} label="rebar.config" />
+      <CodeBlock code={embeddedRun} />
+
+      <h3 class="pf-h3">Serveur</h3>
+      <p class="pf-p">Depuis l’umbrella. Pendant le développement, <code>rebar3 as server shell</code> puis <code>application:ensure_all_started(barrel_server)</code> fait la même chose.</p>
+      <CodeBlock code={server} lang="bash" label="Shell" />
+      <CodeBlock code={serverOut} output label="Réponse de /health" />
+
+      <h3 class="pf-h3">Navigateur</h3>
+      <p class="pf-p">barrel-lite n’est pas encore sur npm : construisez-le depuis <code>clients/barrel-lite</code> dans le dépôt.</p>
+      <CodeBlock code={browser} lang="ts" />
+    </div>
+  </section>
+
+  <Related
+    limits={[
+      'barrel-lite 0.1.0 n’est pas publié sur npm ; vous le construisez depuis le dépôt.',
+      'L’API intégrée n’expose pas la réplication : appelez `barrel_rep` sur la base de documents.',
+      'Le serveur n’a pas d’option pour couper son écoute HTTP ; pour servir les routes barrel depuis votre propre service livery, montez `barrel_server_api:routes/1`.',
+      'Les écoutes HTTP/3 ne vérifient pas les certificats clients ; utilisez HTTP/1.1 ou HTTP/2 avec TLS pour mTLS.',
+      'Dans le navigateur, le stockage est un cache : c’est la synchronisation qui rend une écriture durable.',
+    ]}
+    docs={['start/choose-deployment', 'start/install', 'guides/embedding', 'guides/rest-server', 'guides/embedding-barrel-server', 'guides/barrel-lite']}
+    more={[{ href: '/fr/use-cases/offline-first', label: 'Cas d’usage : applications hors ligne d’abord' }]}
+    libs={['barrel', 'server', 'lite']}
+  />
+</ProductFrame>
+
+<style>
+  .dp-tw { overflow-x: auto; }
+  .dp-t { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 15px; table-layout: fixed; }
+  .dp-t th, .dp-t td { text-align: left; padding: 12px 16px 12px 0; border-top: 1px solid var(--rule); vertical-align: top; }
+  .dp-t thead th { font-size: var(--step-1); border-top: 0; }
+  .dp-t thead th:first-child { width: 16%; }
+  .dp-t thead a { color: var(--ink); }
+  .dp-t tbody th { font-weight: 650; }
+  .dp-add { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px 32px; }
+  .dp-add li { border-top: 1px solid var(--rule); padding-top: 14px; min-width: 0; }
+  .dp-at { font-size: 17px; margin: 0 0 6px; }
+  .dp-add p { margin: 0; font-size: 15px; }
+  @media (max-width: 900px) { .dp-add { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 760px) {
+    .dp-t, .dp-t thead, .dp-t tbody, .dp-t tr, .dp-t th, .dp-t td { display: block; min-width: 0; width: auto; }
+    .dp-t thead { display: none; }
+    .dp-t tbody tr { border-top: 2px solid var(--ink); padding: 8px 0 16px; }
+    .dp-t tbody th { border-top: 0; padding-bottom: 4px; }
+    .dp-t td { border-top: 0; padding: 6px 0; }
+    .dp-t td::before { display: block; font-weight: 650; font-size: 13px; color: var(--teal); }
+    .dp-t td:nth-of-type(1)::before { content: 'Intégrée'; }
+    .dp-t td:nth-of-type(2)::before { content: 'Serveur'; }
+    .dp-t td:nth-of-type(3)::before { content: 'Navigateur'; }
+  }
+</style>

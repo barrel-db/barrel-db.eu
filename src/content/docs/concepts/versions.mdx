@@ -1,0 +1,161 @@
+---
+title: Versions, conflicts, convergence
+description: How Barrel names every write with a version token, keeps concurrent edits as siblings, picks the same winner on every copy, and lets you resolve with _observed.
+---
+import CodeBlock from '../../../components/CodeBlock.astro';
+import Callout from '../../../components/Callout.astro';
+
+Every write to a Barrel document creates a version, named by a token
+built from a hybrid logical clock (HLC) and the id of the database that
+wrote it. Copies of a database exchange versions, keep concurrent edits
+side by side as siblings, and all show the same winner. Read this before
+you replicate, or when a document comes back with `_conflicts`.
+
+## The version token
+
+```text
+000001a1ba45b14e00000000@wddc4e1c028733ad0
+|--------------||------| |---------------|
+ wall clock ms   counter   writer id
+```
+
+- The first 24 hex digits are the HLC of the write: 16 for the wall clock
+  in milliseconds, 8 for a logical counter that orders writes in the same
+  millisecond. The hex is fixed width, so comparing tokens as strings
+  compares them by clock.
+- After `@` comes the writer id of the database that made the write. A
+  database gets a new writer id every time it opens.
+- `_rev` on a read is the token of the winning version.
+
+## The clock
+
+An HLC follows the wall clock and never goes back. Every replication
+exchange carries the peer's clock (`x-barrel-hlc` over HTTP) and each
+side folds it into its own, so a write made after a version was received
+always gets a greater token.
+
+- If the node clock goes back below the highest HLC a database has
+  written, writes fail with `{error, clock_skew}` until the clock catches
+  up. The data is kept.
+- A peer whose clock is ahead by more than `hlc_max_offset` ms is
+  refused with `clock_skew` (409 over HTTP). The default, 0, turns that
+  check off.
+
+## Causal order and siblings
+
+Each version carries a version vector: for every writer, the latest HLC
+it had seen. Barrel compares vectors to tell two cases apart:
+
+- **One version saw the other.** The newer one replaces the older one.
+  This is the normal case: you read `_rev`, change the body, write.
+- **Neither saw the other.** Two copies edited the same document before
+  they synced. Both versions are kept as siblings. Nothing is dropped.
+
+## The winner
+
+Among siblings, the winner is the greatest version: highest HLC first,
+writer id to break a tie. The rule only depends on the set of versions,
+so every copy that holds the same siblings shows the same winner, in any
+order of sync. Showing a winner deletes nothing; the others stay as
+`_conflicts` until you resolve them.
+
+Two copies, `laptop` and `phone`, edit `task:1` and then sync both ways:
+
+<CodeBlock label="Erlang shell" code={`{ok, L} = barrel_docdb:get_doc(<<"laptop">>, <<"task:1">>),
+{ok, P} = barrel_docdb:get_doc(<<"phone">>, <<"task:1">>),
+barrel_docdb:put_doc(<<"laptop">>,
+                     L#{<<"state">> => <<"done">>}),
+barrel_docdb:put_doc(<<"phone">>,
+                     P#{<<"state">> => <<"blocked">>}),
+barrel_rep:replicate(<<"laptop">>, <<"phone">>),
+barrel_rep:replicate(<<"phone">>, <<"laptop">>),
+barrel_docdb:get_doc(<<"laptop">>, <<"task:1">>,
+                     #{conflicts => true}).`} />
+
+<CodeBlock output label="Output from a run on barrel_docdb 2.1.0" code={`{ok,#{<<"_conflicts">> =>
+          [<<"000001a1ba40490400000000@w0db1f003b3487bf5">>],
+      <<"_observed">> =>
+          [<<"000001a1ba40490400000001@w6e689af2f29a3bb0">>,
+           <<"000001a1ba40490400000000@w0db1f003b3487bf5">>],
+      <<"_rev">> =>
+          <<"000001a1ba40490400000001@w6e689af2f29a3bb0">>,
+      <<"id">> => <<"task:1">>,<<"state">> => <<"blocked">>}}`} />
+
+Reading `phone` returns the same `_rev`, `_conflicts` and body. Both
+writes fell in the same millisecond, so the logical counter decided.
+
+## Resolve with `_observed`
+
+`_observed` lists every version your read showed. Pass it back and the
+resolution replaces exactly those versions. A version that arrived after
+your read is not one of them, so it stays as a conflict: you never
+overwrite an edit you did not see.
+
+<CodeBlock label="Erlang shell" code={`{ok, #{<<"_observed">> := Seen}} =
+    barrel_docdb:get_doc(<<"laptop">>, <<"task:1">>,
+                         #{conflicts => true}),
+barrel_docdb:resolve_conflict(<<"laptop">>, <<"task:1">>, Seen,
+    {merge, #{<<"id">> => <<"task:1">>,
+              <<"state">> => <<"blocked">>,
+              <<"note">> => <<"done once unblocked">>}}).`} />
+
+<CodeBlock output label="Output from a run on barrel_docdb 2.1.0" code={`{ok,#{id => <<"task:1">>,
+      rev => <<"000001a1ba40490700000000@w0db1f003b3487bf5">>,
+      conflicts_resolved => 1}}`} />
+
+After the next replication, `phone` has the resolution and no conflicts:
+
+<CodeBlock output label="Output from a run on barrel_docdb 2.1.0" code={`> barrel_docdb:get_conflicts(<<"phone">>, <<"task:1">>).
+{ok,[]}`} />
+
+The resolution can be:
+
+| Resolution | Effect |
+|------------|--------|
+| `{choose, Token}` | Keep that version's body and its deleted flag |
+| `{merge, Body}` | Write a new body |
+| `delete` | Resolve to a delete |
+
+You can also write the document with `_observed` in the body (over REST,
+read with `?conflicts=true` and send `_observed` back). A write with only
+`_rev` replaces the winner and leaves the conflicts in place. A `_rev`
+that is not the winner returns `{error, conflict}`.
+
+## Resolve automatically
+
+Give the database a `conflict_resolver`. It runs whenever a write or a
+sync leaves more than one version, and returns `{choose, Token}`,
+`{merge, Body}`, `delete` or `keep`.
+
+```erlang
+Resolver = fun(Versions) ->
+    %% Versions: [#{token, deleted, body}], sorted by token
+    Live = [B || #{deleted := false, body := B} <- Versions],
+    case Live of
+        [] -> delete;
+        _ -> {merge, lists:max(Live)}
+    end
+end,
+{ok, _} = barrel_docdb:create_db(<<"db">>,
+    #{conflict_resolver => Resolver}).
+```
+
+Make it pure and independent of the order it sees versions in. Then
+every copy writes the same resolution and the conflict ends in one
+version everywhere. A crash counts as `keep`. Pass it again on every
+open: it is not stored.
+
+<Callout kind="limit" label="Limit">
+Two copies resolving the same conflict at the same time leave their two
+resolutions in conflict; resolve once more. Above
+`max_conflict_versions` (default 8) the oldest siblings are evicted; the
+winner always stays.
+</Callout>
+
+## Why it converges
+
+Each copy ends with the same set of versions, the same winner, the same
+body and the same deleted flag, whatever the order of writes and syncs.
+Delivery is idempotent, so sending a version twice is safe. The model and
+its checked properties are in [Replication
+proofs](/docs/architecture/replication-proofs).

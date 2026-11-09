@@ -1,0 +1,87 @@
+---
+import '../styles/site.css';
+import ThemeScript from '../components/ThemeScript.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import CommandMenu from '../components/CommandMenu.astro';
+import { langOf, counterpart, t } from '../i18n';
+
+interface Props {
+  title: string;
+  description?: string;
+  /** Path of a Markdown copy of this page, advertised for agents. */
+  markdown?: string;
+  /** Leave the page out of the search index (redirect stubs, demos). */
+  noindex?: boolean;
+}
+
+const lang = langOf(Astro.url);
+const s = t(lang);
+const {
+  title,
+  description = s.defaultDescription,
+  markdown,
+  noindex = false,
+} = Astro.props;
+
+const site = Astro.site ?? new URL('https://barrel-db.eu');
+const canonical = new URL(Astro.url.pathname, site).toString();
+const fullTitle = title === 'Barrel' ? s.titleHome : `${title} | Barrel`;
+const enPath = lang === 'fr' ? counterpart(Astro.url.pathname) : Astro.url.pathname;
+const frPath = lang === 'fr' ? Astro.url.pathname : counterpart(Astro.url.pathname);
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <ThemeScript />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="en" href={new URL(enPath, site).toString()} />
+    <link rel="alternate" hreflang="fr" href={new URL(frPath, site).toString()} />
+    <link rel="alternate" hreflang="x-default" href={new URL(enPath, site).toString()} />
+    <meta property="og:locale" content={lang === 'fr' ? 'fr_FR' : 'en_US'} />
+    <link rel="icon" type="image/svg+xml" href="/logo-symbol-coral.svg" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL('/logo-github-avatar.png', site).toString()} />
+    <meta name="twitter:card" content="summary" />
+    <link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt" />
+    {markdown && <link rel="alternate" type="text/markdown" href={markdown} />}
+    {noindex && <meta name="robots" content="noindex" />}
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">{s.skip}</a>
+    <Header />
+    <main id="main" data-pagefind-body={noindex ? undefined : ''}>
+      <slot />
+    </main>
+    <Footer />
+    <CommandMenu />
+    <script>
+      // One handler for every Copy button: code blocks and code tabs.
+      document.addEventListener('click', async (e) => {
+        const b = (e.target as HTMLElement).closest<HTMLButtonElement>('[data-copy]');
+        if (!b) return;
+        const host = b.closest('.cb, .ct');
+        const pre = host?.querySelector('[role=tabpanel]:not([hidden]) pre') ?? host?.querySelector('pre');
+        if (!pre) return;
+        const label = b.textContent;
+        try { await navigator.clipboard.writeText(pre.textContent || ''); b.textContent = b.dataset.copied || 'Copied'; }
+        catch { b.textContent = b.dataset.select || 'Select and copy'; }
+        setTimeout(() => { b.textContent = label; }, 1600);
+      });
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  body { min-height: 100vh; display: flex; flex-direction: column; }
+  main { flex: 1; }
+</style>

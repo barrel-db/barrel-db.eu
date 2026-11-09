@@ -1,0 +1,28 @@
+alice created space sp_rhcq5uxrts6igoq4
+
+carol holds a read token
+  can    read the space
+  cannot use it on another space: wrong_space
+  cannot use a tampered token: invalid_token
+  cannot write notes: forbidden
+
+alice handed off "finish the draft" to bob
+bob's pending handoffs: finish the draft
+  can    write with the handoff token
+  cannot administer the space: forbidden
+
+bob accepted: accepted by bob
+  cannot accept the same handoff again (mallory): already_accepted
+bob reads notes: draft v1
+bob reads alice's messages: [<<"draft is half done">>]
+bob reads alice's pins: [<<"deadline friday">>]
+bob's session points at handoff: ho_26p5x345g6o2f64j
+  can    write notes
+
+bob completed: completed, result draft v2 ready
+  cannot use the handoff token after completion: revoked
+
+alice revoked carol's token
+  cannot read the space (carol): revoked
+
+notes now: draft v2 (bob)

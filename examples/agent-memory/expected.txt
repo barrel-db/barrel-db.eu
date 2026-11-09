@@ -1,0 +1,26 @@
+== node 1: write
+session ses_vl6c7rwng4nw4ayc
+messages added: 3
+facts written: 3
+search "when can I deploy to production":
+  0.667 message Never deploy to production on Friday
+  0.463 fact Production deploys need a review from Sam
+  0.309 message Our staging database runs on host db2
+== node 2: recall after a restart
+session ses_vl6c7rwng4nw4ayc (agent assistant)
+messages:
+  user: Our staging database runs on host db2
+  assistant: Noted: staging is on db2
+  user: Never deploy to production on Friday
+pinned:
+  0 Reply in short sentences
+  1 Project codename: Atlas
+current_task: upgrade billing
+search "when can I deploy to production":
+  0.667 message Never deploy to production on Friday
+  0.463 fact Production deploys need a review from Sam
+  0.309 message Our staging database runs on host db2
+search "where is the staging database":
+  0.507 message Our staging database runs on host db2
+  0.448 fact The billing service is written in Erlang
+  0.400 message Noted: staging is on db2

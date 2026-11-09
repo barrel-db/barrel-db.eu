@@ -1,0 +1,78 @@
+---
+// translation_of: src/pages/product/status.astro source_hash: 6ffcee533e2859a8
+import { getEntry, render } from 'astro:content';
+import ProductFrame from '../../../components/product/ProductFrame.astro';
+import { GITHUB } from '../../../data/fr/site';
+
+const entry = await getEntry('guidesFr', 'features');
+if (!entry) throw new Error('fr/product/status: src/content/fr/synced/features.md is missing; translate src/content/synced/features.md');
+const { Content } = await render(entry);
+const { source, commit, updated } = entry.data;
+
+const marks = [
+  { kind: 'today', label: 'Fonctionne aujourd’hui', doc: 'Prêt', body: 'Utilisable maintenant sans installation supplémentaire, et couvert par les suites de tests.' },
+  { kind: 'optional', label: 'Optionnel, à installer', doc: 'Optionnel', body: 'Utilisable maintenant, mais désactivé par défaut ou derrière un profil de build : un backend à activer, une bibliothèque à installer, une clé à fournir.' },
+  { kind: 'planned', label: 'Prévu', doc: 'Prévu', body: 'Pas encore construit. Décrit pour que vous puissiez en tenir compte, jamais présenté comme fonctionnel.' },
+];
+---
+
+<ProductFrame
+  title="État des fonctionnalités"
+  description="Ce que Barrel fait aujourd’hui, ce qui demande une installation, et ce qui est prévu, capacité par capacité."
+  heading="Ce qui fonctionne aujourd’hui, et ce qui ne fonctionne pas encore."
+  lead="Chaque page de ce site utilise les mêmes trois marques. Cette page liste chaque capacité avec sa marque, d’après le tableau des fonctionnalités du dépôt Barrel."
+>
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h3">Les trois marques</h2>
+      <dl class="st-marks">
+        {marks.map((m) => (
+          <div>
+            <dt class={`mark mark--${m.kind}`}>{m.label}</dt>
+            <dd>{m.body} <span class="muted">Dans le tableau ci-dessous : {m.doc}.</span></dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap pf-narrow st-prose" data-status-table>
+      <Content />
+      {source && (
+        <p class="small muted st-src">
+          Traduit de <a href={`${GITHUB}/blob/main/${source}`}><code>{source}</code></a>{commit && <> au commit <code>{commit}</code></>}{updated && <>, mis à jour le {updated}</>}. Les corrections se font dans le dépôt.
+        </p>
+      )}
+    </div>
+  </section>
+</ProductFrame>
+
+<style>
+  .st-marks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px 40px; margin: 0; }
+  .st-marks div { border-top: 1px solid var(--rule); padding-top: 14px; }
+  .st-marks dt { font-size: 17px; margin-bottom: 6px; }
+  .st-marks dd { margin: 0; font-size: 15px; }
+  .st-prose :global(h2) { font-size: var(--step-2); font-stretch: 108%; letter-spacing: -0.015em; margin: 44px 0 12px; }
+  .st-prose :global(h2:first-child) { margin-top: 0; }
+  .st-prose :global(p), .st-prose :global(ul) { margin: 0 0 16px; }
+  .st-prose :global(table) { width: 100%; border-collapse: collapse; font-size: 15px; margin: 0 0 20px; display: block; overflow-x: auto; }
+  .st-prose :global(th) { text-align: left; font-weight: 650; background: var(--paper-2); padding: 8px 12px; border-bottom: 1px solid var(--rule); }
+  .st-prose :global(td) { padding: 8px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  .st-prose :global(td.mark) { display: table-cell; white-space: nowrap; }
+  .st-prose :global(td.mark::before) { display: inline-block; margin-right: 8px; vertical-align: -1px; }
+  .st-src { margin-top: 32px; }
+  @media (max-width: 820px) { .st-marks { grid-template-columns: minmax(0, 1fr); } }
+</style>
+
+<script>
+  // Affiche les marques du site à côté des mots d’état du dépôt (traduits ou non).
+  const KIND: Record<string, string> = {
+    Ready: 'today', 'Opt-in': 'optional', Planned: 'planned',
+    Prêt: 'today', Optionnel: 'optional', Prévu: 'planned',
+  };
+  document.querySelectorAll('[data-status-table] td').forEach((td) => {
+    const kind = KIND[(td.textContent || '').trim()];
+    if (kind) td.classList.add('mark', `mark--${kind}`);
+  });
+</script>

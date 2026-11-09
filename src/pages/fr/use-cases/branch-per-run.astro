@@ -1,0 +1,123 @@
+---
+// translation_of: src/pages/use-cases/branch-per-run.astro source_hash: e74086d8f3469b8e
+import UseCasePage from '../../../components/usecase/UseCasePage.astro';
+import type { ArchColumn, Step } from '../../../components/usecase/types';
+
+const arch: ArchColumn[] = [
+  { who: 'Votre orchestrateur', boxes: [
+    { name: 'Avant l’exécution', note: 'branch/3, une branche en temps constant' },
+    { name: 'L’agent', note: 'n’écrit que dans la branche' } ] },
+  { who: 'Barrel', boxes: [
+    { name: 'main', note: 'données de production, intactes pendant l’exécution', rec: true },
+    { name: 'run_42', note: 'la branche : une base ordinaire', rec: true } ] },
+  { who: 'Relecture', boxes: [
+    { name: 'Changements depuis la branche', note: 'ce qu’a fait l’exécution' },
+    { name: 'merge/1 ou delete/1', note: 'la garder ou la jeter' } ] },
+];
+
+const steps: Step[] = [
+  { title: 'Créer une branche avant l’exécution',
+    body: 'Une branche est un point de contrôle des stockages par liens physiques : la créer coûte autant quelle que soit la taille. Une branche en mode enregistrement reçoit son propre stockage vectoriel, reconstruit à partir des embeddings déjà stockés dans les documents.',
+    tabs: [
+      { label: 'Erlang', lang: 'erlang', code: `{ok, Run} = barrel:branch(Db, run_42,
+    #{vectordb => #{db_path => "data/run_42_vec"}}).` },
+      { label: 'REST', lang: 'bash', code: `curl -X POST localhost:8080/db/demo/_timeline/branch \\
+  -H 'content-type: application/json' \\
+  -d '{"name":"demo-exp"}'` },
+      { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":20,"method":"tools/call",
+ "params":{"name":"branch_create",
+  "arguments":{"db":"demo","name":"demo-exp"}}}` } ],
+    outLabel: 'Réponse REST, d’après une exécution enregistrée',
+    out: `HTTP/1.1 201 Created
+{"ok":true,"parent":"demo","fork_hlc":"AAABobh22gAAAAAA",
+ "branch":"demo-exp"}` },
+  { title: 'Laisser l’agent écrire dans la branche',
+    body: 'La branche accepte lectures, écritures, requêtes et recherche comme n’importe quelle base. Donnez son nom à l’agent ; `main` ne change pas.',
+    tabs: [
+      { label: 'Erlang', lang: 'erlang', code: `{ok, D} = barrel:get_doc(Run, <<"kb:201">>),
+{ok, _} = barrel:put_doc(Run,
+    D#{<<"title">> => <<"Export invoices and credit notes">>}).` },
+      { label: 'REST', lang: 'bash', code: `curl -X PUT localhost:8080/db/demo-exp/doc/e \\
+  -H 'content-type: application/json' \\
+  -d '{"kind":"note","title":"on branch"}'` } ] },
+  { title: 'Relire ce que l’exécution a changé',
+    body: 'Lisez les changements de la branche depuis l’instant de sa création. `fork_hlc` est un curseur de changements.',
+    tabs: [
+      { label: 'Erlang', lang: 'erlang', code: `{ok, #{fork_hlc := Fork}} = barrel:info(Run),
+{ok, Changed, _Last} = barrel:changes(Run, Fork).` },
+      { label: 'REST', lang: 'bash', code: `FORK=AAABobh22gAAAAAA   # fork_hlc from step 1
+curl "localhost:8080/db/demo-exp/changes?since=$FORK"` } ] },
+  { title: 'La fusionner, ou la jeter',
+    body: 'Une fusion n’envoie que les documents modifiés par la branche. Les modifications faites entre-temps sur `main` aux mêmes documents deviennent des conflits ordinaires. Une nouvelle fusion plus tard est incrémentale.',
+    tabs: [
+      { label: 'Erlang', lang: 'erlang', code: `{ok, _Report} = barrel:merge(Run),
+ok = barrel:delete(Run).` },
+      { label: 'REST', lang: 'bash', code: `curl -X POST localhost:8080/db/demo-exp/_timeline/merge
+curl -X DELETE 'localhost:8080/db/demo-exp?purge=true'` },
+      { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":21,"method":"tools/call",
+ "params":{"name":"merge",
+  "arguments":{"db":"demo-exp"}}}` } ],
+    outLabel: 'Réponse REST de la fusion, d’après une exécution enregistrée (abrégée)',
+    out: `{"failed":[],"last_merged":"AAABobh224EAAAAA",
+ "docs_read":1,"docs_written":1,"doc_write_failures":0,
+ "att_sync":{"atts_written":0, …}, …}` },
+  { title: 'Retrouver un état d’avant l’exécution',
+    body: 'Gardez un curseur de changements avant chaque exécution. Une branche créée avec `at` sur ce curseur vous donne chaque document tel qu’il était alors, à côté des données d’aujourd’hui, tant que l’instant est dans la fenêtre de rétention (30 jours par défaut). En REST, `at_time` accepte aussi une date RFC 3339.',
+    tabs: [
+      { label: 'Erlang', lang: 'erlang', code: `{ok, _, Before} = barrel:changes(Db, first),
+%% ... the run happens ...
+{ok, Then} = barrel:branch(Db, before_run_42,
+    #{at => Before,
+      vectordb => #{db_path => "data/before_42_vec"}}).` },
+      { label: 'REST', lang: 'bash', code: `curl -X POST localhost:8080/db/demo/_timeline/branch \\
+  -H 'content-type: application/json' \\
+  -d '{"name":"before-run",
+       "at_time":"2026-11-07T09:00:00Z"}'` },
+      { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":22,"method":"tools/call",
+ "params":{"name":"branch_create",
+  "arguments":{"db":"demo","name":"before-run",
+               "at":"AAABobh22gAAAAAA"}}}` } ] },
+];
+---
+
+<UseCasePage
+  title="Une branche par exécution d’agent"
+  lead="Créez une branche de la base avant l’exécution d’un agent, laissez l’agent écrire dans la copie, relisez ce qui a changé, puis fusionnez-la ou jetez-la. Créez une branche d’un instant passé pour récupérer ce qu’une exécution a cassé."
+  sub="Construit avec la timeline de barrel : `barrel:branch/3`, `merge/1` et `delete/1`, les mêmes opérations en REST et sous forme des outils MCP `branch_create` et `merge`."
+  problem="Laisser un agent modifier des données en production est risqué, et copier une base pour lui donner un bac à sable est lent et vous laisse retrouver les différences à la main. Quand une exécution tourne mal, vous voulez les données telles qu’elles étaient avant son début."
+  arch={arch}
+  edges={['branch/3', 'changes, puis merge']}
+  archNote="La branche partage ses fichiers avec `main` en copie à l’écriture, jusqu’à ce que l’un des deux côtés compacte. Ses écritures portent leur propre identifiant de source, ce qui permet à une fusion de distinguer ce que la branche a fait de ce dont elle a hérité."
+  stepsIntro="Cinq étapes. Les exemples REST et MCP utilisent une base nommée `demo` et une branche `demo-exp`, comme dans l’exécution enregistrée."
+  steps={steps}
+  barrel={[
+    'Crée une branche en temps constant et l’isole entièrement',
+    'Ne fusionne que ce que la branche a changé, par le mécanisme de réplication',
+    'Garde comme conflits les modifications concurrentes des deux côtés',
+    'Restaure un instant passé dans la fenêtre de rétention',
+    'Reconstruit les vecteurs d’une branche en mode enregistrement à partir des embeddings stockés',
+  ]}
+  app={[
+    'Nomme une branche par exécution et y dirige l’agent',
+    'Décide de ce qu’est une relecture : une personne, une suite de tests ou un autre agent',
+    'Résout les conflits laissés par une fusion',
+    'Supprime les branches dont elle n’a plus besoin',
+  ]}
+  limits={[
+    'La filiation est linéaire : une branche d’une branche est refusée avec `cannot_branch_a_branch`.',
+    'Un instant passé antérieur au plancher de l’historique échoue avec `pitr_window_exceeded`.',
+    'Une branche d’un instant passé n’est pas refusionnée comme un retour arrière ; ramener `main` à un instant donné n’est pas encore disponible.',
+    'Les branches ordinaires (hors mode enregistrement) démarrent avec un stockage vectoriel vide.',
+    'Sur une branche d’un instant passé, les pièces jointes sont celles du moment de la création de la branche, pas de l’instant choisi.',
+    'Il n’y a pas de politique de conflit par fusion ; c’est le `conflict_resolver` du parent qui s’applique. Un jeton de capacité ne peut pas atteindre une branche de son espace ; `branch_create` et `merge` demandent des droits d’administration.',
+  ]}
+  links={[
+    { label: 'Exemple : une expérience sur une branche', href: '/examples/branch-experiment' },
+    { label: 'Brancher, fusionner, restaurer', href: '/docs/guides/timeline' },
+    { label: 'Conflits', href: '/docs/replicate/conflicts' },
+    { label: 'Audit et provenance', href: '/docs/guides/audit-provenance' },
+    { label: 'Timeline', href: '/product/timeline' },
+    { label: 'barrel', href: '/product/barrel' },
+    { label: 'barrel_docdb', href: '/product/docdb' },
+  ]}
+/>

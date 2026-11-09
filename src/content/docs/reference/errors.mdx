@@ -1,0 +1,243 @@
+---
+title: Error codes
+description: The errors Barrel returns over REST, MCP and the Erlang API, what each one means and what to do about it.
+---
+import Callout from '../../../components/Callout.astro';
+
+This page lists the errors you can get back, what they mean and what to do. REST errors are JSON bodies `{"error": "<code>"}` with an HTTP status; the Erlang API returns `{error, Reason}`. Use it when a call fails and you need the fix, not the cause; [Troubleshooting](/docs/operate/troubleshooting) starts from the symptom instead.
+
+## How REST errors look
+
+```json
+{"error": "conflict"}
+```
+
+Some codes add fields: `reason` (a bad `/find` body, bad `att_opts`), `message`, `line` and `column` (a BQL syntax error), `current` (an attachment conflict), `tokens` (`missing_bodies`).
+
+<Callout label="Note">
+An error the server does not map becomes a 500 with the Erlang term printed as the `error` string, for example `{"error":"{dimension_mismatch,768,2}"}`. That is why some configuration problems answer 500 rather than 4xx.
+</Callout>
+
+## Authentication
+
+| Status | error | Meaning and fix |
+|---|---|---|
+| 401 | `unauthorized` | No token, a wrong, unknown or revoked token, or a bad or replayed signature. The response carries `www-authenticate: Bearer`. Send `Authorization: Bearer` with a valid token, or sign again. |
+| 401 | `signature_v3_required` | A v1 or v2 signature on a request that carries a write header or writes an attachment. Sign with v3. |
+| 401 | `content_hash_mismatch` | The body does not match its signed hash in `x-barrel-content-sha256`. Hash the exact bytes you send. |
+| 400 | `bad_body` | The body of a signed request could not be read. Retry. |
+| 403 | `forbidden` | The capability token lacks the right, is for another space, or the route accepts only a server token. |
+| 413 | `too_large` | A signed body over `max_body` (1 GiB by default). |
+
+## Databases and documents
+
+| Status | error | Meaning and fix |
+|---|---|---|
+| 400 | `invalid_name` | The name has characters other than letters, digits, `_` and `-`. |
+| 500 | `invalid_db_name` | The name has uppercase letters. Use lowercase, starting with a letter or digit, at most 63 bytes. |
+| 400 | `bad_att_opts` + `reason` | Bad `att_opts` in the body of `PUT /db/:db`. |
+| 404 | `not_found` | The document, version or attachment does not exist. The database itself is created by the request. |
+| 409 | `conflict` | The `_rev` you sent is not current. Read again and retry with the new `_rev`. |
+| 400 | `bad_json` | The body is not JSON. |
+| 400 | `invalid_provenance` | An `x-barrel-actor`, `x-barrel-session` or `x-barrel-source` header is too long (256 bytes each, 1 KiB together). |
+| 400 | `bad_since`, `bad_until`, `bad_limit` | A bad query parameter on `GET /db/:db/_history`. |
+
+`GET /db/:db/changes` with a bad `since` does not fail: it restarts from the first change.
+
+## Queries
+
+| Status | error | Meaning and fix |
+|---|---|---|
+| 400 | `invalid_query` + `message`, `line`, `column` | BQL syntax error. BQL has no `COUNT` or `GROUP BY`. |
+| 400 | `invalid_query` + `reason` | An unknown key in a `/find` body, `continuation` included. Page with `offset`. |
+| 400 | `missing_query` | A JSON body without `query`. |
+| 400 | `invalid_max_rows`, `invalid_deadline_ms` | Not a positive integer (at most 1000 rows, 300000 ms). |
+| 400 | `subscribe_requires_sse` | A `SUBSCRIBE` statement without `Accept: text/event-stream` or `?feed=sse`. |
+| in stream | `deadline` | The deadline passed after some rows were sent; the last NDJSON line is `{"error":"deadline"}`. |
+
+## Search
+
+These are configuration problems, but they answer 500.
+
+| Status | error | Meaning and fix |
+|---|---|---|
+| 500 | `bm25_not_enabled` | Keyword search is off on this database. Open it with `vectordb => #{bm25_backend => disk}`, or use record mode. |
+| 500 | `embedder_not_configured` | No embedder to turn your text into a vector. Configure one, or send a vector. |
+| 500 | `{dimension_mismatch,768,N}` | Your vector has N dimensions; the store expects 768. |
+
+## Attachments
+
+| Status | error | Meaning and fix |
+|---|---|---|
+| 409 | `conflict` + `current` | An `If-Match` or `If-None-Match: *` condition failed. |
+| 400 | `bad_if_none_match` | Only `*` is allowed in `If-None-Match`. |
+| 501 | `attachments_disabled` | The database was created with `att_opts => #{backend => none}`. |
+| 501 | `conditional_writes_unsupported` | The S3 backend cannot do conditional writes (Garage). |
+| 503 | `att_sync_pending` | A new S3-backed branch is still copying. Retry shortly. |
+
+## Branches
+
+| Status | error | Meaning and fix |
+|---|---|---|
+| 400 | `invalid_name` | A bad branch name. |
+| 400 | `bad_at` | `at` is not a changes cursor, or `at_time` is not RFC 3339. |
+| 400 | `pitr_window_exceeded` | The instant is older than the retained history. |
+| 409 | `already_exists` | A branch with that name exists. |
+| 409 | `cannot_branch_a_branch` | Branch the parent instead. |
+| 409 | `not_a_branch` | Merge was called on a database that is not a branch. |
+| 404 | `parent_not_found` | The branch's parent is not open. |
+
+## Replication wire
+
+| Status | error | Meaning and fix |
+|---|---|---|
+| 404 | `not_found` | The database does not exist; replication never creates one. |
+| 409 | `clock_skew` | The sender's clock is too far ahead. |
+| 400 | `bad_hlc`, `bad_state`, `bad_bodies`, `missing_bodies` + `tokens`, `bad_json`, `bad_filter`, `bad_since`, `bad_touch`, `bad_origin` | A malformed sync request. |
+| 403 | `read_only` | A repair sent to a read-only database. |
+| 412 | `bytes_needed` | An attachment upload without its bytes. |
+| 422 | `digest_mismatch` | Attachment bytes do not match `x-barrel-digest`. |
+| 413 | `too_large` | The attachment is too large. |
+| 501 | `att_flush_unsupported`, `att_sync_unsupported`, `attachments_disabled` | This server's attachment backend lacks the feature. |
+| 406 | `not_acceptable` | The request asked for a format the route does not serve. |
+
+## Spaces and handoffs
+
+| Status | error | Meaning and fix |
+|---|---|---|
+| 401 | `unauthorized` | The token is invalid, revoked or expired. |
+| 403 | `forbidden` | The token is for another space, or lacks the right. |
+| 404 | `space_dropped` | The space was dropped. |
+| 409 | `already_accepted`, `already_completed` | The handoff token was already used. |
+| 400 | `task_name_required`, `missing_space`, `missing_token`, `invalid_message`, `invalid_rights`, `invalid_expires_at`, `bad_range` | A missing or bad field. Empty `rights` also gives `invalid_rights`. |
+
+## Contexts
+
+Context and working-set routes answer `{"error", "message", "hint", "details"}`. The codes come from `barrel_ctx_error:codes/0`:
+
+| Status | error |
+|---|---|
+| 400 | `invalid_argument`, `invalid_query`, `limit_required`, `limit_too_large`, `too_many_contexts`, `duplicate_context`, `unsupported_federated_query`, `merge_not_allowed`, `merge_not_supported`, `scores_not_comparable`, `invalid_card`, `no_location`, `invalid_snapshot` |
+| 403 | `forbidden` |
+| 404 | `unknown_context`, `unknown_working_set`, `not_attached` |
+| 409 | `ambiguous_context`, `already_attached`, `already_exists`, `offline` |
+| 413 | `over_budget` |
+| 502 | `source_unavailable` |
+| 500 | `internal` |
+
+A member that fails is reported in `sources[]` of the answer, not as a request error.
+
+## MCP
+
+A request without a token on a locked server is HTTP 401. Tool errors come back as a tool result with `isError: true` and the same JSON body, for example `{"error":"not_found"}` or `{"error":"forbidden","db":"kb"}`.
+
+## Erlang API
+
+### Lifecycle and documents
+
+| Return | Meaning and fix |
+|---|---|
+| `{error, already_exists}` | `create_db` on an open database. Use `open_db/1`. |
+| `{error, invalid_db_name}` | Lowercase letters, digits, `_` and `-`; first character a letter or digit; 1 to 63 bytes. |
+| `{error, not_found}` | A missing document, or a database that is not running. |
+| `{error, {db_failed, Reason}}` | The database's writer crashed 3 times in 60 seconds. Fix `Reason`, then `reopen_db/1`. |
+| `{error, conflict}` | A stale `_rev`. |
+| `{error, read_only}` | A write on a database opened with `read_only => true`. |
+| `{error, clock_skew}` | The clock is behind the database's newest write, or a remote HLC was refused. Fix the clock. |
+| `{error, {invalid_expires_at, V}}` | `expires_at` must be a non-negative unix time in milliseconds. |
+| `{error, {invalid_provenance, _}}` | Provenance fields too long. |
+| `{error, {invalid_condition, C}}` | A bad `find` condition. |
+| `{error, db_restarted}` | An attachment stream or upload outlived a database restart. Open it again; the upload published nothing. |
+| `{error, upload_expired}` | An upload left open longer than `att_upload_timeout` (3600 s). |
+| `{error, {read_only_upgrade_needed, _}}` | Stores that need an upgrade, opened read only. Open once writable. |
+
+### BQL
+
+| Return | Meaning and fix |
+|---|---|
+| `{error, {parse_error, {Line, Col}, Msg}}` | A syntax error, from `barrel_docdb:query/2,3`. |
+| `{error, {invalid_query, {Line, Col}, Code}}` | A statement the grammar accepts but the compiler refuses. See [BQL](/docs/reference/bql#refused-statements). |
+| `{error, {table_fn_requires_barrel, Fn}}` | Search table functions run only through `barrel:query/2,3`. |
+| `{error, {unsupported, subscribe}}` | `SUBSCRIBE` through `query`; use `subscribe_query/2,3`. |
+| `{error, {limit_required, #{max_limit := 1000}}}` | A context query without `LIMIT`. |
+
+### barrel module
+
+| Return | Meaning and fix |
+|---|---|
+| `{error, no_vector_store}` | A vector call, or an export, on a database opened with `vectordb => none`. |
+| `{error, record_mode}` | `vector_add` on a record-mode database; write the document instead. |
+| `{error, mixed_batch}` | A `vector_add_batch/2` list that mixes entries with and without vectors. |
+| `{error, {invalid_option, vectordb}}` | `embedding` together with `vectordb => none`. |
+| `{error, no_stored_policy}` | `embedding => stored` on a database that never ran in record mode. |
+| `{error, barrel_app_not_started}` | Record mode needs the `barrel` application started. |
+| `{error, {unknown_options, Keys}}` | Unknown keys in an embedding policy. |
+| `{error, {dimension_mismatch, Want, Got}}` | A vector of the wrong length. |
+| `{error, {index_init_failed, faiss_not_available}}` | `backend => faiss` without the barrel_faiss NIF. |
+
+### Encryption
+
+| Return | Meaning and fix |
+|---|---|
+| `{error, db_is_encrypted}` | Pass the encryption spec when opening. |
+| `{error, wrong_encryption_key}` | The key does not match this database. |
+| `{error, cannot_encrypt_existing_db}` | No in-place encryption. Create an encrypted database and replicate into it. |
+| `{error, {key_provider_error, barrel_keyprovider_env, no_encryption_key}}` | `BARREL_ENCRYPTION_KEY` is not set. |
+
+### Timeline
+
+| Return | Meaning and fix |
+|---|---|
+| `{error, not_a_branch}`, `{error, parent_not_found}` | Merge on a database that is not a branch, or whose parent is not open. |
+| `{error, already_exists}`, `{error, branch_dir_exists}` | The branch name or its folder is taken. |
+| `{error, cannot_branch_a_branch}` | Branch the parent. |
+| `{error, pitr_window_exceeded}`, `{error, {pitr_window_exceeded, DocId}}` | The instant, or that document's history, is older than retention. |
+| `{error, {bad_at, future}}`, `{error, {bad_at, _}}` | The instant is in the future, or not a valid HLC. |
+
+### Replication
+
+| Return | Meaning and fix |
+|---|---|
+| `{error, {checkpoint_failed, target, not_found}}` | The local target database does not exist. Create it first. |
+| `{error, not_found}` | The remote database does not exist (HTTP 404). |
+| `{error, unauthorized}` | The remote answered 401. |
+| `{error, clock_skew}` | The remote answered 409. Every 409 is reported this way. |
+| `{error, too_large}`, `{error, {http, Status, Body}}` | The remote answered 413, or another status. |
+| `{error, {inline_credentials, Keys}}` | Move credentials from the task to `sync_auth`, `sync_signing` or `sync_ssl`. |
+| `{error, att_flush_unsupported}` | The target cannot make attachment writes durable; upgrade it or pass `att_durability => best_effort`. |
+| `{error, {att_flush_failed, R}}`, `{error, {att_sync_failed, R}}` | The attachment phase failed; the checkpoint stays before it. |
+| `{error, att_filter_unsupported}` | The source server cannot filter attachments. |
+| `{error, too_many_failed_docs}` | More than 1000 documents failed in one run; the checkpoint did not move. |
+| `{error, not_running}` | `get_task_pid/1` on a task that is not running. |
+
+### Embedding and reranking
+
+| Return | Meaning and fix |
+|---|---|
+| `{error, embedder_not_configured}` | No `embedder` in the configuration. |
+| `{error, no_providers_available}` | Every provider in the chain failed to start. |
+| `{error, all_providers_failed}` | Every provider failed on this call. |
+| `{error, venv_not_found}` | The managed Python venv is missing. |
+| `{error, {port_open_failed, enoent}}` | barrel_rerank could not start Python; pass an absolute `python`. |
+
+### Spaces and capabilities
+
+| Return | Meaning and fix |
+|---|---|
+| `{error, invalid_token}` | Unknown or tampered token. |
+| `{error, revoked}` | Revoked, or a handoff token after `complete`. |
+| `{error, expired}` | Past `expires_at`. |
+| `{error, wrong_space}` | A token for another space (403 over REST). |
+| `{error, forbidden}` | The right is not granted (read, then write, then admin). |
+| `{error, space_dropped}` | The space was dropped. |
+| `{error, already_accepted}`, `{error, already_completed}` | The handoff was already used. |
+| `{error, {embedder_mismatch, _}}`, `{error, {embedder_required, _}}` | `open_space` with an embedder that differs from the space's, or without one when the space needs it. |
+
+### S3 attachments
+
+| Return | Meaning and fix |
+|---|---|
+| `{error, {att_store_open_failed, missing_bucket}}` | `att_opts` without `bucket`. The bucket must exist. |
+| `{error, {conflict, Info}}` | A `create_only` or `expected_etag` write lost. |
+| `{error, conditional_writes_unsupported}` | The store cannot do conditional writes. |
+| `{error, {att_sync_pending, _}}` | A new branch is still copying its attachments. |

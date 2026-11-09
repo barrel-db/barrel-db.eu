@@ -1,0 +1,125 @@
+---
+translation_of: src/content/docs/operate/monitoring.mdx
+source_hash: "631018cc12ec6a9d"
+title: Supervision
+description: Ce que Barrel mesure, comment lire les métriques, comment les envoyer à un collecteur, et comment surveiller les tâches de réplication et l’état du nœud.
+---
+import Callout from '../../../../components/Callout.astro';
+import CodeBlock from '../../../../components/CodeBlock.astro';
+
+Cette page décrit ce que Barrel mesure, comment vous le lisez et comment vous surveillez les tâches de réplication. Lisez-la quand vous mettez un nœud en production et devez savoir qu’il est en bonne santé et qu’il suit le rythme.
+
+## Ce que Barrel mesure
+
+La couche documents, barrel_docdb, enregistre des métriques sur chaque nœud, que vous les exportiez ou non. Elles suivent le nommage Prometheus. Une métrique avec labels est exportée sous un nom qui porte ses labels : écrivez vos requêtes avec les noms ci-dessous.
+
+| Nom exporté | Type | Ce qu’il compte |
+|---|---|---|
+| `barrel_doc_operations_db_operation_total{db,operation}` | counter | Écritures, lectures et suppressions de documents |
+| `barrel_doc_operation_duration_seconds_vec_db_operation` | histogram | Durée de chaque opération sur un document |
+| `barrel_write_group_size_vec_db` | histogram | Écritures validées ensemble dans un même lot |
+| `barrel_query_operations_db_total{db}` | counter | Requêtes exécutées |
+| `barrel_query_duration_seconds_vec_db` | histogram | Durée de chaque requête |
+| `barrel_query_timeouts_total` | counter | Requêtes qui ont atteint leur échéance |
+| `barrel_replication_docs_direction_total{direction}` | counter | Documents écrits par la réplication |
+| `barrel_replication_errors_task_id_total{task_id}` | counter | Erreurs de réplication, par identifiant de réplication |
+| `barrel_db_size_bytes{db}` | gauge | Taille du stockage des documents sur disque |
+| `barrel_db_pending_compaction_bytes{db}` | gauge | Octets que la compaction doit encore réécrire |
+| `barrel_db_compactions_running{db}`, `barrel_db_compactions_queued{db}` | gauge | Compactions en cours, et en attente d’un thread |
+| `barrel_db_stubs_total`, `barrel_db_stubs_bytes` | gauge | Documents supprimés conservés comme stubs, par base, après chaque purge de rétention |
+
+Les gauges de taille et de compaction se mettent à jour chaque minute (`stats_interval`), et une première fois dans la seconde qui suit l’ouverture. Un retard de compaction qui ne cesse de grandir, ou des compactions en attente qui restent au-dessus de zéro, signifient que la compaction ne suit plus vos écritures.
+
+Chaque métrique déclarée est aussi affichée une fois sans labels ; cette copie reste à 0. Vérifiez le nom exact avec labels dans `export_text/0` avant d’écrire une alerte.
+
+<Callout label="Pas encore enregistré" kind="limit">
+`barrel_db_documents_total`, `barrel_db_attachments_total`, `barrel_replication_lag_seconds` et `barrel_replication_active` sont déclarées mais jamais renseignées ; elles valent toujours 0. Utilisez plutôt les appels de statistiques ci-dessous.
+</Callout>
+
+barrel_vectordb, barrel, barrel_server, barrel_spaces et barrel_embed n’enregistrent aucune métrique.
+
+## Lire les métriques
+
+Dans le nœud, `barrel_metrics:export_text/0` renvoie le format texte Prometheus sous forme de binaire (`export/0` renvoie de l’iodata).
+
+```erlang
+io:format("~s", [barrel_metrics:export_text()]).
+```
+
+<CodeBlock output label="Sortie, abrégée, après une écriture, une lecture et une requête sur la base mon (exécution réelle sur barrel_server 1.13.0)" code={`barrel_doc_operations_db_operation_total{db="mon",operation="put"} 1.0
+barrel_doc_operations_db_operation_total{db="mon",operation="get"} 1.0
+barrel_query_operations_db_total{db="mon"} 1.0
+barrel_doc_operation_duration_seconds_vec_db_operation_count{db="mon",operation="put"} 1`} />
+
+## Les envoyer à un collecteur
+
+barrel_server ne sert pas de route `/metrics`. Poussez les métriques en OTLP vers votre collecteur, que Prometheus ou un autre backend lit ensuite. Définissez les exporters dans l’environnement applicatif de `barrel_docdb` :
+
+```erlang
+[{barrel_docdb, [
+   {metrics, [{exporter, otlp},
+              {otlp_endpoint, "http://collector:4318"}]},
+   {tracing, [{enabled, true}, {exporter, otlp},
+              {otlp_endpoint, "http://collector:4318"}]}
+ ]}].
+```
+
+L’exporter vaut `none` par défaut ; `console` et `{Mod, Map}` sont aussi acceptés. Métriques, traces et logs ont chacun leur propre exporter, voir [Configuration](/fr/docs/reference/configuration#barrel_docdb).
+
+Les traces couvrent les opérations sur les documents, les requêtes et la réplication. Les requêtes de réplication sortantes transmettent les en-têtes de trace au pair.
+
+<Callout label="Remarque">
+La clé `export_interval` montrée dans certaines docs de barrel_docdb n’est jamais lue.
+</Callout>
+
+Si vous voulez un point d’accès à scraper, servez `barrel_metrics:export_text()` depuis un handler de votre propre application.
+
+## Les statistiques disponibles
+
+| Appel | Renvoie |
+|---|---|
+| `barrel:info(Db)`, `GET /db/:db` | Configuration, rétention, plancher d’historique, compteurs de groupes d’écriture, embedder, et `storage` : taille sur disque et retard de compaction. Pas de nombre de documents. |
+| `barrel:vector_stats(Db)` | Nombre de vecteurs, dimension, type d’index et si l’index a été chargé ou reconstruit |
+| `barrel_docdb:stub_stats(Name)` | Nombre de stubs et octets. Parcourt le flux de changements dans le processus appelant. |
+| `barrel_rep_tasks:list_tasks()` | Chaque tâche de réplication avec son statut |
+| `barrel_rep_tasks:get_task(Id)` | Une tâche : `status`, `last_seq`, `last_error`, `paused_reason` |
+
+```erlang
+{ok, S} = barrel:vector_stats(Db),
+maps:with([count, dimension, index_origin], S).
+```
+
+L’outil MCP `db_info` annonce renvoyer un nombre de documents ; il renvoie la même map que `barrel:info/1`, qui n’en contient pas.
+
+## Surveiller les tâches de réplication
+
+Une tâche continue garde le statut `running` pendant qu’elle réessaie, avec un backoff exponentiel. L’erreur est portée par la tâche, pas par son statut : alertez donc sur `last_error`.
+
+```erlang
+{ok, Tasks} = barrel_rep_tasks:list_tasks(#{mode => continuous}),
+[{Id, Status, maps:get(last_error, T, none)}
+ || #{id := Id, status := Status} = T <- Tasks].
+```
+
+- Statuts : `pending`, `running`, `paused`, `completed`, `failed`.
+- `paused` avec `paused_reason` `<<"db_closed">>` signifie que la base locale de la tâche n’est pas ouverte. La tâche reprend quand la base s’ouvre.
+- Une tâche ponctuelle échoue tout de suite ; seules les tâches continues réessaient.
+
+## Vérifications de santé
+
+`GET /health` répond `200 {"status":"ok"}` sans authentification. Cela indique que l’écoute HTTP fonctionne ; aucune base n’est ouverte et aucun magasin n’est vérifié.
+
+```shell
+curl -s localhost:8080/health
+```
+
+Pour une vérification plus poussée, lisez `GET /db/:db` sur une base qui vous importe, avec un token. Attention : cela crée la base si elle n’existe pas.
+
+```shell
+curl -s -H "authorization: Bearer $TOKEN" \
+  localhost:8080/db/kb
+```
+
+<Callout label="Manque connu" kind="limit">
+barrel_server n’a pas encore de route de disponibilité (readiness) ni de métriques sur les requêtes HTTP.
+</Callout>

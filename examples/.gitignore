@@ -1,0 +1,5 @@
+_build/
+_checkouts/
+data/
+rebar.lock
+node_modules/

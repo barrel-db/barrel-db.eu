@@ -1,0 +1,92 @@
+---
+import { Code } from 'astro:components';
+import { langOf, localize } from '../i18n';
+import { useCasesFor } from '../data/i18n';
+const lang = langOf(Astro.url);
+const { useCaseDetails } = useCasesFor(lang);
+const T = {
+  en: { list: 'Use cases', problem: 'The problem', with: 'With Barrel', flow: 'How the pieces connect', read: 'Read the use case', uses: 'Uses' },
+  fr: { list: 'Cas d’usage', problem: 'Le problème', with: 'Avec Barrel', flow: 'Comment les pièces s’enchaînent', read: 'Lire le cas d’usage', uses: 'Utilise' },
+}[lang];
+const themes = { light: 'github-light', dark: 'github-dark' } as const;
+---
+
+<div class="uc" data-uc>
+  <div class="uc-list" role="tablist" aria-label={T.list} aria-orientation="vertical">
+    {useCaseDetails.map((u, i) => (
+      <button type="button" role="tab" id={`uc-t-${u.slug}`} aria-controls={`uc-p-${u.slug}`} aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? 0 : -1}>
+        <span class="uc-n">{u.name}</span>
+        <span class="uc-s">{u.short}</span>
+      </button>
+    ))}
+  </div>
+  <div class="uc-panels">
+    {useCaseDetails.map((u, i) => (
+      <section role="tabpanel" id={`uc-p-${u.slug}`} aria-labelledby={`uc-t-${u.slug}`} hidden={i !== 0} class="uc-p">
+        <h3 class="h3">{u.name}</h3>
+        <div class="uc-why">
+          <div><p class="uc-l">{T.problem}</p><p class="muted">{u.problem}</p></div>
+          <div><p class="uc-l">{T.with}</p><p>{u.solution}</p></div>
+        </div>
+        <p class="uc-flow" aria-label={T.flow}>
+          {u.flow.map((f) => (
+            <>
+              <span class:list={['uc-node', { 'is-rec': f.record }]}>{f.label}</span>
+              {f.edge && <span class="uc-edge">{f.edge}</span>}
+            </>
+          ))}
+        </p>
+        <Code code={u.code} lang={u.lang as any} themes={themes} defaultColor={false} />
+        <p class="uc-links small">
+          <a href={localize(`/use-cases/${u.slug}`, lang)}><strong>{T.read}</strong></a>
+          <span class="muted">{T.uses} {u.uses}</span>
+        </p>
+      </section>
+    ))}
+  </div>
+</div>
+
+<style>
+  .uc { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 48px; }
+  .uc-list { display: flex; flex-direction: column; }
+  .uc-list button { display: block; text-align: left; padding: 12px 16px; border: 0; border-left: 3px solid transparent; background: transparent; color: var(--ink); font: inherit; cursor: pointer; }
+  .uc-list button[aria-selected='true'] { border-left-color: var(--coral); background: var(--paper-2); }
+  .uc-n { display: block; font-weight: 620; }
+  .uc-s { display: block; font-size: 14px; color: var(--ink-2); }
+  .uc-why { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
+  .uc-why p { margin: 0; }
+  .uc-l { font-size: 14px; font-weight: 650; margin-bottom: 4px !important; }
+  .uc-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 24px 0; }
+  .uc-node { padding: 8px 12px; border-radius: 6px; font-size: 14px; font-weight: 600; border: 1.5px solid var(--ink); background: var(--card); }
+  .uc-node.is-rec { background: var(--coral); border-color: var(--coral); color: var(--on-coral); }
+  .uc-edge { font-size: 13px; color: var(--teal); }
+  .uc-links { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 16px; }
+  @media (max-width: 900px) {
+    .uc, .uc-why { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+    .uc-list { flex-direction: row; overflow-x: auto; }
+    .uc-list button { min-width: 220px; border-left: 0; border-bottom: 3px solid transparent; }
+    .uc-list button[aria-selected='true'] { border-bottom-color: var(--coral); }
+  }
+</style>
+
+<script>
+  document.querySelectorAll('[data-uc]').forEach((root) => {
+    const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('[role=tab]'));
+    const show = (t: HTMLButtonElement, focus = false) => {
+      tabs.forEach((x) => {
+        const on = x === t;
+        x.setAttribute('aria-selected', String(on));
+        x.tabIndex = on ? 0 : -1;
+        document.getElementById(x.getAttribute('aria-controls')!)!.hidden = !on;
+      });
+      if (focus) t.focus();
+    };
+    tabs.forEach((t, i) => {
+      t.addEventListener('click', () => show(t));
+      t.addEventListener('keydown', (e) => {
+        const d = ['ArrowDown', 'ArrowRight'].includes(e.key) ? 1 : ['ArrowUp', 'ArrowLeft'].includes(e.key) ? -1 : 0;
+        if (d) { e.preventDefault(); show(tabs[(i + d + tabs.length) % tabs.length], true); }
+      });
+    });
+  });
+</script>

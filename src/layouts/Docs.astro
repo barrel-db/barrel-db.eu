@@ -1,0 +1,176 @@
+---
+import Base from './Base.astro';
+import { SITE_REPO, GITHUB, type Status } from '../data/site';
+import { navFor } from '../data/i18n';
+import { langOf, localize, counterpart, t } from '../i18n';
+
+interface Heading { depth: number; slug: string; text: string; }
+interface Props {
+  title: string;
+  description?: string;
+  slug: string;
+  headings?: Heading[];
+  /** Repository path for synced pages; site pages are edited in the site repository. */
+  source?: string;
+  commit?: string;
+  updated?: string;
+  status?: Status;
+  /** Path of the page's file in the site repository, for "Edit this page". */
+  file?: string;
+}
+
+const { title, description, slug, headings = [], source, commit, updated, status, file } = Astro.props;
+const lang = langOf(Astro.url);
+const s = t(lang);
+const { docsNav, docsOrder, sectionOf } = navFor(lang);
+const D = (sl: string) => localize(`/docs/${sl}`, lang);
+const isFr = lang === 'fr';
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+const section = sectionOf(slug);
+const idx = docsOrder.findIndex((i) => i.slug === slug);
+const prev = idx > 0 ? docsOrder[idx - 1] : undefined;
+const next = idx >= 0 && idx < docsOrder.length - 1 ? docsOrder[idx + 1] : undefined;
+const editUrl = file
+  ? `${SITE_REPO}/edit/main/${file}`
+  : source ? `${GITHUB}/edit/main/${source}` : undefined;
+---
+
+<Base title={title} description={description} markdown={slug ? `${D(slug)}.md` : undefined}>
+  <div class="dk">
+    <nav class="dk-side" aria-label={s.documentation}>
+      <details class="dk-mobile-nav">
+        <summary>{s.browseDocs}</summary>
+        <div class="dk-tree" set:html="" />
+      </details>
+      <div class="dk-tree">
+        {docsNav.map((s) => {
+          const open = s === section;
+          return (
+            <details open={open || undefined}>
+              <summary class:list={{ 'is-open': open }}>{s.title}</summary>
+              <ul>
+                {s.items.map((i) => (
+                  <li><a href={D(i.slug)} aria-current={i.slug === slug ? 'page' : undefined}>{i.label}</a></li>
+                ))}
+              </ul>
+            </details>
+          );
+        })}
+      </div>
+    </nav>
+
+    <article class="dk-main">
+      <nav aria-label="Breadcrumb" class="dk-crumbs">
+        <a href={localize('/docs', lang)}>{s.docs}</a>{section && <> / <span>{section.title}</span></>}
+      </nav>
+      <h1 class="dk-title">{title}</h1>
+      {status && status !== 'today' && <p class={`mark mark--${status} dk-status`}>{s.status[status]}</p>}
+      <div class="dk-prose" data-pagefind-meta={`title:${title}`}>
+        <slot />
+      </div>
+
+      <nav class="dk-pager" aria-label={`${s.previous} / ${s.next}`}>
+        {prev ? <a href={D(prev.slug)}><span class="small muted">{s.previous}</span>{prev.label}</a> : <span />}
+        {next && <a href={D(next.slug)} class="dk-next"><span class="small muted">{s.next}</span>{next.label}</a>}
+      </nav>
+      <p class="dk-meta" data-pagefind-ignore>
+        {isFr
+          ? <span>{s.translatedFrom}: <a href={counterpart(Astro.url.pathname)} hreflang="en">{counterpart(Astro.url.pathname)}</a>{source && <> ({source})</>}</span>
+          : source
+            ? <span>From <a href={`${GITHUB}/blob/main/${source}`}>{source}</a> in the barrel repository{commit && <> at {commit}</>}{updated && <>, updated {updated}</>}</span>
+            : <span>{s.writtenForSite}</span>}
+        {editUrl && <a href={editUrl}>{s.editPage}</a>}
+        {slug && <a href={`${D(slug)}.md`}>{s.viewMarkdown}</a>}
+      </p>
+    </article>
+
+    <aside class="dk-toc" aria-label={s.onThisPage} data-pagefind-ignore>
+      {toc.length > 0 && (
+        <div class="dk-toc-in">
+          <p class="dk-toc-h">{s.onThisPage}</p>
+          {toc.map((h) => <a href={`#${h.slug}`} class:list={[`d${h.depth}`]} data-toc>{h.text}</a>)}
+        </div>
+      )}
+    </aside>
+  </div>
+</Base>
+
+<style>
+  .dk { display: flex; flex-wrap: wrap; max-width: 1360px; margin: 0 auto; padding: 0 32px; gap: 0 48px; }
+  .dk-side { flex: 0 1 248px; min-width: 210px; padding: 28px 0; font-size: 15px; }
+  .dk-tree details { margin-bottom: 2px; }
+  .dk-tree summary { list-style: none; cursor: pointer; padding: 5px 0; color: var(--ink-2); font-weight: 500; display: flex; justify-content: space-between; }
+  .dk-tree summary::-webkit-details-marker { display: none; }
+  .dk-tree summary::after { content: '+'; }
+  .dk-tree details[open] > summary { color: var(--ink); font-weight: 650; }
+  .dk-tree details[open] > summary::after { content: '\2212'; }
+  .dk-tree ul { list-style: none; margin: 2px 0 10px; padding: 0; }
+  .dk-tree a { display: block; padding: 4px 10px; margin-left: -10px; border-radius: 6px; color: var(--ink-2); text-decoration: none; }
+  .dk-tree a:hover { color: var(--ink); }
+  .dk-tree a[aria-current='page'] { color: var(--ink); background: var(--paper-2); font-weight: 650; }
+  .dk-mobile-nav { display: none; }
+
+  .dk-main { flex: 999 1 560px; min-width: 0; max-width: 780px; padding: 28px 0 80px; }
+  .dk-crumbs { font-size: 14px; color: var(--ink-2); margin-bottom: 14px; }
+  .dk-crumbs a { color: var(--ink-2); }
+  .dk-title { font-size: clamp(2.25rem, 4vw, 3rem); font-stretch: 112%; letter-spacing: -0.03em; line-height: 1.05; margin: 0 0 16px; }
+  .dk-status { margin: 0 0 16px; padding: 4px 10px; border: 1.5px solid var(--ink-2); border-radius: 6px; }
+
+  .dk-pager { display: flex; justify-content: space-between; gap: 16px; border-top: 1px solid var(--rule); margin-top: 48px; padding-top: 18px; }
+  .dk-pager a { display: flex; flex-direction: column; text-decoration: none; font-weight: 600; }
+  .dk-next { text-align: right; }
+  .dk-meta { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 14px; color: var(--ink-2); margin: 16px 0 0; }
+
+  .dk-toc { flex: 0 1 210px; min-width: 180px; padding: 28px 0; font-size: 14px; }
+  .dk-toc-in { position: sticky; top: 20px; }
+  .dk-toc-h { font-weight: 650; margin: 0 0 8px; }
+  .dk-toc a { display: block; padding: 3px 0 3px 10px; border-left: 2px solid var(--rule); color: var(--ink-2); text-decoration: none; }
+  .dk-toc a.d3 { padding-left: 22px; }
+  .dk-toc a.is-current { border-left-color: var(--teal); color: var(--ink); }
+
+  @media (max-width: 1100px) { .dk-toc { display: none; } }
+  @media (max-width: 820px) {
+    .dk { padding: 0 16px; }
+    .dk-side { flex-basis: 100%; padding: 16px 0 0; }
+    .dk-side > .dk-tree { display: none; }
+    .dk-mobile-nav { display: block; border: 1px solid var(--rule); border-radius: var(--radius); padding: 10px 14px; }
+    .dk-mobile-nav summary { font-weight: 600; cursor: pointer; }
+  }
+
+  /* Prose: Markdown output */
+  .dk-prose { font-size: 17px; }
+  .dk-prose :global(h2) { font-size: 1.75rem; font-stretch: 108%; letter-spacing: -0.015em; margin: 44px 0 12px; scroll-margin-top: 16px; }
+  .dk-prose :global(h3) { font-size: 1.25rem; margin: 28px 0 8px; scroll-margin-top: 16px; }
+  .dk-prose :global(h4) { font-size: 1.05rem; margin: 22px 0 6px; }
+  .dk-prose :global(p), .dk-prose :global(ul), .dk-prose :global(ol) { margin: 0 0 16px; }
+  .dk-prose :global(> p:first-child) { font-size: 19px; line-height: 1.55; }
+  .dk-prose :global(li) { margin-bottom: 6px; }
+  .dk-prose :global(pre) { margin: 0 0 20px; }
+  .dk-prose :global(table) { width: 100%; border-collapse: collapse; font-size: 15px; margin: 0 0 20px; display: block; overflow-x: auto; }
+  .dk-prose :global(th) { text-align: left; font-weight: 650; background: var(--paper-2); padding: 8px 12px; border-bottom: 1px solid var(--rule); }
+  .dk-prose :global(td) { padding: 8px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  .dk-prose :global(blockquote) { margin: 0 0 20px; padding: 12px 18px; background: var(--paper-2); border-radius: var(--radius); }
+  .dk-prose :global(blockquote p:last-child) { margin: 0; }
+  .dk-prose :global(hr) { border: 0; border-top: 1px solid var(--rule); margin: 32px 0; }
+</style>
+
+<script>
+  // Mobile: reuse the sidebar tree inside the collapsible.
+  const tree = document.querySelector('.dk-side > .dk-tree');
+  const slot = document.querySelector('.dk-mobile-nav .dk-tree');
+  if (tree && slot) slot.innerHTML = tree.innerHTML;
+
+  // Highlight the section being read in "On this page".
+  const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-toc]'));
+  if (links.length && 'IntersectionObserver' in window) {
+    const byId = new Map(links.map((a) => [decodeURIComponent(a.hash.slice(1)), a]));
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (!e.isIntersecting) return;
+        links.forEach((a) => a.classList.remove('is-current'));
+        byId.get(e.target.id)?.classList.add('is-current');
+      });
+    }, { rootMargin: '0px 0px -70% 0px' });
+    byId.forEach((_, id) => { const h = document.getElementById(id); if (h) io.observe(h); });
+  }
+</script>

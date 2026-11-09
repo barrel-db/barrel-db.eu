@@ -1,0 +1,23 @@
+---
+// translation_of: src/pages/product/[component].astro source_hash: af6a58f191083ee5
+// Les douze pages des bibliothèques, en français. Les pages de capacités
+// (réplication, recherche...) sont des routes séparées.
+import Base from '../../../layouts/Base.astro';
+import ComponentPage from '../../../components/product/ComponentPage.astro';
+import { components } from '../../../data/fr/site';
+import { componentsFor } from '../../../data/i18n';
+
+export function getStaticPaths() {
+  return components.map((c) => ({ params: { component: c.slug } }));
+}
+
+const { component } = Astro.params;
+const meta = components.find((c) => c.slug === component)!;
+const content = componentsFor('fr')[component!];
+if (!content) throw new Error(`no French content for /fr/product/${component}`);
+const plain = content.lead.replace(/`/g, '');
+---
+
+<Base title={meta.name} description={plain}>
+  <ComponentPage content={content} />
+</Base>

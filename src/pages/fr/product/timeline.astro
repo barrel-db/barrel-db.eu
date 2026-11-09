@@ -1,0 +1,156 @@
+---
+// translation_of: src/pages/product/timeline.astro source_hash: 9b39246fef0625a2
+import ProductFrame from '../../../components/product/ProductFrame.astro';
+import Guarantees from '../../../components/product/Guarantees.astro';
+import FlowDiagram from '../../../components/product/FlowDiagram.astro';
+import Related from '../../../components/product/Related.astro';
+import CodeBlock from '../../../components/CodeBlock.astro';
+import CodeTabs from '../../../components/CodeTabs.astro';
+
+const branchStages = [
+  { boxes: [{ name: 'main', note: 'la base parente' }], edge: 'fork : un checkpoint par liens physiques, O(1)' },
+  { boxes: [{ name: 'exp1', note: 'une base ordinaire, avec son propre identifiant d’écrivain', rec: true }], edge: 'fusion : seulement ce qu’exp1 a changé' },
+  { boxes: [{ name: 'main', note: 'les modifications arrivent ; les modifications concurrentes deviennent des conflits' }] },
+];
+
+const pitrStages = [
+  { boxes: [{ name: 'main', note: 'historique gardé pendant la fenêtre de rétention' }], edge: 'branche à T' },
+  { boxes: [{ name: 'yesterday', note: 'chaque document tel qu’il était à T', rec: true }], edge: 'lire, interroger, servir' },
+  { boxes: [{ name: 'À côté des données du jour', note: 'main continue de tourner' }] },
+];
+
+const guarantees = [
+  { title: 'La branche contient exactement ce qui précède le fork', body: 'L’instant du fork est pris à l’intérieur de l’écrivain de la base parente : une branche créée sous charge d’écriture voit toutes les écritures appliquées avant, et aucune après.', check: '`fork_under_write_load` et `fork_isolation` dans barrel_timeline_SUITE.' },
+  { title: 'Un retour en arrière restaure l’état à T', body: 'Les documents modifiés après T reviennent tels qu’ils étaient, les documents créés après T disparaissent, les suppressions après T sont annulées, et les index comme le flux des changements correspondent.', check: 'barrel_timeline_pitr_SUITE : `rewind_updates`, `rewind_forgets_created_after_t`, `rewind_restores_deleted_after_t`, `rewind_query_index`, `rewind_feed_replay`.' },
+  { title: 'Fusionner deux fois ne change rien', body: 'Une fusion envoie les documents de la branche sous forme d’états complets et garde un point de reprise : une seconde fusion ne fait rien, et une fusion ultérieure n’envoie que le nouveau travail.', check: '`merge_idempotent` et `merge_incremental` dans barrel_timeline_merge_SUITE.' },
+  { title: 'Les conflits suivent les règles de la réplication', body: 'Les modifications faites des deux côtés deviennent des conflits ordinaires, ou sont tranchées par le `conflict_resolver` de la base parente. Les pièces jointes et les suppressions fusionnent aussi.', check: '`merge_conflict_lww`, `merge_conflict_merger`, `merge_attachments`, `merge_delete`.' },
+  { title: 'La recherche fonctionne tout de suite sur la branche', body: 'Une branche en mode enregistrement reconstruit son magasin de vecteurs à partir des embeddings stockés dans les documents, sans appel à l’embedder. Après une fusion, la base parente réindexe ce qui a changé.', check: 'barrel_record_timeline_SUITE : `backfill_stored_vectors_no_embed_calls`, `merge_reindexes_parent`.' },
+  { title: 'Hors de la fenêtre, un refus net', body: 'Un T antérieur au plancher de l’historique échoue avec `pitr_window_exceeded` et ne laisse rien derrière lui.', check: '`rewind_floor_guard` dans barrel_timeline_pitr_SUITE.' },
+];
+
+const branchTabs = [
+  { label: 'Erlang', lang: 'erlang', code: `{ok, _} = barrel_docdb:branch_db(<<"main">>, <<"exp1">>, #{}),
+
+%% la branche est une base ordinaire ; les modifications y restent
+{ok, D} = barrel_docdb:get_doc(<<"exp1">>, <<"a">>),
+{ok, _} = barrel_docdb:put_doc(<<"exp1">>, D#{<<"v">> => 2}),
+
+%% renvoyer les modifications de la branche ; relançable à tout moment
+{ok, #{docs_written := 1}} =
+    barrel_docdb:merge_branch(<<"exp1">>, #{}),
+ok = barrel_docdb:delete_db(<<"exp1">>).` },
+  { label: 'REST', lang: 'bash', code: `curl -X POST localhost:8080/db/main/_timeline/branch \\
+  -H 'content-type: application/json' -d '{"name":"exp1"}'
+
+curl localhost:8080/db/main/_timeline
+
+# appelé sur la branche
+curl -X POST localhost:8080/db/exp1/_timeline/merge
+curl -X DELETE 'localhost:8080/db/exp1?purge=true'` },
+  { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":7,"method":"tools/call",
+ "params":{"name":"branch_create",
+   "arguments":{"db":"main","name":"exp1"}}}
+
+{"jsonrpc":"2.0","id":8,"method":"tools/call",
+ "params":{"name":"merge","arguments":{"db":"exp1"}}}` },
+];
+
+const pitrTabs = [
+  { label: 'Erlang', lang: 'erlang', code: `{ok, _Changes, T} = barrel_docdb:get_changes(<<"main">>, first),
+%% ... d’autres écritures ont lieu ...
+{ok, _} = barrel_docdb:branch_db(<<"main">>, <<"yesterday">>,
+                                 #{at => T}).` },
+  { label: 'REST', lang: 'bash', code: `curl -X POST localhost:8080/db/main/_timeline/branch \\
+  -H 'content-type: application/json' \\
+  -d '{"name":"yesterday","at_time":"2026-11-07T09:00:00Z"}'` },
+  { label: 'MCP', lang: 'json', code: `{"jsonrpc":"2.0","id":9,"method":"tools/call",
+ "params":{"name":"branch_create","arguments":{
+   "db":"main","name":"yesterday","at":"<changes cursor>"}}}` },
+];
+
+const record = `{ok, Br} = barrel:branch(Db, <<"support_draft">>,
+    #{vectordb => #{db_path => "data/support_draft_vec"}}),
+barrel:search(Br, <<"export billing CSV">>, #{k => 1}),
+{ok, Bd} = barrel:get_doc(Br, <<"kb:201">>),
+{ok, _} = barrel:put_doc(Br,
+    Bd#{<<"title">> => <<"Export invoices and credit notes">>}),
+barrel:merge(Br).`;
+
+const recordOut = `{ok,[#{... key => <<"kb:201">>,score => 0.5059366870734147}]}
+{ok,#{failed => [], docs_read => 1, docs_written => 1,
+      doc_write_failures => 0, ...}}`;
+
+const nested = `barrel_docdb:branch_db(<<"edge_a_review">>, <<"nested">>, #{}).`;
+const nestedOut = `{error,cannot_branch_a_branch}`;
+
+const limits = [
+  'La lignée est linéaire : une branche d’une branche est refusée avec `cannot_branch_a_branch`. Les fusions entre lignées sont prévues.',
+  'La fenêtre de retour en arrière est la fenêtre de rétention : `retention_period`, 30 jours par défaut. Sous le plancher de l’historique, une branche à T échoue avec `pitr_window_exceeded`.',
+  'Une branche créée à un instant passé garde les pièces jointes telles qu’elles étaient au fork, pas à T : les pièces jointes n’ont pas d’historique.',
+  'Il n’y a pas de politique de conflit par fusion ; le `conflict_resolver` de la base parente s’applique, et le rapport de fusion donne des comptes, pas le détail des conflits par document.',
+  'Une branche `barrel` simple démarre avec un magasin de vecteurs vide : les vecteurs ajoutés avec `vector_add` ne sont pas emportés. Ajoutez-les de nouveau, ou utilisez le mode enregistrement.',
+  '« Ramener la base parente à T » n’est pas encore une opération ; un retour en arrière est une nouvelle branche à côté de la base parente.',
+  'Les réglages d’exécution (canaux, `conflict_resolver`, rétention, chiffrement) doivent être passés de nouveau quand vous rouvrez une branche, comme pour toute base. Une branche qui n’est pas ouverte n’est pas listée.',
+  'En REST et MCP, créer une branche et fusionner demandent un identifiant serveur : les jetons de capacité reçoivent 403 sur les routes `_timeline`.',
+];
+---
+
+<ProductFrame
+  title="Timeline"
+  description="Créez instantanément une branche d’une base Barrel, travaillez dessus à l’écart, fusionnez-la, ou créez une branche à un instant passé pour retrouver un état."
+  heading="Créez une branche d’une base, fusionnez-la, retrouvez un état passé."
+  lead="Une branche est une copie complète d’une base, créée en temps constant. Donnez-en une à une exécution d’agent ou à une expérience, relisez ce qu’elle a fait, et fusionnez ce qui a survécu. Créez une branche à un instant passé pour lire les données d’hier à côté de celles d’aujourd’hui."
+  sub="La fusion utilise les mêmes vecteurs de versions que la réplication : les versions connues ne changent rien, les modifications arrivent, et les modifications concurrentes deviennent des conflits que vous pouvez voir et résoudre."
+  ctas={[{ label: 'Branche, fusion, récupération', href: '/fr/docs/guides/timeline' }, { label: 'Une branche par exécution d’agent', href: '/fr/use-cases/branch-per-run' }]}
+>
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Ce que c’est</h2>
+      <p class="section-intro">Un fork prend un checkpoint par liens physiques des magasins de documents et de pièces jointes : la base parente et la branche partagent des fichiers jusqu’à ce que l’une des deux compacte. La branche est alors une base ordinaire : lectures, écritures, requêtes, flux des changements et réplication y fonctionnent, sous son propre identifiant d’écrivain.</p>
+      <FlowDiagram label="Branche et fusion" stages={branchStages} />
+      <h3 class="pf-h3 tl-gap">Récupération à un instant donné</h3>
+      <FlowDiagram label="Branche à un instant passé" stages={pitrStages} caption="T est un curseur de changements (le HLC que renvoie le flux) ou, en REST, une date RFC 3339." />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <h2 class="h2">Ce qui tient, et ce qui le teste</h2>
+      <p class="section-intro">Chaque propriété nomme les cas de test qui la vérifient.</p>
+      <Guarantees items={guarantees} />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap pf-narrow">
+      <h2 class="h2">L’utiliser</h2>
+
+      <h3 class="pf-h3">Créer une branche, modifier, fusionner</h3>
+      <CodeTabs tabs={branchTabs} />
+
+      <h3 class="pf-h3">Créer une branche à un instant passé</h3>
+      <p class="pf-p">Chaque document modifié après T est restauré à son dernier état à T ou avant, y compris les conflits ouverts à cet instant.</p>
+      <CodeTabs tabs={pitrTabs} />
+
+      <h3 class="pf-h3">Une branche en mode enregistrement, d’après une exécution enregistrée</h3>
+      <p class="pf-p">La branche reçoit un magasin de vecteurs neuf, rempli à partir des embeddings stockés : la recherche répond avant la première modification.</p>
+      <CodeBlock code={record} />
+      <CodeBlock code={recordOut} output label="Sortie de la recherche et de la fusion, enregistrée sur barrel 1.12.0 (abrégée)" />
+
+      <h3 class="pf-h3">Un seul niveau de branches</h3>
+      <CodeBlock code={nested} />
+      <CodeBlock code={nestedOut} output label="Sortie, enregistrée sur barrel_docdb 2.1.0" />
+    </div>
+  </section>
+
+  <Related
+    limits={limits}
+    docs={['guides/timeline', 'guides/audit-provenance', 'operate/backups', 'concepts/versions']}
+    more={[{ href: '/fr/use-cases/branch-per-run', label: 'Cas d’usage : une branche par exécution d’agent' }]}
+    libs={['docdb', 'barrel', 'server']}
+  />
+</ProductFrame>
+
+<style>
+  .tl-gap { margin-top: 48px; margin-bottom: 16px; }
+</style>

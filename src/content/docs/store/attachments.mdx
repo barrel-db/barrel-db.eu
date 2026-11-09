@@ -1,0 +1,137 @@
+---
+title: Attachments
+description: Store files with a document, read them back whole or as a stream, keep them in S3, and know how they replicate.
+---
+import CodeBlock from '../../../components/CodeBlock.astro';
+import CodeTabs from '../../../components/CodeTabs.astro';
+import Callout from '../../../components/Callout.astro';
+
+An attachment is a named binary blob stored with a document: a PDF, an
+image, a log. It belongs to the document's id, travels with it on
+replication, and is stored apart from the JSON, in RocksDB blob files by
+default or in an S3 bucket. Use attachments when a record needs files and
+you want them under the same id, synced with the same replication.
+
+## Write and read
+
+<CodeTabs tabs={[
+  { label: 'Erlang', lang: 'erlang', code: `{ok, Info} = barrel:put_attachment(Db, <<"rb:pg">>,
+    <<"diagram.txt">>, <<"primary -> replica">>),
+barrel:get_attachment(Db, <<"rb:pg">>, <<"diagram.txt">>).` },
+  { label: 'REST', lang: 'shell', code: `curl -X PUT localhost:8080/db/demo/doc/a/att/hello.txt \\
+  -H 'content-type: text/plain' \\
+  --data-binary 'hello attachment'
+curl localhost:8080/db/demo/doc/a/att/hello.txt` },
+]} />
+
+<CodeBlock output label="Output from a run on barrel 1.12.0 (Erlang)" code={`{ok,#{name => <<"diagram.txt">>,length => 18,
+      digest => <<"sha256-1a8b09f8050eb8c57268d69a...">>,
+      content_type => <<"text/plain">>,chunked => false}}
+{ok,<<"primary -> replica">>}`} />
+
+<CodeBlock output label="Output from a run on barrel_server 1.13.0 (REST)" code={`HTTP/1.1 201 Created
+{"name":"hello.txt","length":16,
+ "digest":"sha256-7fa36b95d5c98859ed72b4787f3c28b2...",
+ "content_type":"text/plain","chunked":false}
+
+HTTP/1.1 200 OK
+content-type: text/plain
+hello attachment`} />
+
+Digests are trimmed above. Writing an attachment does not change the
+document's `_rev`.
+
+## List, inspect, delete
+
+<CodeTabs tabs={[
+  { label: 'Erlang', lang: 'erlang', code: `barrel:list_attachments(Db, <<"rb:pg">>),
+barrel:attachment_info(Db, <<"rb:pg">>, <<"diagram.txt">>),
+ok = barrel:delete_attachment(Db, <<"rb:pg">>,
+                              <<"diagram.txt">>).` },
+  { label: 'REST', lang: 'shell', code: `curl -X DELETE localhost:8080/db/demo/doc/a/att/hello.txt` },
+]} />
+
+## Stream large files
+
+A writer sends a file in chunks; nothing holds the whole file in memory.
+
+```erlang
+{ok, W0} = barrel:open_attachment_writer(Db, <<"rb:pg">>,
+                                         <<"log.txt">>,
+                                         <<"text/plain">>),
+{ok, W1} = barrel:write_attachment(W0, <<"line 1\n">>),
+{ok, W2} = barrel:write_attachment(W1, <<"line 2\n">>),
+barrel:finish_attachment(W2).
+```
+
+<CodeBlock output label="Output from a run on barrel 1.12.0, digest trimmed" code={`{ok,#{name => <<"log.txt">>,length => 14,chunk_size => 65536,
+      digest => <<"sha256-9060554863a62b9db5f72621...">>,
+      content_type => <<"text/plain">>,chunked => true,
+      chunk_count => 1}}`} />
+
+`abort_attachment/1` drops an unfinished upload. To read in chunks, use
+`open_attachment_reader/3` and `read_attachment/1`, and close the reader
+when you stop early: it holds that version until then. Byte-range reads
+(`open_attachment_stream/4`, `read_attachment_range/5`) are in
+`barrel_docdb` only.
+
+An upload is invisible until it finishes. One left unfinished longer
+than `att_upload_timeout` (default 3600 s) is removed.
+
+## Write only if
+
+| Erlang option | REST header | Effect |
+|---------------|-------------|--------|
+| `create_only => true` | `If-None-Match: *` | Fail if the attachment exists |
+| `expected_etag => Etag` | `If-Match: Etag` | Fail unless it is still that version |
+| `expected_digest => Digest` | | Fail if the bytes do not match |
+
+A failed condition answers 409. A backend that cannot do conditional
+writes answers 501 `conditional_writes_unsupported`.
+
+## Keep attachments in S3
+
+<span class="mark mark--optional">Optional, needs setup</span>
+
+`barrel_att_s3` stores the bytes in an S3-compatible bucket. The bucket
+must exist. Pass the backend when you create the database:
+
+```erlang
+{ok, _} = barrel_docdb:create_db(<<"s3db">>, #{
+    att_opts => #{backend => s3,
+                  s3 => #{
+                      bucket => <<"barrel-files">>,
+                      endpoint => <<"http://127.0.0.1:9000">>,
+                      region => <<"us-east-1">>,
+                      access_key_id => <<"...">>,
+                      secret_access_key => <<"...">>}}}).
+```
+
+Over REST, `PUT /db/:db` takes the same options as JSON:
+`{"att_opts":{"backend":"s3","s3":{...}}}`.
+
+<Callout kind="limit" label="Limit">
+Attachments in S3 are not encrypted, even in an encrypted database. The
+backend is tested against RustFS and Garage; Garage cannot enforce
+conditional writes.
+</Callout>
+
+To store no attachments at all, pass `att_opts => #{backend => none}`.
+
+## How they replicate
+
+Every replication run has an attachment phase after the documents. It
+compares digests, sends only what the target lacks, and resolves
+concurrent writes last-write-wins on their timestamp. There are no
+siblings for attachments.
+
+- A document can arrive before its attachment; the attachment reads 404
+  until the phase lands.
+- By default a run waits for the target to make attachment writes
+  durable before it moves its checkpoint. A target that cannot do this
+  fails with `att_flush_unsupported`; pass `att_durability =>
+  best_effort` to replicate to it anyway.
+- A filtered replication sends only the attachments of the documents
+  that pass the filter.
+
+See [Synchronization](/docs/guides/synchronization).
