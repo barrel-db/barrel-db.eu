@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/operate/troubleshooting.mdx
-source_hash: "3c4c2354591ef473"
+source_hash: "10960baec41de202"
 title: Dépannage
 description: Les symptômes que vous pouvez rencontrer avec Barrel, leur cause et leur correction, regroupés par domaine.
 ---
@@ -62,7 +62,7 @@ maps:with([docs_checked, bodies_repaired,
 | Des fichiers de vecteurs apparaissent dans `./priv` | Le magasin de vecteurs a été créé avant barrel 1.13.0 sans `db_path`, sous le répertoire de travail. Il continue d’y être utilisé, avec une notice dans le journal ; les nouveaux magasins vont dans `<data_dir>/<name>.vectordb`. | Sauvegardez ce dossier, ou définissez `vectordb => #{db_path => ...}` pour le placer vous-même. |
 | Un jeton de capacité reçoit 403 | Il est pour un autre espace, ou n’a pas le droit nécessaire. | Utilisez un jeton pour cet espace avec le droit requis. |
 | Prometheus ne trouve rien sur `/metrics` | Cette route n’existe pas. | Poussez avec l’exporter OTLP, voir [Supervision](/fr/docs/operate/monitoring). |
-| `barrel_db_documents_total` a disparu | barrel_docdb 2.3.0 l’a retirée : elle n’a jamais eu de valeur. Un nombre de documents est prévu. | Utilisez `barrel:info/1`, `barrel:vector_stats/1` ou `barrel_docdb:stub_stats/1`. |
+| `barrel_db_documents_total_db` manque juste après une mise à jour | Une base écrite avant barrel_docdb 2.4.0 est comptée une fois en arrière-plan après son ouverture. | Attendez le premier comptage ; `db_info` renvoie `documents` à `undefined` d’ici là. |
 | `barrel_db_pending_compaction_bytes_db` ne cesse de grandir | La compaction ne suit plus les écritures. | Augmentez `max_background_jobs` dans `store_opts`, ou étalez les écritures. |
 | Un avertissement dit que `compaction_interval` ou `prune_depth` n’a plus d’effet | Ces options ont été retirées dans barrel_docdb 2.2.0. | Retirez-les de votre configuration. |
 

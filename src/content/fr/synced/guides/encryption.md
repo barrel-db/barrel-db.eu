@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/synced/guides/encryption.md
-source_hash: "ccc12877b3d44c16"
+source_hash: "e451e97ce1ea3564"
 title: "Chiffrement au repos"
 description: "Barrel peut chiffrer au repos toute une base logique sous une clé propre à la base : les stockages de documents et de pièces jointes, le stockage vectoriel et les fichiers d’index sur disque (BM25, DiskANN). Lisez ce guide quand vos données ne doivent pas être lisibles depuis le disque, ou quand vous voulez des clés par base comme frontière d’isolation entre agents ou locataires."
 source: "docs/guides/encryption.md"
@@ -114,6 +114,14 @@ spécification, comme toute autre configuration d’exécution.
   attaquant actif ayant accès en écriture aux fichiers est hors périmètre.
   Les clés en mémoire sont des binaires BEAM ordinaires et ne sont pas
   remises à zéro.
+- Les pièces jointes stockées dans S3 (barrel_att_s3 0.2.0) sont couvertes :
+  chaque objet est chiffré sous une clé dérivée de la clé de la base, son
+  empreinte dans les métadonnées de l’objet est scellée, et le flux local des
+  pièces jointes s’ouvre sous le même environnement. Une lecture complète est
+  vérifiée contre l’empreinte. Le bucket montre encore les clés des objets
+  (identifiant du document et nom de la pièce jointe) et leur taille. Une base
+  chiffrée qui stockait des pièces jointes dans S3 avant la 0.2.0 réécrit ses
+  objets en clair, chiffrés, en arrière-plan à l’ouverture.
 - Les index de recherche vectorielle sont couverts : l’état HNSW et FAISS est
   persisté dans le RocksDB chiffré ; les fichiers plats BM25 disque et
   DiskANN utilisent le chiffrement par secteur, et leurs RocksDB de

@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/operate/monitoring.mdx
-source_hash: "ebb9adf33e4e7618"
+source_hash: "634bc9b83c162a58"
 title: Supervision
 description: Ce que Barrel mesure, comment lire les métriques, comment les envoyer à un collecteur, et comment surveiller les tâches de réplication et l’état du nœud.
 ---
@@ -25,6 +25,8 @@ La couche documents, barrel_docdb, enregistre des métriques sur chaque nœud, q
 | `barrel_replication_errors_task_id_total{task_id}` | counter | Erreurs de réplication, par identifiant de réplication |
 | `barrel_replication_active_task_id{task_id}` | gauge | 1 tant que la tâche tourne, 0 quand elle est en pause, en échec, terminée ou supprimée |
 | `barrel_replication_lag_seconds_task_id{task_id}` | gauge | Secondes écoulées depuis l’écriture sur la source du dernier changement copié ; 0 une fois à jour |
+| `barrel_db_documents_total_db{db}` | gauge | Documents vivants (les documents supprimés ne sont pas comptés), nombre exact |
+| `barrel_db_attachments_total_db{db}` | gauge | Pièces jointes, nombre exact, pour les stockages blob et S3 |
 | `barrel_db_size_bytes_db{db}` | gauge | Taille du stockage des documents sur disque |
 | `barrel_db_pending_compaction_bytes_db{db}` | gauge | Octets que la compaction doit encore réécrire |
 | `barrel_db_compactions_running_db{db}`, `barrel_db_compactions_queued_db{db}` | gauge | Compactions en cours, et en attente d’un thread |
@@ -34,9 +36,7 @@ Les gauges de taille et de compaction se mettent à jour chaque minute (`stats_i
 
 Chaque métrique déclarée est aussi affichée une fois sans labels ; cette copie reste à 0. Vérifiez le nom exact avec labels dans `export_text/0` avant d’écrire une alerte.
 
-<Callout label="Pas encore enregistré" kind="limit">
-Il n’existe pas encore de métrique qui compte les documents ou les pièces jointes ; elle est prévue. barrel_docdb 2.3.0 a retiré `barrel_db_documents_total` et `barrel_db_attachments_total`, qui n’ont jamais eu de valeur. Utilisez plutôt les appels de statistiques ci-dessous.
-</Callout>
+Les nombres de documents et de pièces jointes sont exacts : chaque écriture qui en ajoute ou en retire un met le compte à jour dans la même écriture atomique (barrel_docdb 2.4.0). Une base écrite avant la 2.4.0 est comptée une fois en arrière-plan après son ouverture ; d’ici là, ses comptes ne sont pas publiés et `db_info` les renvoie à `undefined`.
 
 barrel_vectordb, barrel, barrel_server, barrel_spaces et barrel_embed n’enregistrent aucune métrique.
 
@@ -80,7 +80,7 @@ Si vous voulez un point d’accès à scraper, servez `barrel_metrics:export_tex
 
 | Appel | Renvoie |
 |---|---|
-| `barrel:info(Db)`, `GET /db/:db` | Configuration, rétention, plancher d’historique, compteurs de groupes d’écriture, embedder, et `storage` : taille sur disque et retard de compaction. Pas de nombre de documents. |
+| `barrel:info(Db)`, `GET /db/:db` | Configuration, rétention, plancher d’historique, compteurs de groupes d’écriture, embedder, et `storage` : taille sur disque, retard de compaction, et les comptes `documents` et `attachments`. |
 | `barrel:vector_stats(Db)` | Nombre de vecteurs, dimension, type d’index et si l’index a été chargé ou reconstruit |
 | `barrel_docdb:stub_stats(Name)` | Nombre de stubs et octets. Parcourt le flux de changements dans le processus appelant. |
 | `barrel_rep_tasks:list_tasks()` | Chaque tâche de réplication avec son statut |
