@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/reference/libraries.md
-source_hash: "d35c389292d3046a"
+source_hash: "d60dab3e202dadb4"
 title: Bibliothèques
 description: Les bibliothèques indépendantes qui composent Barrel, leurs versions et profils de compilation, et où trouver la référence générée de chacune.
 ---
@@ -12,7 +12,7 @@ Barrel est une seule base de données faite de bibliothèques indépendantes sou
 | Bibliothèque | Version | Rôle | Référence |
 |---|---|---|---|
 | `barrel` | 1.12.0 | La base de données : documents, pièces jointes et vecteurs sous un même id, BQL, mode enregistrement, timeline, contextes | [/docs/lib/barrel/](/docs/lib/barrel/) |
-| `barrel_docdb` | 2.2.0 | Documents, versions, requêtes, pièces jointes, réplication | [/docs/lib/docdb/](/docs/lib/docdb/) |
+| `barrel_docdb` | 2.2.1 | Documents, versions, requêtes, pièces jointes, réplication | [/docs/lib/docdb/](/docs/lib/docdb/) |
 | `barrel_vectordb` | 2.5.2 | Index vectoriel (HNSW, DiskANN, FAISS), BM25, recherche hybride | [/docs/lib/vectordb/](/docs/lib/vectordb/) |
 | `barrel_ngram` | 0.11.4 | Recherche exacte par sous-chaîne et expression régulière sur une base docdb | [source](https://github.com/barrel-db/barrel/tree/main/apps/barrel_ngram) |
 | `barrel_embed` | 2.6.1 | Fournisseurs d’embeddings, locaux ou cloud | [/docs/lib/embed/](/docs/lib/embed/) |

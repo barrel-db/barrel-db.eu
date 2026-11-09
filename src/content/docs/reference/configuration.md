@@ -49,10 +49,15 @@ These are the options of `barrel_docdb:create_db/2`. `encryption`, `read_only`, 
 | `att_upload_timeout` | `3600` s | Longest an attachment upload may stay open |
 | `store_opts` | `#{}` | RocksDB options, see below |
 
-Two `store_opts` keys come with barrel_docdb 2.2.0:
+The main `store_opts` keys. Each applies to every column family of the document store, so memtable memory per database can reach `write_buffer_size` × `max_write_buffer_number` × 4.
 
 | Key | Default | Meaning |
 |---|---|---|
+| `compression`, `bottommost_compression` | `zstd` | rocksdb always builds zstd. `snappy` and `lz4` work only if rocksdb was built with the system library. |
+| `bloom_bits` | `10` | Bloom filter bits per key: a read of a missing key skips the files that cannot hold it |
+| `block_size` | `4096` | Table block size, in bytes |
+| `write_buffer_size` | 64 MiB | Memtable size before a flush |
+| `max_write_buffer_number` | `2` | Memtables per column family before writes wait for a flush |
 | `min_tombstones_for_range_conversion` | `64` | A run of this many deletes becomes one range delete at flush, so reads skip it at once. `0` turns it off. |
 | `use_direct_io_for_compaction_reads` | `false` | Compactions read with direct I/O and leave the page cache to your reads. Also accepted in `att_opts`. Needs a file system with direct I/O (not tmpfs). |
 
