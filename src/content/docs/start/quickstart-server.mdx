@@ -67,7 +67,9 @@ curl localhost:8080/health
 
 <Callout kind="happened">
 The server is up and listening on port 8080. `/health` only tells you the
-HTTP listener answers; it does not check the databases.
+HTTP listener answers; it does not check the databases. `GET /ready`
+answers `{"status":"ready"}` once the database and replication processes
+run.
 </Callout>
 
 <Callout kind="limit" label="Limit">
@@ -92,8 +94,10 @@ curl -X PUT localhost:8080/db/demo
 `201 Created` means the database `demo` did not exist and now does.
 </Callout>
 
-Use lowercase names. Any `/db/:db/...` route creates the database if it
-does not exist, so a typo creates an empty one.
+Names use lowercase letters, digits, `_` and `-`, up to 63 bytes, and
+must not start with `_`; any other name answers 400 `invalid_name`. Only
+`PUT /db/:db` creates a database: every other `/db/:db/...` route answers
+404 `{"error":"db_not_found"}` for a database that does not exist.
 
 ## 4. Write and read a document
 
@@ -264,12 +268,17 @@ point an agent at it.
 
 ## Notes
 
-- Vector stores go to `./priv/` under the directory you start the server
-  from, not under `data_dir`. Start it from a directory you keep.
+- Vector stores go next to the documents under `data_dir`, as
+  `<data_dir>/<name>.vectordb`. A store created before barrel 1.13.0 in
+  `./priv/` under the directory you started the server from keeps being
+  used there.
 - Default databases have a 768-dimension vector store, no embedder and
   BM25 off, so `/search/bm25` and `/search/hybrid` answer 500 until you
   configure them. See [Run the server](/docs/guides/rest-server).
-- `/health` returns ok without checking anything.
+- `/health` returns ok without checking anything. Point a load balancer
+  or orchestrator at `/ready` instead: it answers 503
+  `{"status":"not_ready","failed":[...]}` when a database or replication
+  process is down.
 
 <NextSteps steps={[
   { href: '/docs/security/authentication', label: 'Authentication', why: 'Lock the server before anyone else can reach its port.' },

@@ -99,7 +99,7 @@ The report lists `docs_checked`, `bodies_repaired`, `atts_resent`, `doc_failures
 Close the database first. Then copy every location it uses; the data directory alone is not enough.
 
 - The database folder under the barrel_docdb `data_dir` (default `data/barrel_docdb` under the working directory): documents, attachments, and the `CRYPTO` and `TIMELINE` files.
-- The vector store folder: its `db_path`, or `./priv/barrel_vectordb_<name>` under the working directory when none was set. This holds even under barrel_server with a `data_dir`.
+- The vector store folder: its `db_path`, or `<name>.vectordb` next to the database folder under `data_dir` when none was set. A store created before barrel 1.13.0 in `./priv/barrel_vectordb_<name>` under the working directory keeps being used there; copy that folder too.
 - For spaces, the space's vector store at `<data_dir>/<id>_vec` and the `_barrel_spaces` registry database.
 - If you use them, the `_barrel_catalog` and `_barrel_worksets` databases and the barrel_ngram `data_dir` (default `data/barrel_ngram`).
 

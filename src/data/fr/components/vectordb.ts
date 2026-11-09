@@ -1,4 +1,4 @@
-// translation_of: src/data/components/vectordb.ts source_hash: 215b20c9c2e41aee
+// translation_of: src/data/components/vectordb.ts source_hash: f8bf2e1dc3eea055
 // French text for the barrel_vectordb library page. Code, calls and outputs come from the English file.
 import { overlay } from '../../overlay';
 import { vectordb as en } from '../../components/vectordb';
@@ -68,13 +68,12 @@ export const vectordb = overlay(en, {
   limits: [
     'Le filtre sur les métadonnées s’applique après la recherche : un filtre très sélectif peut renvoyer moins de `k` résultats (une recherche avec `k => 2` en a renvoyé 1).',
     'BM25 est désactivé tant que `bm25_backend` n’est pas fixé. Un index BM25 en mémoire se reconstruit à partir du texte stocké à chaque ouverture.',
-    'Il n’y a pas de mise à jour avec un vecteur explicite : `update/4` et `upsert/4` recalculent l’embedding du texte.',
+    'Il n’y a pas de mise à jour avec un vecteur explicite : `update/4` et `upsert/4` recalculent l’embedding du texte. Si le calcul échoue, l’ancienne entrée reste et l’appel renvoie l’erreur (avant la 2.5.3, l’entrée était perdue).',
     'Ouvrir en lecture seule un magasin qui demande une mise à niveau échoue avec `read_only_upgrade_needed`.',
     'Les clés d’environnement de `barrel_vectordb.app.src` (`default_dimensions`, `hnsw_m`...) ne sont jamais lues ; les valeurs par défaut viennent du code.',
   ],
   gaps: [
-    '`update/4` supprime l’entrée avant de calculer l’embedding. Si le calcul échoue (pas d’embedder, fournisseur indisponible), l’appel renvoie une erreur et l’entrée a disparu. `upsert/4` a le même comportement.',
-    'Sans chemin fixé, le magasin se retrouve dans `./priv/` sous le répertoire courant.',
+    'Un magasin démarré avec `barrel_vectordb:start_link/1` sans chemin se retrouve dans `./priv/barrel_vectordb_<name>` sous le répertoire courant. Via barrel, il va plutôt à côté des documents.',
   ],
   guides: [
     { label: 'Vectorielle, par mots-clés et hybride' },

@@ -37,11 +37,12 @@ ok = application:set_env(barrel_rerank, venv_path,
 `start_link/1` takes `python`, `model` and `timeout` (120000 ms). Each
 call starts its own server; keep the pid.
 
-<Callout kind="limit" label="Known gap">
-If `venv_path` is not set, barrel_rerank 1.0.2 creates its virtualenv in
-a directory named `undefined` under the current directory. If the setup
-then fails, `start_link/1` returns `{error, {port_open_failed, enoent}}`.
-Always set `venv_path`, or pass an absolute `python`.
+<Callout label="Note">
+If `venv_path` is not set, barrel_rerank creates its virtualenv in
+`priv/.venv` of the app (since 1.0.3; 1.0.2 used a directory named
+`undefined` under the current directory). If the setup fails,
+`start_link/1` returns `{error, {port_open_failed, enoent}}`: pass an
+absolute `python`, or a working `venv_path`.
 </Callout>
 
 ## Rerank

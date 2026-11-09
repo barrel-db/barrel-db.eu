@@ -67,7 +67,7 @@ The main `store_opts` keys. Each applies to every column family of the document 
 
 | Key | Default | Meaning |
 |---|---|---|
-| `db_path` (or `path`) | `priv/barrel_vectordb_<name>` under the working directory | Where the store lives. Always set it. |
+| `db_path` (or `path`) | `<data_dir>/<name>.vectordb`, next to the documents | Where the store lives. A store created before barrel 1.13.0 in `priv/barrel_vectordb_<name>` under the working directory keeps being used there. |
 | `dimensions` (or `dimension`) | `768` | Vector size |
 | `embedder` | none | A barrel_embed provider, such as `{ollama, #{model => <<"nomic-embed-text">>}}`. Without one, text calls return `embedder_not_configured`. |
 | `backend` | `hnsw` | `hnsw`, `diskann`, or `faiss` (needs barrel_faiss) |
@@ -101,7 +101,7 @@ Set these in `sys.config`. Paths are relative to the working directory of the no
 | `http_port` | `8080` | Port of the cleartext HTTP listener, when `listeners` is not set |
 | `listeners` | one HTTP/1.1 listener | `#{http => ..., https => ..., http3 => ...}` |
 | `tls` | none | `#{certfile, keyfile, cacertfile, verify, ssl_opts}` |
-| `data_dir` | barrel_docdb's | Copied into the barrel_docdb `data_dir` at start. Vector stores still default to `./priv`. |
+| `data_dir` | barrel_docdb's | Copied into the barrel_docdb `data_dir` at start. Vector stores follow it, as `<data_dir>/<name>.vectordb`. |
 | `open_opts` | `#{}` | `barrel:open/2` options for every database the server opens |
 | `auth` | none (open server) | `#{tokens => [...]}`, or `#{accept => [bearer, signed, mtls], signers => ..., skew_ms => 300000, require_nonce => ...}`. See [Authentication](/docs/security/authentication). |
 | `cors` | none | `#{origins, expose, max_age}`; needed by [barrel-lite](/docs/guides/barrel-lite) |
@@ -194,7 +194,7 @@ See [Monitoring](/docs/operate/monitoring) for the exporters.
 
 | Key | Default | Meaning |
 |---|---|---|
-| `venv_path` | `undefined` | Set it to an absolute path before the app starts; left at `undefined`, a venv is created in a folder named `undefined` |
+| `venv_path` | `undefined`, which means `priv/.venv` of the app | Where the virtualenv lives. Set it after `application:load/1` and before the app starts. |
 
 ### barrel_vectordb
 

@@ -98,13 +98,12 @@ export const vectordb: ComponentContent = {
   limits: [
     'The metadata filter runs after retrieval, so heavy filtering can return fewer than `k` results (a `k => 2` search returned 1).',
     'BM25 is off unless `bm25_backend` is set. A memory BM25 index rebuilds from the stored text at every open.',
-    'There is no update with an explicit vector: `update/4` and `upsert/4` re-embed the text.',
+    'There is no update with an explicit vector: `update/4` and `upsert/4` re-embed the text. If embedding fails, the old entry stays and the call returns the error (before 2.5.3 the entry was lost).',
     'A read-only open of a store that needs an upgrade fails with `read_only_upgrade_needed`.',
     'The app env keys in `barrel_vectordb.app.src` (`default_dimensions`, `hnsw_m`...) are never read; defaults come from code.',
   ],
   gaps: [
-    '`update/4` deletes the entry before embedding. If embedding fails (no embedder, provider down), it returns an error and the entry is gone. `upsert/4` has the same shape.',
-    'With no path set, the store lands in `./priv/` under the current directory.',
+    'A store started with `barrel_vectordb:start_link/1` and no path lands in `./priv/barrel_vectordb_<name>` under the current directory. Through barrel, it goes next to the documents instead.',
   ],
   guides: [
     { label: 'Vector, keyword and hybrid', href: '/docs/search/hybrid' },

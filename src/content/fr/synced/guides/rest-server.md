@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/synced/guides/rest-server.md
-source_hash: "019b4935fa089382"
+source_hash: "18c36326a34cbc1c"
 title: "Lancer le serveur REST"
 description: "barrel_server expose la base barrel comme une API REST/JSON avec livery. Par défaut il sert du HTTP/1.1 en clair ; HTTP/2 et HTTP/3 (sur TLS) s’activent via la configuration listeners (voir synchronization). Il ne contient aucune logique de base de données : chaque handler appelle le module barrel via un gestionnaire de cycle de vie des bases."
 source: "docs/guides/rest-server.md"
@@ -39,7 +39,13 @@ Définissez-les avant le démarrage de l’application, par exemple dans
 
 ## Points d’accès
 
-Les bases s’ouvrent à la demande à la première utilisation via le gestionnaire
+Créez une base avec `PUT /db/:db` avant de l’utiliser : toute autre route
+`/db/:db` répond 404 `{"error":"db_not_found"}` quand la base n’existe pas,
+si bien qu’une faute de frappe dans un nom ne laisse jamais de base vide derrière
+elle. Les noms sont faits de lettres minuscules, de chiffres, de `_` et de `-`,
+de 1 à 63 octets, sans `_` en premier ; les autres répondent 400 `invalid_name`.
+
+Les bases existantes s’ouvrent à la demande à la première utilisation via le gestionnaire
 de cycle de vie des bases de Barrel (`barrel_dbs`) : les handles sont mis en
 cache par nom, les bases inactives se ferment après `dbs_idle_timeout`
 (environnement de l’application barrel, 5 minutes par défaut, 0 désactive), et
@@ -47,7 +53,8 @@ cache par nom, les bases inactives se ferment après `dbs_idle_timeout`
 
 ```
 GET    /                          texte de vivacité
-GET    /health                    {"status":"ok"}
+GET    /health                    {"status":"ok"} quand l’écouteur répond
+GET    /ready                     200 {"status":"ready"}, ou 503 avec les vérifications en échec
 
 PUT    /db/:db                     ouvrir/créer une base
 GET    /db/:db                     informations sur la base
@@ -197,8 +204,9 @@ le sens push (PUT `_sync/doc`, écritures `_sync/local` et `_sync/att`). Le cycl
 de vie des bases (`PUT`/`DELETE /db/:db`), `_timeline` et toute route non
 couverte restent interdits aux jetons de capacité (403, fermé par défaut) ; pour
 les routes de contextes, voir
-[Contextes et ensembles de travail](#contextes-et-ensembles-de-travail) ; les
-jetons expirés ou d’un autre espace répondent 401. `/mcp` s’authentifie via son
+[Contextes et ensembles de travail](#contextes-et-ensembles-de-travail). Un jeton
+expiré ou inconnu répond 401{nb}; un jeton valide utilisé sur un autre espace, ou
+sans le droit qu’exige la route, répond 403. `/mcp` s’authentifie via son
 propre fournisseur, qui couvre les deux sortes. Voir [spaces](/fr/docs/guides/spaces),
 [mcp](/fr/docs/guides/mcp) et [barrel-lite](/fr/docs/guides/barrel-lite).
 
@@ -241,14 +249,14 @@ $ curl -X PUT localhost:8080/db/mydb/doc/a \
 {"id":"a","ok":true,...}
 
 $ curl localhost:8080/db/mydb/doc/a
-{"_rev":"1-...","id":"a","title":"hello"}
+{"_rev":"000001a1ba3fd05d00000000@w4f0cb98700ad5ffc","id":"a","title":"hello"}
 
 $ curl -X POST localhost:8080/db/mydb/_bulk_docs \
     -H 'content-type: application/json' -d '{"docs":[{"id":"b"},{"id":"c"}]}'
 {"results":[{"id":"b",...},{"id":"c",...}]}
 
 $ curl localhost:8080/db/mydb/changes
-{"changes":[{"id":"a","rev":"1-...","hlc":"..."}],"last":"..."}
+{"changes":[{"id":"a","rev":"000001a1ba3fd05d00000000@w4f0cb98700ad5ffc","hlc":"..."}],"last":"..."}
 ```
 
 ## Notes

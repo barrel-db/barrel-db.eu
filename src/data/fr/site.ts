@@ -1,4 +1,4 @@
-// translation_of: src/data/site.ts source_hash: 564b7d10e44ea682
+// translation_of: src/data/site.ts source_hash: e8fd8144e902a61b
 // French text for src/data/site.ts. Slugs, versions and status come from the English
 // file, so only the words are kept here.
 import * as en from '../site';

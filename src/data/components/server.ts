@@ -50,7 +50,7 @@ export const server: ComponentContent = {
   config: [
     { title: 'App env (barrel_server)', rows: [
       { key: 'http_port', def: '8080', meaning: 'One cleartext HTTP/1.1 listener when `listeners` is not set' },
-      { key: 'data_dir', def: 'docdb data_dir', meaning: 'Copied into barrel_docdb `data_dir` at start' },
+      { key: 'data_dir', def: 'docdb data_dir', meaning: 'Copied into barrel_docdb `data_dir` at start; vector stores go there too, as `<name>.vectordb`' },
       { key: 'listeners', def: 'none', meaning: '`#{http, https, http3}`' },
       { key: 'tls', def: 'none', meaning: '`certfile`, `keyfile`, `cacertfile`, `verify`' },
       { key: 'auth', def: 'none (open)', meaning: '`#{tokens => [Bin]}`, or `accept => [bearer, signed, mtls]` with `signers`' },
@@ -62,7 +62,7 @@ export const server: ComponentContent = {
   ],
   api: [
     { title: 'Databases and documents (REST)', rows: [
-      { task: 'Create, delete a database', call: 'PUT, DELETE /db/:db', returns: '201 `{"ok":true,"db"}`' },
+      { task: 'Create, delete a database', call: 'PUT, DELETE /db/:db', returns: '201 `{"ok":true,"db"}`; other routes answer 404 `db_not_found` until it exists' },
       { task: 'Write, read, delete', call: 'PUT, GET, DELETE /db/:db/doc/:id', returns: '201 `{"id","ok","rev"}`; 409 on a stale `_rev`' },
       { task: 'Bulk', call: 'POST /db/:db/_bulk_docs, _bulk_get', returns: '`{"results":[...]}`' },
       { task: 'Find', call: 'POST /db/:db/find', returns: '`{"rows","meta"}`' },
@@ -90,14 +90,11 @@ export const server: ComponentContent = {
   limits: [
     'Search configuration errors (`bm25_not_enabled`, `embedder_not_configured`, `dimension_mismatch`) answer 500, not 4xx.',
     'A default database opens with a 768-dimension vector store and BM25 off; set `open_opts` for BM25 and hybrid.',
-    '`POST /find` returns a continuation but refuses it back; page with `offset`.',
+    'There are no HTTP request metrics and no `/metrics` route. `/health` checks nothing; use `/ready` for readiness.',
     'A bad `?since` cursor on `/changes` silently restarts from the first change.',
     'MCP accepts bearer tokens only, not signed requests or mTLS. HTTP/3 has no client-certificate check yet.',
     'mTLS authenticates the CA, not the individual peer, and applies only to requests without an `Authorization` header.',
     'There is no setting to turn off the HTTP listener.',
-  ],
-  gaps: [
-    'Vector stores are created under `./priv/` of the server\'s working directory, even with `data_dir` set. Back up both.',
   ],
   guides: [
     { label: 'Run the server', href: '/docs/guides/rest-server' },

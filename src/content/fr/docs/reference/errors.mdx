@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/reference/errors.mdx
-source_hash: "fd9f2395f03dc53c"
+source_hash: "c8e9be754ebbd1f1"
 title: Codes d’erreur
 description: Les erreurs que Barrel renvoie en REST, en MCP et par l’API Erlang, ce que chacune signifie et quoi faire.
 ---
@@ -35,10 +35,10 @@ Une erreur que le serveur ne traduit pas devient un 500 avec le terme Erlang imp
 
 | Statut | error | Signification et correction |
 |---|---|---|
-| 400 | `invalid_name` | Le nom contient d’autres caractères que des lettres, des chiffres, `_` et `-`. |
-| 500 | `invalid_db_name` | Le nom contient des majuscules. Utilisez des minuscules, en commençant par une lettre ou un chiffre, 63 octets au plus. |
+| 400 | `invalid_name` | Le nom ne suit pas la règle : utilisez des lettres minuscules, des chiffres, `_` et `-`, de 1 à 63 octets, sans `_` en premier. Avant la 1.14.0, barrel_server répondait `500 invalid_db_name` aux noms en majuscules. |
+| 404 | `db_not_found` | La base n’existe pas. Seul `PUT /db/:db` (ou l’outil MCP `db_create`) en crée une ; créez-la d’abord. |
 | 400 | `bad_att_opts` + `reason` | Des `att_opts` invalides dans le corps de `PUT /db/:db`. |
-| 404 | `not_found` | Le document, la version ou la pièce jointe n’existe pas. La base elle-même est créée par la requête. |
+| 404 | `not_found` | Le document, la version ou la pièce jointe n’existe pas. |
 | 409 | `conflict` | Le `_rev` envoyé n’est pas le courant. Relisez et réessayez avec le nouveau `_rev`. |
 | 400 | `bad_json` | Le corps n’est pas du JSON. |
 | 400 | `invalid_provenance` | Un en-tête `x-barrel-actor`, `x-barrel-session` ou `x-barrel-source` est trop long (256 octets chacun, 1 Kio ensemble). |
@@ -51,7 +51,7 @@ Une erreur que le serveur ne traduit pas devient un 500 avec le terme Erlang imp
 | Statut | error | Signification et correction |
 |---|---|---|
 | 400 | `invalid_query` + `message`, `line`, `column` | Erreur de syntaxe BQL. BQL n’a ni `COUNT` ni `GROUP BY`. |
-| 400 | `invalid_query` + `reason` | Une clé inconnue dans un corps `/find`, `continuation` compris. Paginez avec `offset`. |
+| 400 | `invalid_query` + `reason` | Une clé inconnue dans un corps `/find`, ou une `continuation` mal formée. Renvoyez la `continuation` de `meta` telle quelle. |
 | 400 | `missing_query` | Un corps JSON sans `query`. |
 | 400 | `invalid_max_rows`, `invalid_deadline_ms` | Pas un entier positif (1000 lignes au plus, 300000 ms). |
 | 400 | `subscribe_requires_sse` | Une instruction `SUBSCRIBE` sans `Accept: text/event-stream` ni `?feed=sse`. |
@@ -140,7 +140,7 @@ Une requête sans token sur un serveur verrouillé reçoit un HTTP 401. Les erre
 | Retour | Signification et correction |
 |---|---|
 | `{error, already_exists}` | `create_db` sur une base ouverte. Utilisez `open_db/1`. |
-| `{error, invalid_db_name}` | Lettres minuscules, chiffres, `_` et `-` ; premier caractère une lettre ou un chiffre ; de 1 à 63 octets. |
+| `{error, invalid_db_name}` | Lettres minuscules, chiffres, `_` et `-`, de 1 à 63 octets. Un `_` en premier est réservé aux bases propres à barrel. |
 | `{error, not_found}` | Un document absent, ou une base qui ne tourne pas. |
 | `{error, {db_failed, Reason}}` | L’écrivain de la base a planté 3 fois en 60 secondes. Corrigez `Reason`, puis `reopen_db/1`. |
 | `{error, conflict}` | Un `_rev` périmé. |
@@ -203,7 +203,7 @@ Une requête sans token sur un serveur verrouillé reçoit un HTTP 401. Les erre
 | `{error, {checkpoint_failed, target, not_found}}` | La base cible locale n’existe pas. Créez-la d’abord. |
 | `{error, not_found}` | La base distante n’existe pas (HTTP 404). |
 | `{error, unauthorized}` | Le serveur distant a répondu 401. |
-| `{error, clock_skew}` | Le serveur distant a répondu 409. Tout 409 est signalé ainsi. |
+| `{error, clock_skew}` | Le serveur distant a répondu 409 avec `{"error":"clock_skew"}`. Tout autre 409 revient sous la forme `{error, {http, 409, Body}}`. |
 | `{error, too_large}`, `{error, {http, Status, Body}}` | Le serveur distant a répondu 413, ou un autre statut. |
 | `{error, {inline_credentials, Keys}}` | Déplacez les identifiants de la tâche vers `sync_auth`, `sync_signing` ou `sync_ssl`. |
 | `{error, att_flush_unsupported}` | La cible ne sait pas rendre durables les écritures de pièces jointes ; mettez-la à jour ou passez `att_durability => best_effort`. |

@@ -1,4 +1,4 @@
-// translation_of: src/data/components/server.ts source_hash: ce343b725bde171f
+// translation_of: src/data/components/server.ts source_hash: 6a838c71d85d9a9e
 // French text for the barrel_server library page. Code, calls and outputs come from the English file.
 import { overlay } from '../../overlay';
 import { server as en } from '../../components/server';
@@ -21,7 +21,7 @@ export const server = overlay(en, {
   config: [
     { title: 'Environnement de l’application (barrel_server)', rows: [
       { meaning: 'Un seul écouteur HTTP/1.1 en clair quand `listeners` n’est pas défini' },
-      { def: 'le data_dir de docdb', meaning: 'Copié dans le `data_dir` de barrel_docdb au démarrage' },
+      { def: 'le data_dir de docdb', meaning: 'Copié dans le `data_dir` de barrel_docdb au démarrage ; les magasins de vecteurs y vont aussi, sous `<name>.vectordb`' },
       { def: 'aucun', meaning: '`#{http, https, http3}`' },
       { def: 'aucun', meaning: '`certfile`, `keyfile`, `cacertfile`, `verify`' },
       { def: 'aucune (ouvert)', meaning: '`#{tokens => [Bin]}`, ou `accept => [bearer, signed, mtls]` avec `signers`' },
@@ -33,7 +33,7 @@ export const server = overlay(en, {
   ],
   api: [
     { title: 'Bases et documents (REST)', rows: [
-      { task: 'Créer, supprimer une base' },
+      { task: 'Créer, supprimer une base', returns: '201 `{"ok":true,"db"}` ; les autres routes répondent 404 `db_not_found` tant qu’elle n’existe pas' },
       { task: 'Écrire, lire, supprimer', returns: '201 `{"id","ok","rev"}` ; 409 sur un `_rev` périmé' },
       { task: 'En masse' },
       { task: 'Chercher' },
@@ -61,14 +61,11 @@ export const server = overlay(en, {
   limits: [
     'Les erreurs de configuration de la recherche (`bm25_not_enabled`, `embedder_not_configured`, `dimension_mismatch`) répondent 500, pas 4xx.',
     'Une base par défaut s’ouvre avec un magasin de vecteurs en 768 dimensions et BM25 désactivé ; définissez `open_opts` pour BM25 et la recherche hybride.',
-    '`POST /find` renvoie une continuation mais la refuse en retour ; paginez avec `offset`.',
+    'Il n’y a ni métriques sur les requêtes HTTP ni route `/metrics`. `/health` ne vérifie rien ; utilisez `/ready` pour la disponibilité.',
     'Un curseur `?since` invalide sur `/changes` repart sans bruit du premier changement.',
     'MCP n’accepte que les tokens bearer, ni requêtes signées ni mTLS. HTTP/3 ne vérifie pas encore les certificats client.',
     'Le mTLS authentifie l’autorité de certification, pas chaque pair, et ne s’applique qu’aux requêtes sans en-tête `Authorization`.',
     'Aucun réglage ne permet de désactiver l’écouteur HTTP.',
-  ],
-  gaps: [
-    'Les magasins de vecteurs sont créés sous `./priv/` du répertoire de travail du serveur, même avec `data_dir` défini. Sauvegardez les deux.',
   ],
   guides: [
     { label: 'Lancer le serveur' },

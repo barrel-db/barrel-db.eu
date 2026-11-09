@@ -119,6 +119,6 @@ npm install /path/to/barrel/clients/barrel-lite
 ## Notes
 
 - Without `vectordb => #{db_path => ...}`, a database puts its vector
-  store in `./priv/barrel_vectordb_<name>` under the current directory,
-  not under `data_dir`. Set `db_path` for every database that has
-  vectors.
+  store next to its documents, in `<data_dir>/<name>.vectordb`. A store
+  created before barrel 1.13.0 in `./priv/barrel_vectordb_<name>` under
+  the current directory stays there; set `db_path` to move it.
