@@ -1,0 +1,26 @@
+---
+// End of a guide: two to four pages to read next, each with why you would.
+import { langOf, localize, t } from '../../i18n';
+interface Step { href: string; label: string; why: string; }
+interface Props { steps: Step[]; }
+const { steps } = Astro.props;
+const lang = langOf(Astro.url);
+const s = t(lang);
+---
+
+<nav class="next" aria-label={s.nextSteps}>
+  <h2 id="next-steps">{s.nextSteps}</h2>
+  <ul>
+    {steps.map((x) => (
+      <li><a href={localize(x.href, lang)}>{x.label}</a><span>{x.why}</span></li>
+    ))}
+  </ul>
+</nav>
+
+<style>
+  .next ul { list-style: none; padding: 0; margin: 0 0 16px; display: grid; gap: 2px; }
+  .next li { display: flex; flex-direction: column; padding: 12px 0; border-bottom: 1px solid var(--rule); }
+  .next li:first-child { border-top: 1px solid var(--rule); }
+  .next a { font-weight: 650; }
+  .next span { color: var(--ink-2); font-size: 16px; }
+</style>

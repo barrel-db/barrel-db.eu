@@ -1,0 +1,36 @@
+---
+// Opening box of a guide: what the reader will do, and what they need first.
+import { langOf, t } from '../../i18n';
+interface Props {
+  /** Outcomes, one short sentence each. */
+  items: string[];
+  /** Prerequisites, one short sentence each. Markdown links are not parsed; use plain text. */
+  needs?: string[];
+  /** Rough time, such as "10 minutes". */
+  time?: string;
+}
+const { items, needs = [], time } = Astro.props;
+const s = t(langOf(Astro.url));
+---
+
+<section class="goal" aria-label={s.goal}>
+  <div class="goal-col">
+    <p class="goal-h">{s.goal}{time && <span class="goal-time">{time}</span>}</p>
+    <ul>{items.map((i) => <li>{i}</li>)}</ul>
+  </div>
+  {needs.length > 0 && (
+    <div class="goal-col">
+      <p class="goal-h">{s.goalNeeds}</p>
+      <ul>{needs.map((i) => <li>{i}</li>)}</ul>
+    </div>
+  )}
+</section>
+
+<style>
+  .goal { display: flex; flex-wrap: wrap; gap: 8px 40px; border-top: 2px solid var(--teal); background: var(--paper-2); border-radius: 0 0 var(--radius) var(--radius); padding: 16px 20px 6px; margin: 0 0 28px; font-size: 16px; }
+  .goal-col { flex: 1 1 240px; min-width: 0; }
+  .goal-h { font-weight: 650; margin: 0 0 6px !important; display: flex; gap: 12px; align-items: baseline; }
+  .goal-time { font-weight: 400; color: var(--ink-2); font-size: 14px; }
+  .goal ul { margin: 0 0 10px !important; padding-left: 18px; }
+  .goal li { margin-bottom: 4px; }
+</style>
