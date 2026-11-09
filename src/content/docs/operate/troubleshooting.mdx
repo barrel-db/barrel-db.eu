@@ -53,6 +53,7 @@ maps:with([docs_checked, bodies_repaired,
 |---|---|---|
 | `open_db` returns `{error, {db_failed, Reason}}` | The writer crashed 3 times in 60 seconds. That database stays down; others are not affected. | Read the log for `Reason`, fix it, then `barrel_docdb:reopen_db(Name)`. |
 | `{error, db_is_encrypted}` | Opened without its encryption settings. | Pass the same `encryption` spec on every open. |
+| Opening fails with `Snappy is not available` | barrel_docdb 2.2.0 compressed with Snappy, and rocksdb was built without the system Snappy library. | Upgrade to barrel_docdb 2.2.1, which uses zstd. Or install `libsnappy-dev` (or your system's Snappy package) and rebuild rocksdb. |
 | A typo in a REST path created an empty database | Every `/db/:db` route except `_sync` creates the database. | Check names in your client; `DELETE /db/:db?purge=true` removes it. |
 | `PUT /db/MyDb` answers `500 invalid_db_name` | Database names are lowercase. | Use lowercase letters, digits, `_` and `-`, starting with a letter or digit. |
 | Vector files appear in `./priv` | Without `db_path` the vector store goes under the working directory, even when the server has a `data_dir`. | Always set `vectordb => #{db_path => ...}`. |

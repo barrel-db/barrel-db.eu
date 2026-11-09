@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/reference/configuration.md
-source_hash: "d5be8c8e5b467ba3"
+source_hash: "5b22b4a3d3c27803"
 title: Configuration
 description: Les options que vous passez à l’ouverture d’une base, et les clés d’environnement de chaque application Barrel avec leurs valeurs par défaut.
 ---
@@ -51,10 +51,15 @@ Ce sont les options de `barrel_docdb:create_db/2`. `encryption`, `read_only`, `c
 | `att_upload_timeout` | `3600` s | Durée maximale pendant laquelle un envoi de pièce jointe peut rester ouvert |
 | `store_opts` | `#{}` | Options RocksDB, voir ci-dessous |
 
-Deux clés de `store_opts` arrivent avec barrel_docdb 2.2.0 :
+Les principales clés de `store_opts`. Chacune s’applique à toutes les familles de colonnes du stockage des documents : la mémoire des memtables d’une base peut donc atteindre `write_buffer_size` × `max_write_buffer_number` × 4.
 
 | Clé | Défaut | Rôle |
 |---|---|---|
+| `compression`, `bottommost_compression` | `zstd` | rocksdb inclut toujours zstd. `snappy` et `lz4` ne marchent que si rocksdb a été compilé avec la bibliothèque du système. |
+| `bloom_bits` | `10` | Bits par clé du filtre de Bloom : la lecture d’une clé absente évite les fichiers qui ne peuvent pas la contenir |
+| `block_size` | `4096` | Taille d’un bloc de table, en octets |
+| `write_buffer_size` | 64 Mio | Taille d’une memtable avant écriture sur disque |
+| `max_write_buffer_number` | `2` | Memtables par famille de colonnes avant que les écritures attendent un flush |
 | `min_tombstones_for_range_conversion` | `64` | Une suite d’au moins ce nombre de suppressions devient une seule suppression de plage au flush, et les lectures la sautent d’un coup. `0` la désactive. |
 | `use_direct_io_for_compaction_reads` | `false` | Les compactions lisent en I/O directe et laissent le cache de pages à vos lectures. Acceptée aussi dans `att_opts`. Demande un système de fichiers qui gère l’I/O directe (pas tmpfs). |
 

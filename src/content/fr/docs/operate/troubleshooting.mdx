@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/operate/troubleshooting.mdx
-source_hash: "6c471c182fd5698c"
+source_hash: "f6ef58feab4f315e"
 title: Dépannage
 description: Les symptômes que vous pouvez rencontrer avec Barrel, leur cause et leur correction, regroupés par domaine.
 ---
@@ -55,6 +55,7 @@ maps:with([docs_checked, bodies_repaired,
 |---|---|---|
 | `open_db` renvoie `{error, {db_failed, Reason}}` | L’écrivain a planté 3 fois en 60 secondes. Cette base reste arrêtée ; les autres ne sont pas touchées. | Cherchez `Reason` dans le log, corrigez, puis `barrel_docdb:reopen_db(Name)`. |
 | `{error, db_is_encrypted}` | Ouverte sans ses paramètres de chiffrement. | Passez la même spécification `encryption` à chaque ouverture. |
+| L’ouverture échoue avec `Snappy is not available` | barrel_docdb 2.2.0 compressait avec Snappy, et rocksdb a été compilé sans la bibliothèque Snappy du système. | Passez à barrel_docdb 2.2.1, qui utilise zstd. Ou installez `libsnappy-dev` (ou le paquet Snappy de votre système) et recompilez rocksdb. |
 | Une faute de frappe dans un chemin REST a créé une base vide | Chaque route `/db/:db` sauf `_sync` crée la base. | Vérifiez les noms dans votre client ; `DELETE /db/:db?purge=true` la supprime. |
 | `PUT /db/MyDb` répond `500 invalid_db_name` | Les noms de base sont en minuscules. | Utilisez des lettres minuscules, des chiffres, `_` et `-`, en commençant par une lettre ou un chiffre. |
 | Des fichiers de vecteurs apparaissent dans `./priv` | Sans `db_path`, le magasin de vecteurs va sous le répertoire de travail, même quand le serveur a un `data_dir`. | Définissez toujours `vectordb => #{db_path => ...}`. |
