@@ -1,4 +1,4 @@
-// translation_of: src/data/docs-nav.ts source_hash: 36ec790d06731be5
+// translation_of: src/data/docs-nav.ts source_hash: bfc846571acef734
 // French labels for the docs sidebar. Slugs and order come from the English file.
 import { docsNav as enNav, type NavItem, type NavSection } from '../docs-nav';
 
@@ -20,6 +20,7 @@ const labels: Record<string, string> = {
   'concepts/versions': 'Versions, conflits, convergence',
   'concepts/spaces': 'Espaces et capacités',
   'concepts/contexts': 'Contextes et ensembles de travail',
+  'concepts/glossary': 'Glossaire',
   'guides/embedding': 'Intégrer barrel dans une application Erlang',
   'guides/record-mode': 'Mode enregistrement',
   'guides/query-bql': 'Interroger avec BQL',
