@@ -62,9 +62,24 @@ and the whole set through `/llms.txt` and `/llms-full.txt`.
 
 ## Deploy
 
-`npm run build` writes a static site to `dist/`. Serve it from any static host
-(Caddy, nginx, Cloudflare Pages). Directory URLs resolve to `index.html`;
-`404.html` is the not-found page.
+`npm run build` writes a static site to `dist/`. barrel-db.eu serves it with
+nginx from `/var/www/barrel-db.eu`. From an up-to-date `main`:
+
+```bash
+scripts/deploy.sh               # build, check, upload, swap in
+scripts/deploy.sh --no-build    # upload the dist/ you already have, such as CI's "site" artifact
+scripts/deploy.sh --rollback    # put the previous version back
+```
+
+The script unpacks the site next to the live one and swaps it in, keeps the
+previous version for `--rollback`, and carries over `.well-known/`, which
+Let's Encrypt uses in the same directory. `DEPLOY_HOST`, `DEPLOY_ROOT` and
+`DEPLOY_SUDO` (`sudo` by default; `doas`, or empty when logging in as root)
+change where and how it installs.
+
+Any static host works too: directory URLs resolve to `index.html`, and
+`404.html` is the not-found page. Serve `.md` files as `text/markdown`, so
+agents can read `/docs/<page>.md`.
 
 ## License
 
