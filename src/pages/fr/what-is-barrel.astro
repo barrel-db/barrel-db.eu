@@ -1,5 +1,5 @@
 ---
-// translation_of: src/pages/what-is-barrel.astro source_hash: 1ee2d3b94df78481
+// translation_of: src/pages/what-is-barrel.astro source_hash: 189b7a86aaedd886
 import Base from '../../layouts/Base.astro';
 import AssistantDemo from '../../components/demos/AssistantDemo.astro';
 import RecordFigure from '../../components/RecordFigure.astro';
@@ -31,6 +31,7 @@ const different = [
       <h1 class="display">Qu’est-ce que Barrel ?</h1>
       <p class="lead">Une base de données qui aide les applications d’IA à retenir, retrouver et exploiter l’information.</p>
       <p>Les modèles d’IA savent rédiger des réponses, mais une vraie application doit aussi se souvenir de ce qui s’est passé, consulter des informations fiables, suivre les modifications et partager les données entre les différents agents qui font le travail. Barrel est l’endroit où tout cela est conservé.</p>
+      <p>Prenez un assistant de support. Quand un client écrit, il lui faut les articles d’aide qui répondent à la question, ce que ce client a demandé la semaine dernière, et une note de ce qu’il a déjà essayé. Barrel garde tout cela : l’assistant le retrouve en un instant et reprend là où il s’était arrêté.</p>
       <p class="muted small">Environ quatre minutes de lecture. Les développeurs peuvent passer directement à la <a href={L('/docs/start/what-is-barrel')}>présentation technique</a>.</p>
     </div>
     <RecordFigure plain id="article-142" caption="Chaque information dans Barrel forme un seul enregistrement : le texte, les fichiers qui l’accompagnent, et ce qui permet de le retrouver par le sens." />
@@ -41,6 +42,7 @@ const different = [
       <h2 class="h2">L’IA a besoin de mémoire</h2>
       <p>Un modèle de langage sait ce qu’il a appris pendant son entraînement. Il ne connaît ni vos clients, ni vos documents, ni la décision prise hier par votre équipe, et chaque conversation repart de zéro. À lui seul, il ne peut ni se souvenir, ni rechercher une information, ni garder la trace de ce qu’il a fait.</p>
       <p>Toute application d’IA sérieuse a donc besoin d’un endroit où ranger l’information et la retrouver : les faits sur lesquels elle s’appuie, ce que chaque utilisateur lui a dit, le travail en cours et l’historique de ce qui a changé. Cet endroit, c’est une base de données.</p>
+      <p>Barrel est une base de données conçue pour les applications où des agents d’IA font une partie du travail. Un agent est un programme qui se sert d’un modèle d’IA pour mener une tâche de lui-même, par exemple répondre à un client, trier les demandes qui arrivent ou relire un document. Plusieurs agents travaillent souvent sur les mêmes informations : il leur faut un seul endroit partagé où les ranger.</p>
       <details class="wb-more">
         <summary>Une base de données, qu’est-ce que c’est exactement ?</summary>
         <p>Une base de données est un logiciel qui conserve l’information pour qu’elle ne se perde pas, permet à plusieurs programmes de la lire et de la modifier en même temps sans se gêner, et retrouve rapidement ce que vous demandez. Votre banque, votre messagerie et la plupart des sites web en utilisent une. Barrel est une base de données conçue pour les applications où des agents d’IA lisent et écrivent l’information.</p>
@@ -70,6 +72,7 @@ const different = [
           <p class="small muted">Modifiez un document, ses informations de recherche suivent. Copiez-le ailleurs, ses fichiers partent avec lui.</p>
         </figure>
       </div>
+      <p class="wb-narrow wb-example">Un exemple : un article d’aide sur le déblocage d’un compte a son texte, une capture d’écran qui l’accompagne, et l’information qui permet à un assistant de le retrouver quand un client écrit « je n’arrive pas à me connecter », même si ces mots ne figurent pas dans l’article. Dans Barrel, les trois restent ensemble. Modifiez le texte, l’information de recherche est mise à jour avec lui ; copiez l’article vers un autre bureau, la capture d’écran part avec lui.</p>
       <details class="wb-more wb-narrow">
         <summary>Pour les curieux de technique</summary>
         <p>Chaque enregistrement contient un document JSON, ses pièces jointes et un embedding vectoriel sous un même identifiant. Barrel peut calculer l’embedding à l’écriture du document, avec le modèle de votre choix, et cherche par similarité vectorielle, par classement de mots-clés (BM25), ou les deux combinés. Chaque version est conservée dans un journal d’historique pendant une durée de rétention. Lisez <a href={L('/docs/concepts/record')}>l’enregistrement</a> et <a href={L('/product/search')}>la recherche</a>.</p>
@@ -88,6 +91,7 @@ const different = [
   <section class="section">
     <div class="wrap">
       <h2 class="h2">Ce que vous pouvez construire</h2>
+      <p class="section-intro">Voici des types d’applications que les équipes construisent avec Barrel. Chaque lien explique le problème résolu, comment cela fonctionne en pratique, et renvoie vers un exemple à exécuter.</p>
       <div class="wb-builds">
         {builds.map((b) => (
           <a href={L(b.href)} class="wb-build">
@@ -102,6 +106,7 @@ const different = [
   <section class="section">
     <div class="wrap">
       <h2 class="h2">Ce qui rend Barrel différent</h2>
+      <p class="section-intro">Quand une application d’IA sert tous les jours, les questions difficiles portent rarement sur le modèle d’IA. Elles portent sur l’endroit où vivent les données, sur ce qui se passe quand la connexion tombe, sur ce qui a changé et qui l’a changé, et sur qui a le droit de voir quoi. C’est là que Barrel aide.</p>
       <div class="wb-diff">
         {different.map((d) => (
           <div>
@@ -154,6 +159,8 @@ const different = [
   .wb-hero .lead { font-size: 1.6rem; font-stretch: 106%; margin: 0 0 20px; }
   .wb-hero p { max-width: 36em; }
   .wb-narrow { max-width: 760px; }
+  .wb-example { margin: 32px 0 0; }
+  .section-intro { max-width: 68ch; }
   .wb-more { margin-top: 24px; border-top: 1px solid var(--rule); padding-top: 12px; }
   .wb-more summary { cursor: pointer; font-weight: 600; color: var(--teal); }
   .wb-more p { margin: 12px 0 0; }

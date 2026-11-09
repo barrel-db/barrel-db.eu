@@ -1,25 +1,39 @@
 ---
 translation_of: src/content/docs/start/quickstart-server.mdx
-source_hash: "ac6bdd4a5c55b0f9"
+source_hash: "fd87392af5868887"
 title: "Démarrage rapide : serveur"
 description: Compilez et démarrez barrel_server, créez une base, écrivez et lisez des documents, lancez une requête BQL, et appelez un outil via MCP.
 ---
 import CodeBlock from '../../../../components/CodeBlock.astro';
 import Callout from '../../../../components/Callout.astro';
+import Goal from '../../../../components/docs/Goal.astro';
+import NextSteps from '../../../../components/docs/NextSteps.astro';
 
-`barrel_server` sert Barrel sur HTTP : une API REST/JSON et un point
-d’accès MCP pour les agents. Dans ce démarrage rapide, vous le compilez
-depuis l’umbrella, le démarrez, créez une base, écrivez et lisez des
-documents, lancez une requête BQL, et appelez la même base comme outil
-MCP. Suivez ce parcours quand vos clients ne sont pas en Erlang, tournent
-sur d’autres machines, ou sont des agents.
+[`barrel_server`](/fr/docs/concepts/glossary#barrel-server) sert Barrel
+sur HTTP : une API REST/JSON pour les applications et un point d’accès
+[MCP](/fr/docs/concepts/glossary#mcp) pour les agents. Dans ce démarrage
+rapide, vous le compilez depuis les sources, le démarrez, créez une base,
+écrivez et lisez des documents avec `curl`, lancez une requête, puis vous
+accédez aux mêmes données comme le ferait un agent, par des appels
+d’outils MCP. Suivez ce parcours quand vos clients ne sont pas écrits en
+Erlang, tournent sur d’autres machines, ou sont des agents : tout ce qui
+parle HTTP peut utiliser la base, et vous la faites tourner comme un seul
+service.
+
+<Goal items={["Compiler et démarrer barrel_server", "Créer une base et écrire des documents en REST", "Voir comment une écriture périmée est refusée", "Lancer une requête BQL sur HTTP", "Appeler la base comme des outils MCP"]} />
 
 ## Avant de commencer
 
-- Erlang/OTP 26 ou plus récent, rebar3, CMake et un compilateur C/C++.
-- `curl`.
+- Erlang/OTP 26 ou plus récent, rebar3, CMake et un compilateur C/C++,
+  pour compiler le serveur et ses parties natives.
+- git, pour cloner les sources.
+- `curl`, pour envoyer les requêtes.
 
 ## 1. Compiler
+
+Le serveur se trouve dans le dépôt umbrella de Barrel, derrière le profil
+de compilation `server` : vous clonez le dépôt et compilez avec ce
+profil.
 
 ```shell
 git clone https://github.com/barrel-db/barrel.git
@@ -29,7 +43,9 @@ rebar3 as server compile
 
 ## 2. Configurer et démarrer
 
-Écrivez un `sys.config` avec un port et un répertoire de données :
+Le serveur lit ses réglages dans un fichier `sys.config`. Il vous en faut
+deux : le port d’écoute et le répertoire où les bases sont stockées.
+Écrivez-le à la racine du clone :
 
 <CodeBlock label="sys.config" code={`[{barrel_server, [{http_port, 8080},
                   {data_dir, "/var/tmp/barrel/data"}]},
@@ -54,6 +70,11 @@ curl localhost:8080/health
 
 <CodeBlock output label="Sortie d’une exécution sur barrel_server 1.13.0" code={`{"status":"ok"}`} />
 
+<Callout kind="happened">
+Le serveur tourne et écoute sur le port 8080. `/health` indique seulement
+que l’écouteur HTTP répond ; il ne vérifie pas les bases.
+</Callout>
+
 <Callout kind="limit" label="Limite">
 Ce serveur n’a aucune authentification : quiconque atteint le port peut
 lire et écrire. Verrouillez-le avant de l’exposer. Voir
@@ -62,6 +83,10 @@ lire et écrire. Verrouillez-le avant de l’exposer. Voir
 
 ## 3. Créer une base
 
+Une base est l’unité dans laquelle vous écrivez, que vous interrogez et
+que vous répliquez. Chaque route qui touche aux données commence par
+`/db/:db`, le nom de la base.
+
 ```shell
 curl -X PUT localhost:8080/db/demo
 ```
@@ -69,10 +94,18 @@ curl -X PUT localhost:8080/db/demo
 <CodeBlock output label="Sortie d’une exécution sur barrel_server 1.13.0" code={`HTTP/1.1 201 Created
 {"ok":true,"db":"demo"}`} />
 
+<Callout kind="happened">
+`201 Created` signifie que la base `demo` n’existait pas et qu’elle existe
+maintenant.
+</Callout>
+
 Utilisez des noms en minuscules. Toute route `/db/:db/...` crée la base
 si elle n’existe pas : une faute de frappe en crée donc une vide.
 
 ## 4. Écrire et lire un document
+
+Un document est un objet JSON stocké sous un id. `PUT` l’écrit à l’id
+donné dans l’URL (ici `a`), `GET` le relit.
 
 ```shell
 curl -X PUT localhost:8080/db/demo/doc/a \
@@ -86,8 +119,18 @@ curl localhost:8080/db/demo/doc/a
 {"_rev":"000001a1b876972d00000000@w78160d59891ba7d7",
  "id":"a","kind":"note","n":1,"title":"hello world"}`} />
 
-Pour le mettre à jour, envoyez le `_rev` actuel dans le corps. Un `_rev`
-périmé répond 409 :
+<Callout kind="happened">
+L’écriture répond avec `rev`, le jeton de
+[révision](/fr/docs/concepts/glossary#revision) de la version créée. La
+lecture renvoie vos champs et ce même jeton sous le nom `_rev`. C’est
+ainsi que le serveur sait sur quelle version s’appuie une écriture
+ultérieure.
+</Callout>
+
+Pour le mettre à jour, envoyez le `_rev` actuel dans le corps. Si
+quelqu’un d’autre a modifié le document depuis votre lecture, votre `_rev`
+est périmé et le serveur refuse l’écriture plutôt que de perdre sa
+modification. Essayez avec un `_rev` inventé :
 
 ```shell
 curl -X PUT localhost:8080/db/demo/doc/a \
@@ -98,7 +141,12 @@ curl -X PUT localhost:8080/db/demo/doc/a \
 <CodeBlock output label="Sortie d’une exécution sur barrel_server 1.13.0" code={`HTTP/1.1 409 Conflict
 {"error":"conflict"}`} />
 
-Écrivez-en plusieurs à la fois avec `_bulk_docs` :
+<Callout kind="happened">
+`409 Conflict` signifie que le document n’a pas changé. Relisez-le pour
+obtenir le `_rev` actuel, appliquez votre modification, puis renvoyez-le.
+</Callout>
+
+Écrivez-en plusieurs à la fois avec `_bulk_docs` :
 
 ```shell
 curl -X POST localhost:8080/db/demo/_bulk_docs \
@@ -109,7 +157,10 @@ curl -X POST localhost:8080/db/demo/_bulk_docs \
 
 ## 5. Interroger avec BQL
 
-`POST /db/:db/query` répond en JSON délimité par des sauts de ligne : une
+[BQL](/fr/docs/concepts/glossary#bql) est le langage de requête de
+Barrel, proche de SQL, et chaque champ est indexé : vous pouvez filtrer
+sur n’importe quel champ. `POST /db/:db/query` prend la requête comme
+corps et répond en JSON délimité par des sauts de ligne : une
 ligne par résultat, puis une ligne `meta`.
 
 ```shell
@@ -123,7 +174,16 @@ curl -X POST localhost:8080/db/demo/query \
 {"row":{"id":"c","title":"third"}}
 {"meta":{"count":2,"bound":"limit_reached",
  "last_seq":"AAABobpEb-MAAAAB",
- "instance_id":"4552d48d297c5b2b","has_more":false}}`} />
+  "instance_id":"4552d48d297c5b2b","has_more":false}}`} />
+
+<Callout kind="happened">
+Chaque ligne `row` est un document qui correspond, avec les champs
+sélectionnés. La ligne `meta` dit comment la réponse s’est terminée :
+`count` lignes, `bound` vaut `limit_reached` parce que `LIMIT 2` l’a
+arrêtée, et `has_more` vaut false : il n’y a pas de page suivante.
+`instance_id` et `last_seq` désignent la copie de la base et le point de
+son historique de changements que reflète la réponse.
+</Callout>
 
 Envoyez plutôt du JSON (`{"query": ..., "params": ...}`) quand vous passez
 des paramètres ou `max_rows`.
@@ -133,8 +193,12 @@ Voir [Interroger avec BQL](/fr/docs/guides/query-bql).
 
 ## 6. L’appeler via MCP
 
-Le même serveur répond en MCP sur `/mcp` (Streamable HTTP). Initialisez
-une session et gardez l’en-tête `mcp-session-id` qu’elle renvoie :
+MCP (Model Context Protocol) est le protocole qu’utilisent les
+environnements d’agents pour appeler des outils. Le même serveur répond en
+MCP sur `/mcp` (Streamable HTTP) : un agent travaille donc sur les mêmes
+bases que vos clients REST. Ici, c’est vous qui jouez l’agent avec
+`curl`. Initialisez d’abord une session et gardez l’en-tête
+`mcp-session-id` qu’elle renvoie :
 
 ```shell
 curl -i -X POST localhost:8080/mcp \
@@ -151,7 +215,13 @@ content-type: application/json
 mcp-session-id: mcp_eb612d0280eda9fef1a406b42ce2c3ea
 {"id":1,"jsonrpc":"2.0","result":{"capabilities":{...},
  "protocolVersion":"2025-06-18",
- "serverInfo":{"name":"barrel","version":"4.4.1"}}}`} />
+  "serverInfo":{"name":"barrel","version":"4.4.1"}}}`} />
+
+<Callout kind="happened">
+Le serveur a accepté la version de protocole `2025-06-18` et ouvert une
+session MCP. L’en-tête `mcp-session-id` identifie cette session ;
+envoyez-le avec chaque requête suivante.
+</Callout>
 
 Envoyez `notifications/initialized`, puis appelez un outil. Chaque
 requête après `initialize` porte l’id de session et la version du
@@ -194,6 +264,14 @@ data: {"id":4,"jsonrpc":"2.0","result":{"content":[{"text":
   \\"title\\":\\"stored over MCP\\"}],\\"has_more\\":false}",
   "type":"text"}]}}`} />
 
+<Callout kind="happened">
+Chaque ligne `data:` répond à la requête de même `id`. La requête 2 a
+créé la base `mcpdemo`, la requête 3 a écrit `note-1` et reçu son `rev`,
+et la requête 4 a lancé une requête BQL qui l’a trouvée. Ce sont les
+mêmes opérations que les appels REST plus haut, présentées comme des
+outils.
+</Callout>
+
 `tools/list` renvoie 39 outils. Voir [Point d’accès MCP](/fr/docs/guides/mcp)
 pour y brancher un agent.
 
@@ -207,3 +285,10 @@ pour y brancher un agent.
   répondent donc 500 tant que vous ne les configurez pas. Voir [Faire
   tourner le serveur](/fr/docs/guides/rest-server).
 - `/health` renvoie ok sans rien vérifier.
+
+<NextSteps steps={[
+  { href: '/docs/security/authentication', label: 'Authentification', why: 'Verrouillez le serveur avant que d’autres puissent atteindre son port.' },
+  { href: '/docs/guides/rest-server', label: 'Lancer le serveur', why: 'Voyez chaque route, les bornes de requête, CORS et les réglages d’authentification.' },
+  { href: '/docs/guides/mcp', label: 'Point d’accès MCP', why: 'Branchez un environnement d’agents sur le serveur.' },
+  { href: '/docs/start/quickstart-browser', label: 'Démarrage rapide : navigateur', why: 'Gardez une copie d’une base dans une application web et synchronisez-la avec ce serveur.' },
+]} />

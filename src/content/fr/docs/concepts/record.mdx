@@ -1,22 +1,41 @@
 ---
 translation_of: src/content/docs/concepts/record.mdx
-source_hash: "9dce749f1c6d6e07"
+source_hash: "d446335560cb4e11"
 title: L’enregistrement
 description: Ce que Barrel stocke sous un même id (un document JSON, ses pièces jointes et son vecteur) et quels champs Barrel ajoute ou réserve.
 ---
 import CodeBlock from '../../../../components/CodeBlock.astro';
+import Callout from '../../../../components/Callout.astro';
 import RecordFigure from '../../../../components/RecordFigure.astro';
+import NextSteps from '../../../../components/docs/NextSteps.astro';
 
-Un enregistrement est tout ce que Barrel garde sous un même id : un
-document JSON, les fichiers qui y sont attachés et, en mode
-enregistrement, le vecteur qui le représente. Ils sont lus, écrits,
-répliqués et supprimés par cet id. Lisez cette page pour savoir à quoi
-ressemble un document à l’entrée et à la sortie, quels champs Barrel
-ajoute, et ce qui accompagne l’enregistrement.
+Une application qui fait de la recherche sur son propre contenu garde
+souvent trois choses à trois endroits : les données dans une base, les
+fichiers dans un stockage objet, et les vecteurs dans une base
+vectorielle. Chaque mise à jour demande alors trois écritures, et tôt ou
+tard un article supprimé ressort encore dans la recherche, ou un fichier
+pointe vers une ligne qui n’existe plus. Barrel évite ce décalage en
+gardant les trois sous un même id.
 
-<RecordFigure id="kb-142" caption="Un seul id : le document en haut, les pièces jointes à gauche, le vecteur à droite." />
+Un [enregistrement](/fr/docs/concepts/glossary#record) est tout ce que
+Barrel garde sous cet id : un document JSON, les fichiers qui y sont
+attachés et, en mode enregistrement, le vecteur qui le représente. Ils
+sont lus, écrits, répliqués et supprimés par cet id. Lisez cette page
+pour savoir à quoi ressemble un document à l’entrée et à la sortie,
+quels champs Barrel ajoute, et ce qui accompagne l’enregistrement.
+
+<RecordFigure id="kb-142" caption="Un seul id : le document en haut, les pièces jointes à gauche, le vecteur à droite." />
+
+Prenons l’article de support `kb-142`, « Reset a locked account ». Ses
+champs forment le document, le fichier `steps.md` est une pièce jointe,
+et le vecteur calculé à partir de son texte permet à une recherche par
+le sens de le retrouver. Cette page suit cet article du début à la fin.
 
 ## Les trois parties
+
+Chaque partie d’un enregistrement se comporte un peu différemment quand
+elle change ou quand elle part vers une autre copie de la base. Le
+tableau résume ; les sections qui suivent détaillent chaque ligne.
 
 | Partie | Ce que c’est | Versionné | Répliqué |
 |------|------------|-----------|------------|
@@ -26,9 +45,10 @@ ajoute, et ce qui accompagne l’enregistrement.
 
 ## Le document
 
-Vous écrivez une map avec un `id`. Chaque chemin qu’elle contient est
-indexé : vous pouvez donc interroger n’importe quel champ sans déclarer
-d’index.
+Le [document](/fr/docs/concepts/glossary#document) est la partie que vous
+interrogez. Vous écrivez une map avec un `id`. Chaque chemin qu’elle
+contient est indexé : vous pouvez donc interroger n’importe quel champ
+sans déclarer d’index.
 
 <CodeBlock label="Shell Erlang" code={`barrel:put_doc(Db, #{<<"id">> => <<"kb-142">>,
     <<"title">> => <<"Reset a locked account">>,
@@ -40,9 +60,17 @@ barrel:get_doc(Db, <<"kb-142">>).`} />
       <<"id">> => <<"kb-142">>,
       <<"title">> => <<"Reset a locked account">>}}`} />
 
-- `_rev` est le jeton de version que Barrel ajoute à la lecture.
-  Renvoyez-le pour mettre le document à jour ; un `_rev` absent ou
-  périmé renvoie `{error, conflict}`. Voir [Versions, conflits,
+<Callout kind="happened">
+La lecture renvoie votre `id` et votre `title`, plus un `_rev` ajouté
+par Barrel. Le champ `_note` que vous aviez envoyé a disparu : Barrel l’a
+écarté parce qu’il commence par `_`.
+</Callout>
+
+- `_rev` est la [révision](/fr/docs/concepts/glossary#revision) : le
+  jeton de version que Barrel ajoute à la lecture. Renvoyez-le pour
+  mettre le document à jour ; un `_rev` absent ou périmé renvoie
+  `{error, conflict}`. Vous ne pouvez donc pas écraser une modification
+  que vous n’avez pas lue. Voir [Versions, conflits,
   convergence](/fr/docs/concepts/versions).
 - Les champs de premier niveau qui commencent par `_` sont réservés.
   Barrel écarte ceux que vous envoyez (`_note` ci-dessus) et ne les
@@ -53,6 +81,11 @@ barrel:get_doc(Db, <<"kb-142">>).`} />
 
 ## Champs que Barrel ajoute à la demande
 
+En plus de `_rev`, Barrel ajoute quelques champs à une lecture quand
+vous les demandez. Vous en avez besoin quand un document a des
+[conflits](/fr/docs/concepts/glossary#conflict) à résoudre, ou quand
+vous voulez voir le vecteur derrière un résultat de recherche.
+
 | Champ | Option de lecture | Ce qu’il contient |
 |-------|-------------|---------------|
 | `_rev` | toujours | Le jeton de la version gagnante |
@@ -62,8 +95,11 @@ barrel:get_doc(Db, <<"kb-142">>).`} />
 
 ## Les pièces jointes
 
-Les pièces jointes appartiennent à un id de document. En écrire une ne
-change pas le `_rev` du document.
+Une [pièce jointe](/fr/docs/concepts/glossary#attachment) est un fichier
+nommé qui appartient à un id de document, comme le fichier `steps.md` de
+`kb-142`. Utilisez-les pour le contenu qui n’est pas du JSON. En écrire
+une ne change pas le `_rev` du document : mettre à jour un fichier
+n’entre donc jamais en conflit avec une modification du document.
 
 <CodeBlock label="Shell Erlang" code={`barrel:put_attachment(Db, <<"kb-142">>, <<"steps.md">>,
                       <<"1. Open the console">>),
@@ -75,28 +111,50 @@ barrel:list_attachments(Db, <<"kb-142">>).`} />
       chunked => false}}
 [<<"steps.md">>]`} />
 
+<Callout kind="happened">
+L’écriture renvoie les métadonnées de la pièce jointe : son nom, sa
+taille en octets (19), une empreinte SHA-256 du contenu, et un type de
+contenu générique faute d’en avoir donné un. La liste montre ensuite
+`steps.md` comme seule pièce jointe de `kb-142`.
+</Callout>
+
 Voir [Pièces jointes](/fr/docs/store/attachments).
 
 ## Le vecteur
 
+Un [vecteur](/fr/docs/concepts/glossary#vector) est une liste de nombres
+qui représente le sens d’un texte. C’est lui qui permet à une recherche
+de trouver `kb-142` quand la requête n’emploie pas les mots de
+l’article.
+
 En [mode enregistrement](/fr/docs/guides/record-mode), vous donnez à la
-base une politique d’embedding : quels champs traiter, avec quel
-fournisseur, à quelle dimension. Barrel calcule l’embedding de ces champs
-à chaque écriture et supprime le vecteur à la suppression. Les résultats
+base une politique d’embedding : quels champs traiter, avec quel
+fournisseur, à quelle dimension. Barrel calcule
+l’[embedding](/fr/docs/concepts/glossary#embedding) de ces champs à
+chaque écriture et supprime le vecteur à la suppression. Les résultats
 de recherche lisent leur texte et leurs métadonnées dans le document
-courant.
+courant : ils ne montrent jamais une copie périmée.
 
 Dans une base simple, vous gérez les vecteurs vous-même avec
 `vector_add`, sous le même id ou un autre. Le document et son vecteur
-sont alors deux écritures séparées.
+sont alors deux écritures séparées, et c’est à vous de les garder
+synchronisés.
 
 ## Ce qu’une écriture peut porter d’autre
+
+Une écriture peut porter des options en plus du document. Elles disent
+qui a fait la modification, combien de temps le document vit, et s’il
+faut attendre le disque.
 
 | Option d’écriture | Effet |
 |--------------|--------|
 | `provenance => #{actor, session, source}` | Stockée avec la version, affichée dans l’historique |
 | `expires_at => UnixMs` | Le document disparaît après cette date |
 | `sync => true` | Attend que l’écriture atteigne le disque |
+
+Ici, un agent, `agent-7`, s’enregistre avec sa session comme auteur
+d’une écriture. L’historique des versions montre ensuite qui a modifié
+l’article.
 
 <CodeBlock label="Shell Erlang" code={`barrel:put_doc(Db, Doc,
     #{provenance => #{actor => <<"agent-7">>,
@@ -112,5 +170,18 @@ barrel:doc_versions(Db, <<"kb-142">>).`} />
        vv => #{<<"wddc4e1c028733ad0">> =>
                    {timestamp,1794126491982,0}}}]}`} />
 
+<Callout kind="happened">
+L’historique contient une seule version, marquée `current` et non
+supprimée. Sa `provenance` contient l’acteur et la session que vous avez
+passés. `vv` est le vecteur de versions : pour chaque écrivain, la
+dernière horloge que cette version avait vue.
+</Callout>
+
 La provenance n’est pas répliquée. Voir [Audit et
 provenance](/fr/docs/guides/audit-provenance).
+
+<NextSteps steps={[
+  { href: '/docs/concepts/versions', label: 'Versions, conflits, convergence', why: 'De quoi est faite une révision, et ce qui se passe quand deux copies modifient le même document.' },
+  { href: '/docs/guides/record-mode', label: 'Mode enregistrement', why: 'Configurer la politique d’embedding pour que Barrel garde les vecteurs alignés sur les documents.' },
+  { href: '/docs/store/attachments', label: 'Pièces jointes', why: 'Stocker, lire et répliquer les fichiers d’un enregistrement.' },
+]} />

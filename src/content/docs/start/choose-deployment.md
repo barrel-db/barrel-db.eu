@@ -5,10 +5,44 @@ description: Decide between embedding Barrel in an Erlang release, running barre
 
 Barrel runs in three places: inside your Erlang release, as a server
 over HTTP, and as a local copy in a web browser. You can mix them, since
-they replicate with each other. Use this page to pick where to start
-from what your clients are and where your data must live.
+they replicate with each other: a server can sync with browsers and with
+other servers, and every copy takes writes. Use this page to pick where
+to start from what your clients are and where your data must live.
+
+## The three options
+
+### Embedded
+
+In [embedded](/docs/concepts/glossary#embedded) mode the `barrel`
+library runs inside your own Erlang or Elixir release, and your code
+calls it as functions. It fits an application that owns its data and is
+written in Erlang or Elixir, such as an agent runtime on an edge device.
+You get the full API with no network hop: [record
+mode](/docs/concepts/glossary#record-mode), the timeline, spaces. The
+cost is that only code in the same release can reach the data, and
+nothing enforces access rules between parts of that code.
+
+### Server
+
+[`barrel_server`](/docs/concepts/glossary#barrel-server) runs Barrel as
+a service and serves it over HTTP: a REST/JSON API and an
+[MCP](/docs/concepts/glossary#mcp) endpoint that agents call as tools. It
+fits clients written in other languages, clients on other machines, and
+agents. The cost is a service to run and secure: every call crosses the
+network, and the server has no authentication until you configure it.
+
+### Browser
+
+[`barrel-lite`](/docs/concepts/glossary#barrel-lite) keeps a copy of a
+database inside a web app, so reads and writes are local and keep
+working offline. It fits a web app that must stay usable without a
+network. The cost is that it needs a `barrel_server` to sync with, the
+browser may evict its copy, and vector, keyword and hybrid search run on
+the server, not locally.
 
 ## Decide
+
+The table maps a need to the option that answers it.
 
 | If you need | Use | Why |
 |-------------|-----|-----|
@@ -22,6 +56,9 @@ from what your clients are and where your data must live.
 
 ## What each mode gives you
 
+This table lists which features each mode has, so you can check that the
+one you picked covers what you need.
+
 | | Embedded | Server | Browser |
 |-|----------|--------|---------|
 | Documents, BQL | yes | yes | yes, local BQL |
@@ -34,6 +71,8 @@ from what your clients are and where your data must live.
 | Encryption at rest | yes | yes, through `open_opts` | no |
 
 ## Things to know before you choose
+
+These are the limits that most often change a choice.
 
 - **Embedded means your process holds the data.** The vector store is
   linked to the process that opens it. Open long-lived databases through

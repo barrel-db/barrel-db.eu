@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/start/install.md
-source_hash: "bf40e80cf4addc71"
+source_hash: "f50cc3dfbea8dd42"
 title: Installer
 description: Ajoutez Barrel à un projet Erlang depuis Hex, compilez le serveur depuis l’umbrella, ou compilez barrel-lite pour le navigateur.
 ---
@@ -13,25 +13,46 @@ rapide si votre machine n’a encore jamais compilé Barrel.
 
 ## Prérequis
 
-- Erlang/OTP 26 ou plus récent, et rebar3.
-- CMake et un compilateur C/C++. RocksDB, le stockage vectoriel et l’index
-  ngram compilent du code natif.
-- Pour le serveur depuis les sources : git.
-- Pour le client navigateur : Node.js 20 ou plus récent, et npm.
-- Optionnel, pour des embeddings locaux : Python 3 (le fournisseur
-  `local`) ou un [Ollama](https://ollama.com) en marche. Voir [Choisir un
-  fournisseur d’embeddings](/fr/docs/search/embedding-providers).
+Ce qu’il vous faut dépend du mode que vous faites tourner. Chaque élément
+ci-dessous dit à quoi il sert : vous pouvez sauter ce que votre mode
+n’utilise pas.
+
+- **Erlang/OTP 26 ou plus récent, et rebar3.** Barrel est écrit en
+  Erlang : la bibliothèque et le serveur ont besoin du runtime Erlang.
+  Le client navigateur n’en a pas besoin, mais il se synchronise avec un
+  serveur qui, lui, en a besoin. rebar3 est l’outil de compilation d’Erlang : il
+  récupère les dépendances depuis Hex et les compile.
+- **CMake et un compilateur C/C++.** Certaines parties de Barrel sont du
+  code natif compilé sur votre machine : RocksDB (le moteur de stockage
+  qui écrit les documents sur disque), le stockage vectoriel et l’index
+  ngram.
+- **git**, pour le serveur depuis les sources : vous clonez le dépôt
+  Barrel pour compiler `barrel_server`.
+- **Node.js 20 ou plus récent, et npm**, pour le client navigateur : ils
+  servent à compiler `barrel-lite` et à l’ajouter à votre application
+  web.
+- **Optionnel, pour des embeddings locaux :** Python 3 (le fournisseur
+  `local`) ou un [Ollama](https://ollama.com) en marche. Un
+  [embedding](/fr/docs/concepts/glossary#embedding) est la liste de
+  nombres qui permet à Barrel de rechercher un texte par son sens ; ces
+  outils le calculent sur votre machine au lieu d’appeler une API cloud.
+  Voir [Choisir un fournisseur
+  d’embeddings](/fr/docs/search/embedding-providers).
 
 ## Ajouter barrel à un projet Erlang
 
-Toutes les bibliothèques sont sur Hex. Ajoutez `barrel` à `rebar.config` :
+Suivez cette partie quand votre application est écrite en Erlang ou en
+Elixir et que Barrel tourne à l’intérieur : c’est le mode
+[embarqué](/fr/docs/concepts/glossary#embedded). Toutes les
+bibliothèques sont sur Hex, le registre de paquets d’Erlang et d’Elixir. Ajoutez `barrel` à `rebar.config` :
 
 ```erlang
 {deps, [{barrel, "~> 1.12"}]}.
 ```
 
 Ajoutez-la à la liste `applications` de votre application dans
-`src/*.app.src`, puis récupérez et compilez :
+`src/*.app.src`, pour qu’elle démarre avec votre application, puis
+récupérez et compilez :
 
 ```shell
 rebar3 compile
@@ -42,7 +63,8 @@ partie, par exemple `{barrel_docdb, "~> 2.1"}` pour les documents et la
 réplication sans vecteurs, ou `{barrel_ngram, "~> 0.11"}` pour la
 recherche de sous-chaînes.
 
-Indiquez où vont les données, dans `config/sys.config` :
+Indiquez où vont les données, dans `config/sys.config`. `data_dir` est le
+répertoire où les documents sont écrits sur disque :
 
 ```erlang
 [{barrel_docdb, [{data_dir, "data/docdb"}]}].
@@ -53,8 +75,11 @@ courant.
 
 ## Compiler le serveur depuis l’umbrella
 
-`barrel_server` se trouve derrière le profil `server` de l’umbrella. Il
-ne fait pas partie de la compilation par défaut.
+Suivez cette partie quand vos clients accèdent à Barrel sur HTTP ou MCP.
+[`barrel_server`](/fr/docs/concepts/glossary#barrel-server) se compile
+depuis l’umbrella, le dépôt Barrel qui contient toutes les bibliothèques.
+Il se trouve derrière le profil `server`, une configuration de
+compilation nommée, et ne fait pas partie de la compilation par défaut.
 
 ```shell
 git clone https://github.com/barrel-db/barrel.git
@@ -62,7 +87,8 @@ cd barrel
 rebar3 as server compile
 ```
 
-Pour produire une release à la place :
+Pour produire une release à la place, un répertoire autonome que vous
+copiez sur une machine et démarrez :
 
 ```shell
 rebar3 as server,prod release -n barrel_server
@@ -72,6 +98,9 @@ rebar3 as server,prod release -n barrel_server
 
 ## Parties optionnelles
 
+Elles ajoutent des fonctions dont la plupart des installations n’ont pas
+besoin. Installez-les seulement quand vous utilisez la fonction.
+
 | Partie | Comment |
 |------|-----|
 | Backend vectoriel FAISS | `rebar3 as faiss compile`, avec une bibliothèque FAISS système |
@@ -80,7 +109,9 @@ rebar3 as server,prod release -n barrel_server
 
 ## Compiler barrel-lite
 
-`barrel-lite` n’est pas publié sur npm. Compilez-le depuis l’umbrella :
+Suivez cette partie quand une application web garde sa propre copie des
+données. [`barrel-lite`](/fr/docs/concepts/glossary#barrel-lite) n’est
+pas publié sur npm : compilez-le depuis l’umbrella :
 
 ```shell
 cd barrel/clients/barrel-lite

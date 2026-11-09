@@ -1,20 +1,28 @@
 ---
 translation_of: src/content/docs/start/quickstart-browser.mdx
-source_hash: "e9f2f1f25b443609"
+source_hash: "f211218efbaea5f0"
 title: "Démarrage rapide : navigateur"
 description: Compilez barrel-lite, ouvrez une base locale dans une application web, écrivez et lisez des documents, synchronisez-les avec barrel_server, et résolvez un conflit.
 ---
 import CodeBlock from '../../../../components/CodeBlock.astro';
 import Callout from '../../../../components/Callout.astro';
+import Goal from '../../../../components/docs/Goal.astro';
+import NextSteps from '../../../../components/docs/NextSteps.astro';
 
-`barrel-lite` est un client TypeScript qui garde une copie d’une base
-Barrel dans le navigateur. Les lectures et les écritures sont locales et
-continuent de fonctionner hors ligne ; la synchronisation les envoie à un
-`barrel_server` et rapporte les modifications des autres copies. Dans ce
-démarrage rapide, vous le compilez, donnez un jeton au navigateur,
-écrivez et lisez des documents, synchronisez, et résolvez un conflit
-entre deux copies. Suivez ce parcours quand une application web a besoin
-de ses données hors ligne.
+[`barrel-lite`](/fr/docs/concepts/glossary#barrel-lite) est un client
+TypeScript qui garde une copie d’une base Barrel dans le navigateur. Les
+lectures et les écritures sont locales : l’application répond tout de
+suite et continue de fonctionner hors ligne ; la synchronisation envoie
+les écritures locales à un `barrel_server` et rapporte les modifications
+faites par les autres copies. Dans ce démarrage rapide, vous construisez
+une petite application de notes qui tourne sur deux appareils, un
+portable et un téléphone : vous donnez au navigateur un jeton restreint,
+écrivez une note, la synchronisez vers le deuxième appareil, puis la
+modifiez sur les deux à la fois et résolvez le conflit. Suivez ce
+parcours quand une application web doit continuer de fonctionner sans
+réseau.
+
+<Goal items={["Compiler barrel-lite et l’ajouter à une application web", "Donner au navigateur un jeton limité à un espace", "Écrire et lire des documents en local", "Synchroniser deux copies via barrel_server", "Résoudre un conflit entre deux modifications"]} />
 
 ## Avant de commencer
 
@@ -24,7 +32,8 @@ de ses données hors ligne.
 
 ## 1. Obtenir barrel-lite
 
-`barrel-lite` 0.1.0 n’est pas sur npm. Compilez-le depuis l’umbrella et
+Vous compilez le client depuis les sources de Barrel, car `barrel-lite`
+0.1.0 n’est pas sur npm. Compilez-le depuis l’umbrella et
 installez-le dans votre application depuis ce répertoire :
 
 ```shell
@@ -37,9 +46,11 @@ npm install /path/to/barrel/clients/barrel-lite
 
 ## 2. Laisser entrer le navigateur
 
-Le navigateur a besoin de CORS et d’un jeton qu’il a le droit
-d’embarquer. Ajoutez les deux au `sys.config` du serveur et
-redémarrez-le :
+Une page web tourne sur sa propre origine et n’importe qui peut lire son
+code : le serveur doit donc autoriser les requêtes cross-origin (CORS), et
+la page doit porter un jeton qui accorde le moins possible. Ajoutez CORS
+et un jeton d’administration global au `sys.config` du serveur et
+redémarrez-le :
 
 <CodeBlock label="sys.config" code={`[{barrel_server, [
     {http_port, 8080},
@@ -47,9 +58,13 @@ redémarrez-le :
              expose => [<<"x-barrel-hlc">>]}},
     {auth, #{tokens => [<<"global-token">>]}}]}].`} />
 
-Ne mettez jamais le jeton global dans une page web. Créez un espace et
-émettez un jeton de capacité pour lui ; l’id de l’espace est le nom de
-base qu’utilise le navigateur :
+Ne mettez jamais le jeton global dans une page web : il ouvre toutes les
+bases. Créez plutôt un [espace](/fr/docs/concepts/glossary#space), une
+base créée via la couche agents de Barrel et que vous pouvez partager, et
+émettez pour lui un [jeton de
+capacité](/fr/docs/concepts/glossary#capability-token). Un jeton de
+capacité accorde des droits nommés sur un seul espace, et vous pouvez le
+révoquer. L’id de l’espace est le nom de base qu’utilise le navigateur :
 
 ```shell
 curl -X POST localhost:8080/spaces \
@@ -67,10 +82,19 @@ curl -X POST localhost:8080/spaces/sp_7uitvqeved3z7seu/grants \
  "grant":{"rights":["read","write"],
           "space":"sp_7uitvqeved3z7seu", ...}}`} />
 
-Le jeton n’est affiché qu’une fois. `read` couvre les pulls, `write`
-couvre les pushes.
+<Callout kind="happened">
+Le premier appel a créé l’espace `sp_7uitvqeved3z7seu`. Le second a émis
+un jeton `bsp_...` avec `read` et `write` sur cet espace et rien d’autre.
+Le jeton n’est affiché qu’une fois, car le serveur n’en garde qu’une
+empreinte ; copiez-le maintenant. `read` couvre les pulls, `write` couvre
+les pushes.
+</Callout>
 
 ## 3. Ouvrir, écrire, lire
+
+`Database.open` crée la copie locale et retient la base du serveur avec
+laquelle elle se synchronise. Vous écrivez et lisez ensuite comme si la
+base était locale, parce qu’elle l’est.
 
 ```ts
 import { Database } from "barrel-lite";
@@ -90,11 +114,22 @@ await laptop.get("n1");
  "version":"000001a1ba4159ea00000000@wd31d29e133c6788f"}
 {"title":"hello","id":"n1"}`} />
 
+<Callout kind="happened">
+`put` a répondu avec l’id du document et sa `version`, le jeton de
+[révision](/fr/docs/concepts/glossary#revision) de cette écriture, le
+même que le serveur appelle `_rev`. `get` a relu la note depuis le
+stockage local. Rien n’a encore atteint le serveur.
+</Callout>
+
 Les écritures vont tout de suite dans le stockage local. Dans un
 navigateur, ce stockage est OPFS ; là où OPFS manque (Node, par exemple),
 il est en mémoire.
 
 ## 4. Synchroniser
+
+La synchronisation permet aux copies de se rattraper. Un push envoie les
+écritures locales au serveur, un pull applique les changements que le
+serveur tient des autres copies, et `sync()` fait les deux.
 
 ```ts
 await laptop.sync();             // push, puis pull
@@ -121,14 +156,22 @@ await phone.query(
 {"id":"n1","title":"hello"}
 [{"id":"n1","title":"hello"}]`} />
 
-La première ligne est le `sync()` du portable, la deuxième celui du
-téléphone.
+<Callout kind="happened">
+La première ligne est le `sync()` du portable : son push a envoyé un
+document (`pushed: 1`), et son pull a vu un changement sur le serveur, le
+sien, donc rien à appliquer. La deuxième ligne est celle du téléphone :
+rien à pousser, et un changement appliqué, la note. Le téléphone relit
+ensuite la note en local, par id et avec BQL.
+</Callout>
 
 ## 5. Résoudre un conflit
 
-Modifiez le même document sur les deux copies avant qu’elles se
-synchronisent. Après une synchronisation, les deux versions sont gardées,
-chaque copie affiche le même gagnant, et l’autre version est un conflit :
+Des copies hors ligne peuvent modifier la même note en même temps. Barrel
+ne jette aucune des deux modifications : les deux versions sont gardées,
+chaque copie choisit le même gagnant, et l’autre version est gardée comme
+[conflit](/fr/docs/concepts/glossary#conflict), à vous de le résoudre.
+Modifiez la note sur les deux copies avant qu’elles se synchronisent,
+puis synchronisez :
 
 ```ts
 await laptop.put({ id: "n1", title: "hello from the laptop" });
@@ -146,6 +189,15 @@ await laptop.conflicts("n1");
   "deleted":false,
   "body":{"id":"n1","title":"hello from the laptop"}}]`} />
 
+<Callout kind="happened">
+Les deux copies affichent la modification du téléphone : le gagnant est
+la version au jeton le plus élevé, si bien que chaque copie arrive à la
+même réponse sans se concerter. C’est la
+[convergence](/fr/docs/concepts/glossary#convergence). La modification
+du portable n’est pas perdue : `conflicts` la renvoie avec sa version et
+son corps.
+</Callout>
+
 `resolve` remplace le gagnant et chaque conflit par un seul corps.
 Poussez-le, et l’autre copie reçoit la résolution à son prochain pull :
 
@@ -159,6 +211,12 @@ await phone.conflicts("n1");
 
 <CodeBlock output label="Sortie d’une exécution de barrel-lite 0.1.0 dans Node 22 contre barrel_server 1.13.0" code={`{"id":"n1","title":"hello from both"}
 []`} />
+
+<Callout kind="happened">
+Le téléphone lit maintenant le corps résolu, et sa liste de conflits est
+vide : la résolution a remplacé les deux versions sur chaque copie qui
+l’a reçue.
+</Callout>
 
 `put` sur un document en conflit ne remplace que le gagnant ; les
 conflits restent. Passez `null` à `resolve` pour résoudre par une
@@ -182,3 +240,9 @@ tout le stockage. La copie du serveur fait foi : synchronisez souvent.
   par lui.
 - Le client complet est décrit dans
   [barrel-lite](/fr/docs/guides/barrel-lite).
+
+<NextSteps steps={[
+  { href: '/docs/guides/barrel-lite', label: 'barrel-lite', why: 'Lisez la description complète du client : stockage, synchronisation continue, pièces jointes et onglets multiples.' },
+  { href: '/docs/concepts/versions', label: 'Versions, conflits, convergence', why: 'Comprenez comment chaque copie choisit le même gagnant.' },
+  { href: '/docs/concepts/spaces', label: 'Espaces et capacités', why: 'Restreignez et révoquez les jetons que vous donnez aux navigateurs et aux agents.' },
+]} />

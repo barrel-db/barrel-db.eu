@@ -8,19 +8,30 @@ const install = (slug: string) => {
   const code = componentContent[slug]?.install.code ?? '';
   return code.includes('\n') ? 'Build from the repository' : code;
 };
+
+// When you would reach for each capability. The short line stays in site.ts for the menu.
+const when: Record<string, string> = {
+  replication: 'Use it when sites, devices or browsers must keep taking writes while apart, then agree again without losing an edit.',
+  search: 'Use it when agents or people look things up by meaning, by keyword, or by exact text and patterns.',
+  timeline: 'Use it when an agent should work on a copy you review before merging, or when you need the data as it was earlier.',
+  agents: 'Use it when several agents share one server and each must reach only the data it was given.',
+  security: 'Use it when data on disk must stay unreadable without its key, or when the server is reachable from other machines.',
+  deployments: 'Read it first if you have not chosen where Barrel runs: inside an Erlang app, as a server, or in a browser.',
+};
 ---
 
 <Base title="Product" description="What Barrel does, and the libraries it is made of: the database, data and search, models, the agent layer, access over HTTP and in the browser, storage and security.">
   <div class="wrap pi">
     <h1 class="pi-title">Product</h1>
     <p class="lead">Barrel is one database made of separate libraries. Use the <code>barrel</code> library for documents, files and vectors in one place, add the server for REST and MCP, or take one library on its own. Each page below says what a library does, when to use it, what it builds on and how to install it.</p>
+    <p class="pi-intro">Start with what it does when you know the problem you want to solve: each capability page explains what it does for you and how to use it. Go to the libraries behind it when you already know which part you need and want its version, its status and its install line.</p>
 
     <div class="pi-grid">
       <section class="pi-caps" aria-labelledby="caps">
         <h2 id="caps" class="pi-h2">What it does</h2>
         <ul>
           {capabilities.map((c) => (
-            <li><a href={`/product/${c.slug}`}><span class="pi-cap">{c.name}</span><span class="pi-body">{c.body}</span></a></li>
+            <li><a href={`/product/${c.slug}`}><span class="pi-cap">{c.name}</span><span class="pi-body">{c.body}</span><span class="pi-when">{when[c.slug]}</span></a></li>
           ))}
         </ul>
       </section>
@@ -58,7 +69,9 @@ const install = (slug: string) => {
 <style>
   .pi { padding-top: 48px; padding-bottom: 88px; }
   .pi-title { margin: 0 0 16px; font-size: clamp(2.5rem, 6vw, 3.75rem); font-weight: 620; font-stretch: 112%; letter-spacing: -0.03em; line-height: 1; }
-  .pi .lead { margin: 0 0 48px; }
+  .pi .lead { margin: 0 0 16px; }
+  .pi-intro { max-width: 68ch; margin: 0 0 48px; color: var(--ink-2); }
+  .pi-when { display: block; margin-top: 4px; font-size: var(--step--1); }
   .pi-grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 56px; align-items: start; }
   .pi-h2 { margin: 0 0 12px; font-size: var(--step-1); font-stretch: 108%; }
   ul { list-style: none; margin: 0; padding: 0; }

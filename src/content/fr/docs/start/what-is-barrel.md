@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/start/what-is-barrel.md
-source_hash: "d2a01b770e0d7e27"
+source_hash: "872b7b541537fb78"
 title: Présentation pour les développeurs
 description: Barrel est une base de données open source pour les agents et les applications en périphérie. Elle garde un document, ses fichiers et son vecteur sous un même id, les recherche, et les réplique entre des copies qui acceptent toutes des écritures.
 ---
@@ -13,6 +13,66 @@ sens ou par regex, et vous le répliquez entre des copies qui acceptent
 toutes des écritures. Lisez d’abord cette page pour savoir ce que Barrel
 fait aujourd’hui, ce qu’il ne fait pas, et de quelle partie vous avez
 besoin.
+
+## Les idées de base
+
+Quelques idées reviennent sur chaque page de cette documentation. Chacune
+est expliquée ici simplement, avec un lien vers son entrée du
+[glossaire](/fr/docs/concepts/glossary).
+
+**Un enregistrement garde tout ce qui concerne une chose sous un même
+id.** Un [enregistrement](/fr/docs/concepts/glossary#record) réunit un
+[document](/fr/docs/concepts/glossary#document) JSON, les fichiers qui
+y sont joints ([pièces jointes](/fr/docs/concepts/glossary#attachment))
+et son [vecteur](/fr/docs/concepts/glossary#vector). Pour un article de
+support comme kb-142, ce sont ses champs, une capture d’écran jointe, et
+les nombres qui décrivent le sens de son texte. Vous n’avez jamais à
+tenir deux stockages en phase à la main.
+
+**Chaque écriture reçoit une révision.** Quand vous écrivez un document,
+Barrel ajoute un jeton de [révision](/fr/docs/concepts/glossary#revision),
+`_rev`. Pour mettre le document à jour, vous renvoyez ce jeton : Barrel
+sait ainsi quelle version vous avez modifiée. Une écriture fondée sur une
+version périmée est refusée au lieu de remplacer en silence une version
+plus récente.
+
+**La recherche par le sens repose sur les embeddings.** Un
+[embedding](/fr/docs/concepts/glossary#embedding) est un vecteur calculé
+à partir d’un texte par un modèle, de sorte que des textes de sens voisin
+obtiennent des vecteurs proches. C’est ainsi que « I cannot log in »
+trouve « Reset a locked account ». En [mode
+enregistrement](/fr/docs/concepts/glossary#record-mode), vous nommez les
+champs à traiter, et Barrel calcule les vecteurs et les garde en phase
+avec chaque écriture et chaque suppression. La [recherche
+hybride](/fr/docs/concepts/glossary#hybrid-search) y ajoute le classement
+par mot-clé [BM25](/fr/docs/concepts/glossary#bm25) pour les termes
+exacts.
+
+**Chaque copie accepte des écritures.** La
+[réplication](/fr/docs/concepts/glossary#replication) copie les
+changements entre bases, dans un sens ou dans les deux, et chaque copie accepte des
+écritures ([actif-actif](/fr/docs/concepts/glossary#active-active)).
+Quand deux copies modifient le même document en même temps, les deux
+versions sont gardées : l’une est le gagnant, l’autre un
+[conflit](/fr/docs/concepts/glossary#conflict) que vous pouvez résoudre.
+Chaque copie choisit le même gagnant, si bien qu’elles finissent
+identiques : c’est la
+[convergence](/fr/docs/concepts/glossary#convergence).
+
+**Les agents partagent leurs données par des espaces.** Un
+[espace](/fr/docs/concepts/glossary#space) est une base créée via la
+couche agents de Barrel pour que plusieurs agents y travaillent. L’accès
+se donne avec un [jeton de
+capacité](/fr/docs/concepts/glossary#capability-token), qui accorde des
+droits nommés (lecture, écriture) sur un seul espace et peut être
+révoqué. Une [passation](/fr/docs/concepts/glossary#handoff) transmet
+une tâche et son espace d’un agent à un autre.
+
+**Une base a une timeline.** Vous pouvez créer une
+[branche](/fr/docs/concepts/glossary#branch), une copie séparée de la
+base pour essayer des changements, puis la fusionner plus tard. Une
+branche prise à un instant passé vous donne la [restauration à un instant
+donné](/fr/docs/concepts/glossary#point-in-time-recovery).
 
 ## Ce que vous obtenez
 
@@ -43,6 +103,10 @@ besoin.
 
 ## Comment le faire tourner
 
+Vous utilisez la même base de trois façons, selon l’endroit où tourne
+votre code. Elles se répliquent entre elles : vous pouvez commencer par
+l’une et en ajouter une autre plus tard.
+
 | Mode | Ce que c’est | Commencer ici |
 |------|------------|------------|
 | Embarqué | La bibliothèque `barrel` dans votre release OTP | [Démarrage rapide : embarqué](/fr/docs/start/quickstart-embedded) |
@@ -55,7 +119,8 @@ besoin.
 
 Barrel est une seule base de données faite de bibliothèques Apache 2.0
 séparées. Vous pouvez dépendre de `barrel` pour tout, ou d’une seule
-bibliothèque.
+bibliothèque quand vous n’avez besoin que de cette partie, par exemple
+`barrel_docdb` pour les documents et la synchronisation sans vecteurs.
 
 | Bibliothèque | Rôle |
 |---------|------|
@@ -73,6 +138,9 @@ Voir [Bibliothèques](/fr/docs/reference/libraries) pour les références de
 chaque bibliothèque.
 
 ## Ce qu’il ne fait pas
+
+Ces limites sont vraies aujourd’hui. Vérifiez-les avant de concevoir
+autour de Barrel.
 
 - **Les vecteurs ne sont pas répliqués.** Les documents et les pièces
   jointes se répliquent. En mode enregistrement, chaque copie reconstruit
