@@ -11,10 +11,10 @@ import NextSteps from '../../../../components/docs/NextSteps.astro';
 
 Dans ce démarrage rapide, vous ajoutez Barrel à une application Erlang
 et construisez une petite base de connaissances de support : trois
-articles, comme kb-142 « Reset a locked account ». Vous les stockez sous
+articles, comme kb-142 « Reset a locked account ». Vous les stockez sous
 forme de documents JSON, vous les sélectionnez avec une requête, puis vous
 retrouvez le bon article à partir d’une question formulée autrement,
-comme « I cannot log in ». Suivez ce parcours quand Barrel tournera dans
+comme « I cannot log in ». Suivez ce parcours quand Barrel tournera dans
 votre propre release OTP, sans serveur entre les deux : la base est une
 bibliothèque que votre code appelle directement, sans saut réseau ni
 processus séparé à déployer.
@@ -118,7 +118,7 @@ métadonnées sur la réponse ; `count` est le nombre de lignes.
 
 ## 5. Rechercher par le sens
 
-Un filtre BQL trouve « console », mais pas « I cannot log in » : aucun
+Un filtre BQL trouve « console », mais pas « I cannot log in » : aucun
 titre ne contient ces mots. La recherche par le sens compare des
 embeddings : une question retrouve ainsi l’article qui y répond.
 
@@ -158,7 +158,7 @@ barrel:search(Kb, <<"I cannot log in">>, #{k => 2}).`} />
 Vous avez demandé les 2 articles les plus proches (`k => 2`). Chaque
 résultat donne l’id du document dans `key`, le texte calculé dans
 `text`, les autres champs dans `metadata`, et un `score` de similarité,
-le plus haut en premier. Aucun titre ne contient « log in », et pourtant
+le plus haut en premier. Aucun titre ne contient « log in », et pourtant
 les deux articles de connexion reviennent, pas celui sur la clé d’API.
 </Callout>
 
@@ -181,7 +181,7 @@ pouvez donc sélectionner des champs du document à côté du score :
 `vector_top_k` est une fonction de table : elle renvoie les documents les
 plus proches sous forme de lignes, avec l’alias `v`, leur `id` et leur
 `_score`. `title` vient du document lui-même. Avec une autre question,
-« lost my credentials », kb-142 passe en tête.
+« lost my credentials », kb-142 passe en tête.
 </Callout>
 
 <Callout label="Note">

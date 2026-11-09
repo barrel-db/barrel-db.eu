@@ -39,8 +39,8 @@ plus récente.
 **La recherche par le sens repose sur les embeddings.** Un
 [embedding](/fr/docs/concepts/glossary#embedding) est un vecteur calculé
 à partir d’un texte par un modèle, de sorte que des textes de sens voisin
-obtiennent des vecteurs proches. C’est ainsi que « I cannot log in »
-trouve « Reset a locked account ». En [mode
+obtiennent des vecteurs proches. C’est ainsi que « I cannot log in »
+trouve « Reset a locked account ». En [mode
 enregistrement](/fr/docs/concepts/glossary#record-mode), vous nommez les
 champs à traiter, et Barrel calcule les vecteurs et les garde en phase
 avec chaque écriture et chaque suppression. La [recherche
