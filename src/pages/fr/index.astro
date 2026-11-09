@@ -1,10 +1,11 @@
 ---
-// translation_of: src/pages/index.astro source_hash: 80303fda1f783062
+// translation_of: src/pages/index.astro source_hash: e520ccb215b274b4
 import Base from '../../layouts/Base.astro';
 import RecordFigure from '../../components/RecordFigure.astro';
 import TwoSiteDemo from '../../components/demos/TwoSiteDemo.astro';
 import UseCaseTabs from '../../components/UseCaseTabs.astro';
 import CodeTabs from '../../components/CodeTabs.astro';
+import SectionMenu from '../../components/SectionMenu.astro';
 import { localize } from '../../i18n';
 
 const L = (p: string) => localize(p, 'fr');
@@ -87,7 +88,7 @@ await db.sync();   // envoie les écritures locales, puis récupère` },
     <RecordFigure animate caption="Un identifiant les relie. Le vecteur suit chaque modification et chaque suppression du document, et la réplication emporte le document et ses fichiers vers les autres copies." />
   </section>
 
-  <section class="section">
+  <section class="section" id="replication">
     <div class="wrap rep">
       <div>
         <h2 class="h2">Chaque copie accepte les écritures</h2>
@@ -102,7 +103,7 @@ await db.sync();   // envoie les écritures locales, puis récupère` },
     </div>
   </section>
 
-  <section class="section">
+  <section class="section" id="use-cases">
     <div class="wrap">
       <h2 class="h2">Ce que vous construisez avec</h2>
       <p class="section-intro">Huit architectures pour lesquelles Barrel est conçu. Chaque onglet part d’un problème que vous avez peut-être déjà, par exemple empêcher des agents de lire les données les uns des autres ou garder une application utilisable hors ligne, puis montre comment Barrel le traite : les pièces en jeu et le code. Choisissez celui qui ressemble le plus à ce que vous construisez ; chacun a sa page et un exemple à exécuter.</p>
@@ -136,7 +137,7 @@ await db.sync();   // envoie les écritures locales, puis récupère` },
     </div>
   </section>
 
-  <section class="section">
+  <section class="section" id="try-it">
     <div class="wrap">
       <h2 class="h2">Essayez en deux minutes</h2>
       <p class="section-intro">Chaque onglet écrit l’article de support <code>kb-142</code> et le relit avec une requête <a href={G('bql')}>BQL</a>, le langage de requête de Barrel, proche de SQL. L’onglet Erlang appelle directement la bibliothèque et ouvre la base sans stockage vectoriel : il n’a besoin d’aucun modèle d’embeddings. L’onglet REST parle avec curl à un <code>barrel_server</code> déjà lancé. L’onglet TypeScript écrit dans la copie du navigateur, puis la synchronise avec le serveur. Prenez l’onglet qui correspond à l’endroit où vous faites tourner Barrel, puis suivez son démarrage rapide pour l’installer.</p>
@@ -144,7 +145,7 @@ await db.sync();   // envoie les écritures locales, puis récupère` },
     </div>
   </section>
 
-  <section class="section">
+  <section class="section" id="status">
     <div class="wrap">
       <h2 class="h2">Ce qui fonctionne aujourd’hui, et ce qui ne fonctionne pas encore</h2>
       <p class="section-intro">Regardez la marque d’une fonctionnalité avant de compter dessus. « Fonctionne aujourd’hui » veut dire qu’elle marche dans la version actuelle et qu’elle est couverte par les suites de tests. « Optionnel » veut dire qu’elle marche une fois que vous avez installé ou configuré quelque chose, comme un virtualenv Python ou une clé d’API. « Prévu » veut dire qu’elle n’existe pas encore : n’en dépendez pas. Chaque page porte les trois mêmes marques, et tout ce qui n’est pas marqué fonctionne aujourd’hui.</p>
@@ -159,6 +160,13 @@ await db.sync();   // envoie les écritures locales, puis récupère` },
       <p class="small"><a href={L('/product/status')}>État de chaque fonctionnalité</a></p>
     </div>
   </section>
+  <SectionMenu openFrom={1760} items={[
+  { id: 'replication', text: 'Chaque copie accepte les écritures' },
+  { id: 'use-cases', text: 'Ce que vous construisez avec' },
+  { id: 'start', text: 'Trois endroits où la faire tourner' },
+  { id: 'try-it', text: 'Essayez en deux minutes' },
+  { id: 'status', text: 'Ce qui fonctionne aujourd’hui' },
+  ]} />
 </Base>
 
 <style>
