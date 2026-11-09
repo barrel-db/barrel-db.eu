@@ -85,7 +85,7 @@ jobs:
       - name: Install build tools
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends cmake curl libsnappy-dev liblz4-dev libzstd-dev
+          apt-get install -y --no-install-recommends cmake curl jq libsnappy-dev liblz4-dev libzstd-dev
 
       - uses: actions/setup-node@v4
         with:

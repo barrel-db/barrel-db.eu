@@ -25,7 +25,7 @@ plan:team versions on the branch:
   current price 45
   superseded price 50
 
-merge: #{failed => [],docs_read => 3,docs_written => 3}
+merge: #{docs_read => 3,docs_written => 3,failed => []}
 
 main, after merge:
   plan:edu   5

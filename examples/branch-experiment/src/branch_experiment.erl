@@ -49,7 +49,7 @@ run() ->
 
     %% Merge the branch back into main.
     {ok, Report} = barrel:merge(Exp),
-    io:format("~nmerge: ~p~n",
+    io:format("~nmerge: ~kp~n",
               [maps:with([docs_read, docs_written, failed], Report)]),
     table("main, after merge", Db),
 
