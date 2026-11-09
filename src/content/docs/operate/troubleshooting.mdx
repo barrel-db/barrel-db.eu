@@ -60,7 +60,7 @@ maps:with([docs_checked, bodies_repaired,
 | Vector files appear in `./priv` | The vector store was created before barrel 1.13.0 without `db_path`, under the working directory. It keeps being used there, with a notice in the log; new stores go to `<data_dir>/<name>.vectordb`. | Back that folder up, or set `vectordb => #{db_path => ...}` to place it yourself. |
 | A capability token gets 403 | It is for another space, or lacks the right. | Use a token for that space with the right it needs. |
 | Prometheus finds nothing at `/metrics` | There is no such route. | Push with the OTLP exporter, see [Monitoring](/docs/operate/monitoring). |
-| `barrel_db_documents_total` is missing | barrel_docdb 2.3.0 removed it: it never had a value. A document count is planned. | Use `barrel:info/1`, `barrel:vector_stats/1` or `barrel_docdb:stub_stats/1`. |
+| `barrel_db_documents_total_db` is missing just after an upgrade | A database written before barrel_docdb 2.4.0 is counted once in the background after it opens. | Wait for the first count; `db_info` reports `documents` as `undefined` until then. |
 | `barrel_db_pending_compaction_bytes_db` keeps growing | Compaction is falling behind the writes. | Raise `max_background_jobs` in `store_opts`, or spread the writes. |
 | A warning says `compaction_interval` or `prune_depth` no longer has an effect | These options were removed in barrel_docdb 2.2.0. | Remove them from your configuration. |
 

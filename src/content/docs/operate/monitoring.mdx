@@ -23,6 +23,8 @@ The document layer, barrel_docdb, records metrics on every node, whether or not 
 | `barrel_replication_errors_task_id_total{task_id}` | counter | Replication errors, per replication id |
 | `barrel_replication_active_task_id{task_id}` | gauge | 1 while the task runs, 0 when it is paused, failed, completed or deleted |
 | `barrel_replication_lag_seconds_task_id{task_id}` | gauge | Seconds since the last copied change was written on the source; 0 once caught up |
+| `barrel_db_documents_total_db{db}` | gauge | Live documents (deleted ones are not counted), exact |
+| `barrel_db_attachments_total_db{db}` | gauge | Attachments, exact, for both the blob and S3 backends |
 | `barrel_db_size_bytes_db{db}` | gauge | Document store size on disk |
 | `barrel_db_pending_compaction_bytes_db{db}` | gauge | Bytes compaction still has to rewrite |
 | `barrel_db_compactions_running_db{db}`, `barrel_db_compactions_queued_db{db}` | gauge | Compactions running now, and waiting for a thread |
@@ -32,9 +34,7 @@ The size and compaction gauges refresh every minute (`stats_interval`), and once
 
 Each declared metric is also printed once without labels; that copy stays at 0. Check `export_text/0` for the exact labeled name before you write an alert.
 
-<Callout label="Not recorded yet" kind="limit">
-There is no document or attachment count metric yet; one is planned. barrel_docdb 2.3.0 removed `barrel_db_documents_total` and `barrel_db_attachments_total`, which never had values. Use the stats calls below instead.
-</Callout>
+The document and attachment counts are exact: every write that adds or removes one updates the count in the same atomic write (barrel_docdb 2.4.0). A database written before 2.4.0 is counted once in the background after it opens; until then its counts are not published and `db_info` reports them as `undefined`.
 
 barrel_vectordb, barrel, barrel_server, barrel_spaces and barrel_embed record no metrics.
 
@@ -78,7 +78,7 @@ If you want a scrape endpoint, serve `barrel_metrics:export_text()` from a handl
 
 | Call | Returns |
 |---|---|
-| `barrel:info(Db)`, `GET /db/:db` | Configuration, retention, history floor, write-group counters, embedder, and `storage`: size on disk and compaction backlog. No document count. |
+| `barrel:info(Db)`, `GET /db/:db` | Configuration, retention, history floor, write-group counters, embedder, and `storage`: size on disk, compaction backlog, and the `documents` and `attachments` counts. |
 | `barrel:vector_stats(Db)` | Vector count, dimension, index type and whether the index was loaded or rebuilt |
 | `barrel_docdb:stub_stats(Name)` | Stub count and bytes. Scans the change feed in the caller. |
 | `barrel_rep_tasks:list_tasks()` | Every replication task with its status |
