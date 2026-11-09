@@ -20,6 +20,7 @@ export const docsNav: NavSection[] = [
     { label: 'Versions, conflicts, convergence', slug: 'concepts/versions' },
     { label: 'Spaces and capabilities', slug: 'concepts/spaces' },
     { label: 'Contexts and working sets', slug: 'concepts/contexts' },
+    { label: 'Glossary', slug: 'concepts/glossary' },
   ] },
   { title: 'Store and query', items: [
     { label: 'Embed barrel in an Erlang app', slug: 'guides/embedding' },
