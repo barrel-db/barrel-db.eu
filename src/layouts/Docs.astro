@@ -138,7 +138,8 @@ const editUrl = file
   }
 
   /* Prose: Markdown output */
-  .dk-prose { font-size: 17px; }
+  .dk-prose { font-size: 17px; line-height: 1.68; }
+  .dk-prose :global(p) { max-width: 68ch; }
   .dk-prose :global(h2) { font-size: 1.75rem; font-stretch: 108%; letter-spacing: -0.015em; margin: 44px 0 12px; scroll-margin-top: 16px; }
   .dk-prose :global(h3) { font-size: 1.25rem; margin: 28px 0 8px; scroll-margin-top: 16px; }
   .dk-prose :global(h4) { font-size: 1.05rem; margin: 22px 0 6px; }

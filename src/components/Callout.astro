@@ -1,10 +1,13 @@
 ---
+import { langOf, t } from '../i18n';
 interface Props {
   /** Short bold label: Note, Limit, Planned, Known gap. */
   label?: string;
-  kind?: 'note' | 'limit' | 'planned';
+  kind?: 'note' | 'limit' | 'planned' | 'happened';
 }
-const { label = 'Note', kind = 'note' } = Astro.props;
+const ui = t(langOf(Astro.url));
+const { kind = 'note' } = Astro.props;
+const label = Astro.props.label ?? (kind === 'happened' ? ui.whatHappened : 'Note');
 ---
 
 <div class:list={['callout', `callout--${kind}`]} role="note">
@@ -14,6 +17,7 @@ const { label = 'Note', kind = 'note' } = Astro.props;
 
 <style>
   .callout { display: flex; gap: 14px; padding: 14px 18px; border-radius: var(--radius); background: var(--paper-2); margin: 0 0 20px; }
+  .callout--happened { background: transparent; border-left: 3px solid var(--teal); border-radius: 0; flex-direction: column; gap: 4px; }
   .callout--planned { background: transparent; border: 1.5px dashed var(--ink-2); }
   .callout-l { font-weight: 650; white-space: nowrap; }
   .callout-b :global(p) { margin: 0; }
