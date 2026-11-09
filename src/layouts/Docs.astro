@@ -1,5 +1,6 @@
 ---
 import Base from './Base.astro';
+import SectionMenu from '../components/SectionMenu.astro';
 import { SITE_REPO, GITHUB, type Status } from '../data/site';
 import { navFor } from '../data/i18n';
 import { langOf, localize, counterpart, t } from '../i18n';
@@ -84,14 +85,7 @@ const editUrl = file
       </p>
     </article>
 
-    <aside class="dk-toc" aria-label={s.onThisPage} data-pagefind-ignore>
-      {toc.length > 0 && (
-        <div class="dk-toc-in">
-          <p class="dk-toc-h">{s.onThisPage}</p>
-          {toc.map((h) => <a href={`#${h.slug}`} class:list={[`d${h.depth}`]} data-toc>{h.text}</a>)}
-        </div>
-      )}
-    </aside>
+    <SectionMenu items={toc.map((h) => ({ id: h.slug, text: h.text, depth: h.depth }))} />
   </div>
 </Base>
 
@@ -121,14 +115,7 @@ const editUrl = file
   .dk-next { text-align: right; }
   .dk-meta { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 14px; color: var(--ink-2); margin: 16px 0 0; }
 
-  .dk-toc { flex: 0 1 210px; min-width: 180px; padding: 28px 0; font-size: 14px; }
-  .dk-toc-in { position: sticky; top: 20px; }
-  .dk-toc-h { font-weight: 650; margin: 0 0 8px; }
-  .dk-toc a { display: block; padding: 3px 0 3px 10px; border-left: 2px solid var(--rule); color: var(--ink-2); text-decoration: none; }
-  .dk-toc a.d3 { padding-left: 22px; }
-  .dk-toc a.is-current { border-left-color: var(--teal); color: var(--ink); }
 
-  @media (max-width: 1100px) { .dk-toc { display: none; } }
   @media (max-width: 820px) {
     .dk { padding: 0 16px; }
     .dk-side { flex-basis: 100%; padding: 16px 0 0; }
@@ -161,17 +148,4 @@ const editUrl = file
   const slot = document.querySelector('.dk-mobile-nav .dk-tree');
   if (tree && slot) slot.innerHTML = tree.innerHTML;
 
-  // Highlight the section being read in "On this page".
-  const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-toc]'));
-  if (links.length && 'IntersectionObserver' in window) {
-    const byId = new Map(links.map((a) => [decodeURIComponent(a.hash.slice(1)), a]));
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => {
-        if (!e.isIntersecting) return;
-        links.forEach((a) => a.classList.remove('is-current'));
-        byId.get(e.target.id)?.classList.add('is-current');
-      });
-    }, { rootMargin: '0px 0px -70% 0px' });
-    byId.forEach((_, id) => { const h = document.getElementById(id); if (h) io.observe(h); });
-  }
 </script>

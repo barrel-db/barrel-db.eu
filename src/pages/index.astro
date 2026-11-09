@@ -4,6 +4,7 @@ import RecordFigure from '../components/RecordFigure.astro';
 import TwoSiteDemo from '../components/demos/TwoSiteDemo.astro';
 import UseCaseTabs from '../components/UseCaseTabs.astro';
 import CodeTabs from '../components/CodeTabs.astro';
+import SectionMenu from '../components/SectionMenu.astro';
 
 const G = (slug: string) => `/docs/concepts/glossary#${slug}`;
 
@@ -84,7 +85,7 @@ await db.sync();   // push local writes, then pull` },
     <RecordFigure animate caption="One id ties them together. The vector follows every edit and delete of the document, and replication carries the document and its files to other copies." />
   </section>
 
-  <section class="section">
+  <section class="section" id="replication">
     <div class="wrap rep">
       <div>
         <h2 class="h2">Every copy takes writes</h2>
@@ -99,7 +100,7 @@ await db.sync();   // push local writes, then pull` },
     </div>
   </section>
 
-  <section class="section">
+  <section class="section" id="use-cases">
     <div class="wrap">
       <h2 class="h2">What you build with it</h2>
       <p class="section-intro">Eight architectures Barrel is made for. Each tab starts from a problem you may already have, such as keeping agents from reading each other's data or keeping an app working offline, then shows how Barrel handles it: the pieces involved and the code. Pick the one closest to what you are building; each has its own page and a runnable example.</p>
@@ -133,7 +134,7 @@ await db.sync();   // push local writes, then pull` },
     </div>
   </section>
 
-  <section class="section">
+  <section class="section" id="try-it">
     <div class="wrap">
       <h2 class="h2">Try it in two minutes</h2>
       <p class="section-intro">Each tab writes the support article <code>kb-142</code> and reads it back with a query in <a href={G('bql')}>BQL</a>, Barrel's SQL-like query language. The Erlang tab calls the library directly and opens the database without a vector store, so it needs no embedding model. The REST tab talks to a running <code>barrel_server</code> with curl. The TypeScript tab writes to the browser copy, then syncs it with the server. Pick the tab that matches where you run Barrel, then follow its quickstart to set it up.</p>
@@ -141,7 +142,7 @@ await db.sync();   // push local writes, then pull` },
     </div>
   </section>
 
-  <section class="section">
+  <section class="section" id="status">
     <div class="wrap">
       <h2 class="h2">What works today, and what doesn't yet</h2>
       <p class="section-intro">Check a feature's mark before you plan around it. Works today means it works in the current release and is covered by the test suites. Optional means it works once you install or configure something, such as a Python virtualenv or an API key. Planned means it is not built yet, so do not depend on it. Every page carries the same three marks, and anything without a mark works today.</p>
@@ -156,6 +157,13 @@ await db.sync();   // push local writes, then pull` },
       <p class="small"><a href="/product/status">Status of every feature</a></p>
     </div>
   </section>
+  <SectionMenu openFrom={1760} items={[
+  { id: 'replication', text: 'Every copy takes writes' },
+  { id: 'use-cases', text: 'What you build with it' },
+  { id: 'start', text: 'Three places to run it' },
+  { id: 'try-it', text: 'Try it in two minutes' },
+  { id: 'status', text: 'What works today' },
+  ]} />
 </Base>
 
 <style>
