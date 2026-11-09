@@ -5,16 +5,24 @@ import TwoSiteDemo from '../components/demos/TwoSiteDemo.astro';
 import UseCaseTabs from '../components/UseCaseTabs.astro';
 import CodeTabs from '../components/CodeTabs.astro';
 
+const G = (slug: string) => `/docs/concepts/glossary#${slug}`;
+
 const places = [
-  { title: 'Embedded', when: 'Inside your Erlang/OTP release. No network hop, no separate service to run.', href: '/docs/start/quickstart-embedded', layers: [
+  { title: 'Embedded', when: 'Inside your Erlang/OTP release. No network hop, no separate service to run.', href: '/docs/start/quickstart-embedded',
+    fits: 'Fits an Erlang or Elixir application that owns its data. You add <code>barrel</code> as a dependency and call it as a library, with the full API.',
+    start: 'Quickstart: embedded', layers: [
     { name: 'Your application', note: 'agents, workers, OTP processes', edge: 'calls the barrel API' },
     { name: 'barrel', note: 'records, search, branches', edge: 'stores in', rec: true },
     { name: 'RocksDB on local disk', note: 'documents, attachments, vectors' } ] },
-  { title: 'Server', when: 'One node many clients share: agents over MCP, services over REST, other nodes over the sync wire.', href: '/docs/start/quickstart-server', layers: [
+  { title: 'Server', when: 'One node many clients share: agents over MCP, services over REST, other nodes over the sync wire.', href: '/docs/start/quickstart-server',
+    fits: `Fits clients in other languages or on other machines, and AI agents that connect through <a href="${G('mcp')}">MCP</a>, the protocol agent tools use to call outside services. Start here if you do not write Erlang.`,
+    start: 'Quickstart: server', layers: [
     { name: 'Agents and services', note: 'MCP clients, curl, your backend', edge: 'MCP at /mcp, REST at /db' },
     { name: 'barrel_server', note: 'auth, capability tokens, spaces', edge: 'calls' },
     { name: 'barrel', note: 'the same embedded database', rec: true } ] },
-  { title: 'Browser', when: 'A local copy in a web app. Reads and writes keep working offline.', href: '/docs/start/quickstart-browser', layers: [
+  { title: 'Browser', when: 'A local copy in a web app. Reads and writes keep working offline.', href: '/docs/start/quickstart-browser',
+    fits: 'Fits a web app whose users must keep working without a connection. The browser copy syncs with a <code>barrel_server</code>, which holds the durable copy, so you run one too.',
+    start: 'Quickstart: browser', layers: [
     { name: 'Your web app', note: 'TypeScript', edge: 'reads and writes locally' },
     { name: 'barrel-lite', note: 'stores in the browser (OPFS)', edge: 'syncs over /db/:db/_sync', rec: true },
     { name: 'barrel_server', note: 'the copy it syncs with' } ] },
@@ -62,9 +70,10 @@ await db.sync();   // push local writes, then pull` },
     <div class="hero-text">
       <h1 class="display">A database for agents.</h1>
       <p class="lead">Give every agent, customer and task its own database. Barrel keeps the document, the files attached to it and its vector under one id. You search it by meaning and by keyword, keep every version, branch it to try things, sync it to other nodes and browsers, and share it through capability tokens.</p>
+      <p class="hero-why">You need this when agents read and write the data your application runs on: support articles, tasks, notes, code. Usually each item is split across a document store, a file store and a vector index, and your code keeps the three in step. In Barrel they form one <a href={G('record')}>record</a>, so the files and the vector stay tied to the document they belong to.</p>
       <p class="muted hero-sub">Every copy takes writes, on a server, at the edge or in a browser, and replication brings them back into agreement without losing an edit. Embedded in Erlang, served over REST and MCP. Open source, Apache 2.0.</p>
       <p class="hero-cta">
-        <a class="button button--primary" href="/docs/start/quickstart-embedded">Get started</a>
+        <a class="button button--primary" href="#start">Get started</a>
         <a class="button" href="/what-is-barrel">What is Barrel?</a>
       </p>
       <div class="hero-install">
@@ -79,7 +88,8 @@ await db.sync();   // push local writes, then pull` },
     <div class="wrap rep">
       <div>
         <h2 class="h2">Every copy takes writes</h2>
-        <p>Active-active replication: no leader, no primary. Sites, edge nodes and browsers each keep working while apart, then converge.</p>
+        <p><a href={G('active-active')}>Active-active</a> <a href={G('replication')}>replication</a> means every copy of a database accepts writes. There is no leader or primary that the others must reach first, so sites, edge nodes and browsers each keep working while the network between them is down.</p>
+        <p>When they reconnect, the copies exchange their changes and <a href={G('convergence')}>converge</a>: they end up with the same documents and agree on the same version of each one. You need this when a site, a device or a browser must keep working through a lost connection, or when people in several places edit the same data.</p>
         <ul class="rep-points">
           {repPoints.map(([t, b]) => <li><strong>{t}</strong> <span class="muted">{b}</span></li>)}
         </ul>
@@ -92,15 +102,15 @@ await db.sync();   // push local writes, then pull` },
   <section class="section">
     <div class="wrap">
       <h2 class="h2">What you build with it</h2>
-      <p class="section-intro">Eight architectures Barrel is made for. Each has its own page and a runnable example.</p>
+      <p class="section-intro">Eight architectures Barrel is made for. Each tab starts from a problem you may already have, such as keeping agents from reading each other's data or keeping an app working offline, then shows how Barrel handles it: the pieces involved and the code. Pick the one closest to what you are building; each has its own page and a runnable example.</p>
       <UseCaseTabs />
     </div>
   </section>
 
-  <section class="section">
+  <section class="section" id="start">
     <div class="wrap">
       <h2 class="h2">Three places to run it</h2>
-      <p class="section-intro">Same record, same replication protocol. Pick where the database lives; the agents that use it don't change.</p>
+      <p class="section-intro">This is where you start. Barrel is the same database in all three places: the same record, the same replication protocol, so copies in different places can sync with each other. Pick where the database lives from what your application is written in, whether its clients reach it over the network, and whether it must work offline. The agents that use it don't change, and you can add the other places later.</p>
       <div class="three">
         {places.map((p) => (
           <div>
@@ -114,17 +124,19 @@ await db.sync();   // push local writes, then pull` },
                 </li>
               ))}
             </ol>
+            <p class="small pl-f" set:html={p.fits} />
+            <p class="small pl-s"><a href={p.href}><strong>{p.start}</strong></a></p>
           </div>
         ))}
       </div>
-      <p class="small"><a href="/docs/start/choose-deployment">Choose a deployment</a></p>
+      <p class="small">Not sure which one fits? <a href="/docs/start/choose-deployment">Choose a deployment</a> compares the three in one table: what each gives you and what to know before you pick.</p>
     </div>
   </section>
 
   <section class="section">
     <div class="wrap">
       <h2 class="h2">Try it in two minutes</h2>
-      <p class="section-intro">The same record written and read three ways.</p>
+      <p class="section-intro">Each tab writes the support article <code>kb-142</code> and reads it back with a query in <a href={G('bql')}>BQL</a>, Barrel's SQL-like query language. The Erlang tab calls the library directly and opens the database without a vector store, so it needs no embedding model. The REST tab talks to a running <code>barrel_server</code> with curl. The TypeScript tab writes to the browser copy, then syncs it with the server. Pick the tab that matches where you run Barrel, then follow its quickstart to set it up.</p>
       <div class="quick"><CodeTabs tabs={quick} /></div>
     </div>
   </section>
@@ -132,7 +144,7 @@ await db.sync();   // push local writes, then pull` },
   <section class="section">
     <div class="wrap">
       <h2 class="h2">What works today, and what doesn't yet</h2>
-      <p class="section-intro">Every page carries the same three marks. Anything not marked works today and is covered by the test suites.</p>
+      <p class="section-intro">Check a feature's mark before you plan around it. Works today means it works in the current release and is covered by the test suites. Optional means it works once you install or configure something, such as a Python virtualenv or an API key. Planned means it is not built yet, so do not depend on it. Every page carries the same three marks, and anything without a mark works today.</p>
       <div class="status">
         {status.map((g) => (
           <div>
@@ -162,6 +174,10 @@ await db.sync();   // push local writes, then pull` },
   .pl-t { font-size: var(--step-1); margin: 0 0 4px; }
   .pl-t a { color: var(--ink); text-decoration: none; }
   .pl-w { min-height: 4.8em; margin: 0 0 16px; }
+  .pl-f { margin: 16px 0 8px; }
+  .pl-s { margin: 0; }
+  .section-intro { max-width: 68ch; }
+  .hero-why { max-width: 36em; margin: 0 0 20px; }
   .stack { list-style: none; margin: 0; padding: 0; }
   .layer { padding: 12px 14px; border: 1.5px solid var(--ink); border-radius: 6px; background: var(--card); display: flex; flex-direction: column; }
   .layer span { font-size: 13px; color: var(--ink-2); }

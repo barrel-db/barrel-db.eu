@@ -4,14 +4,30 @@ description: How a space, a capability token, a session and a handoff fit togeth
 ---
 import CodeBlock from '../../../components/CodeBlock.astro';
 import Callout from '../../../components/Callout.astro';
+import NextSteps from '../../../components/docs/NextSteps.astro';
 
-A space is a Barrel database that agents share by holding a capability
-token for it. A session is an agent's working context inside a space,
-with a sliding TTL. A handoff passes a task, and the token to work on it,
-from one agent to another. Read this to understand the model before you
-use the [spaces guide](/docs/guides/spaces), and to know which of these
-checks protect you in your own process and which only behind
-`barrel_server`.
+When several agents work together, each one needs a place to keep its
+notes and results, a way to share them with the agents it works with,
+and a guarantee that it cannot read the work of agents it does not work
+with. Giving every agent the server's global token gives each of them
+access to everything. Spaces give each piece of shared work its own
+database and its own keys.
+
+A [space](/docs/concepts/glossary#space) is a Barrel database that agents
+share by holding a [capability
+token](/docs/concepts/glossary#capability-token) for it: a secret that
+grants rights on that one space and nothing else. A
+[session](/docs/concepts/glossary#session) is an agent's working context
+inside a space, with a sliding TTL: it expires after a period without
+activity. A [handoff](/docs/concepts/glossary#handoff) passes a task, and
+the token to work on it, from one agent to another. Read this to
+understand the model before you use the [spaces guide](/docs/guides/spaces),
+and to know which of these checks protect you in your own process and
+which only behind [`barrel_server`](/docs/concepts/glossary#barrel-server).
+
+The examples on this page follow one scenario. Alice creates a space for
+a joint research draft, gives Carol read-only access, works on the draft
+in a session, then hands the task to Bob to finish.
 
 ## The pieces
 
@@ -22,8 +38,12 @@ checks protect you in your own process and which only behind
 | Session | A working context with messages, data and pins | Documents in the space, expiring by TTL |
 | Handoff | A task plus a token for its space | The registry, so it can be listed |
 
+Since only the hash of a token is stored, Barrel cannot show you a token
+again. Keep it when you grant it, and grant a new one if it is lost.
+
 ## Rights
 
+Each token carries rights that say what its holder may do in the space.
 Rights form a ladder: `read` < `write` < `admin`. A higher right includes
 the lower ones.
 
@@ -38,6 +58,10 @@ A token never reaches another space, database lifecycle (`PUT` and
 
 ## Create a space and grant a token
 
+Alice creates the space and grants Carol a `read` token. The last two
+lines check what Carol's token allows: a write in the space, then a read
+in another space.
+
 <CodeBlock label="Erlang shell" code={`{ok, _} = application:ensure_all_started(barrel_spaces),
 {ok, #{id := SpaceId} = Space} =
     barrel_spaces:create_space(#{label => <<"joint research">>,
@@ -51,28 +75,41 @@ barrel_caps:verify(ReadTok, <<"sp_other">>, read).`} />
 <CodeBlock output label="Output from a run on barrel_spaces 1.3.1" code={`{error,forbidden}
 {error,wrong_space}`} />
 
+<Callout kind="happened">
+Both checks fail, each for its own reason. `forbidden` means the token
+is valid for this space but does not carry `write`. `wrong_space` means
+the token belongs to another space, whatever its rights.
+</Callout>
+
 `barrel_caps:revoke/1` ends one token; `barrel_spaces:drop_space/1` ends
 the space and revokes every token for it.
 
 ## Sessions
 
-A session belongs to an agent and expires after `ttl` seconds without a
-`touch` (the space default is 3600). It holds messages, key/value data
-and pinned context, all stored as documents in the space, so any holder
-of a token for the space can read them.
+A session is where an agent keeps what it is doing: the conversation so
+far, small pieces of state, and [pins](/docs/concepts/glossary#pin),
+the facts it must keep in view. A session belongs to an agent and expires
+after `ttl` seconds without a `touch` (the space default is 3600). It
+holds messages, key/value data and pinned context, all stored as
+documents in the space, so any holder of a token for the space can read
+them.
 
 <CodeBlock label="Erlang shell" code={`{ok, Sid} = barrel_session:create(Space,
     #{agent => <<"alice">>, ttl => 1800}),
 {ok, _} = barrel_session:add_message(Space, Sid,
     #{role => <<"user">>, content => <<"draft is half done">>}).`} />
 
+Here Alice opens a session that expires after 30 minutes without
+activity, and records where the draft stands.
+
 ## Handoffs
 
-A handoff issues a token for the space (rights `read` and `write` by
-default) and returns it once. Whoever presents it accepts: the handoff
-flips from pending to accepted, a second accept fails, and the acceptor
-gets a session in the same space. Nothing is copied; the context is read
-in place.
+A handoff is how Alice gives the rest of the task to Bob without copying
+anything. A handoff issues a token for the space (rights `read` and
+`write` by default) and returns it once. Whoever presents it accepts: the
+handoff flips from pending to accepted, a second accept fails, and the
+acceptor gets a session in the same space. Nothing is copied; the context
+is read in place.
 
 <CodeBlock label="Erlang shell" code={`{ok, #{token := HTok}} = barrel_handoff:create(Space,
     #{task_name => <<"finish the draft">>,
@@ -88,10 +125,21 @@ barrel_caps:verify(HTok, SpaceId, read).`} />
 <CodeBlock output label="Output from a run on barrel_spaces 1.3.1" code={`{error,already_accepted}
 {error,revoked}`} />
 
+<Callout kind="happened">
+Bob accepts first and gets his own session. Mallory, presenting the same
+token, gets `already_accepted`. Once Bob completes the task, the token is
+revoked, so a later check returns `revoked`.
+</Callout>
+
 Completing a handoff revokes its token by default. `chain/2` hands it on
 instead; use one or the other, not both.
 
 ## In process and behind the server
+
+Where the token is checked decides how much it protects you. Inside your
+own Erlang node, every piece of code can reach every database, so a token
+is only as strong as the code that checks it. Behind `barrel_server`, the
+server checks it on every request.
 
 <Callout kind="limit" label="Limit">
 In your own Erlang node, tokens are advisory. `barrel_spaces:open_space/1`
@@ -111,7 +159,9 @@ is the only isolation in process.
 
 So: when agents must not reach each other's data, run them against
 `barrel_server` with capability tokens, and keep the global token away
-from them. See [Authentication](/docs/security/authentication).
+from them. The same tokens work over REST and
+[MCP](/docs/concepts/glossary#mcp). See
+[Authentication](/docs/security/authentication).
 
 ## Notes
 
@@ -121,3 +171,9 @@ from them. See [Authentication](/docs/security/authentication).
 - A space's vector store is per node and not replicated.
 - Encrypted spaces are available from Erlang only: the server cannot
   pass a key spec when it opens a space.
+
+<NextSteps steps={[
+  { href: '/docs/guides/spaces', label: 'Spaces, sessions, handoffs', why: 'Every call for spaces, sessions and handoffs, with durable sessions and imports.' },
+  { href: '/docs/security/authentication', label: 'Authentication', why: 'How barrel_server checks capability tokens alongside its other methods.' },
+  { href: '/docs/guides/mcp', label: 'MCP endpoint', why: 'Give agents a scoped token and let them reach the space through MCP.' },
+]} />

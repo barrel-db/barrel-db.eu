@@ -3,17 +3,36 @@ title: The record
 description: What Barrel stores under one id - a JSON document, its attachments and its vector - and which fields Barrel adds or reserves.
 ---
 import CodeBlock from '../../../components/CodeBlock.astro';
+import Callout from '../../../components/Callout.astro';
 import RecordFigure from '../../../components/RecordFigure.astro';
+import NextSteps from '../../../components/docs/NextSteps.astro';
 
-A record is everything Barrel keeps under one id: a JSON document, the
-files attached to it, and in record mode the vector that represents it.
-They are read, written, replicated and deleted by that id. Read this to
-know what a document looks like on the way in and on the way out, which
-fields Barrel adds, and what moves with the record.
+An application that searches its own content usually keeps three things
+in three places: the data in a database, the files in object storage, and
+the vectors in a vector store. Each update then means three writes, and
+sooner or later a deleted article still shows up in search, or a file
+points to a row that is gone. Barrel avoids that drift by keeping all
+three under one id.
+
+A [record](/docs/concepts/glossary#record) is everything Barrel keeps
+under that id: a JSON document, the files attached to it, and in record
+mode the vector that represents it. They are read, written, replicated
+and deleted by that id. Read this to know what a document looks like on
+the way in and on the way out, which fields Barrel adds, and what moves
+with the record.
 
 <RecordFigure id="kb-142" caption="One id: the document on top, attachments on the left, the vector on the right." />
 
+Take the support article `kb-142`, "Reset a locked account". Its fields
+are the document, the file `steps.md` is an attachment, and the vector
+computed from its text is what lets a search by meaning find it. This
+page follows that one article.
+
 ## The three parts
+
+Each part of a record behaves a little differently when it changes or
+when it travels to another copy of the database. The table sums it up;
+the sections below explain each row.
 
 | Part | What it is | Versioned | Replicated |
 |------|------------|-----------|------------|
@@ -23,8 +42,9 @@ fields Barrel adds, and what moves with the record.
 
 ## The document
 
-You write a map with an `id`. Every path in it is indexed, so you can
-query any field without declaring an index.
+A [document](/docs/concepts/glossary#document) is the part you query. You
+write a map with an `id`. Every path in it is indexed, so you can query
+any field without declaring an index.
 
 <CodeBlock label="Erlang shell" code={`barrel:put_doc(Db, #{<<"id">> => <<"kb-142">>,
     <<"title">> => <<"Reset a locked account">>,
@@ -36,15 +56,28 @@ barrel:get_doc(Db, <<"kb-142">>).`} />
       <<"id">> => <<"kb-142">>,
       <<"title">> => <<"Reset a locked account">>}}`} />
 
-- `_rev` is the version token Barrel adds on read. Send it back to update
-  the document; a missing or stale `_rev` returns `{error, conflict}`.
-  See [Versions, conflicts, convergence](/docs/concepts/versions).
+<Callout kind="happened">
+The read returns your `id` and `title`, plus a `_rev` that Barrel added.
+The `_note` field you sent is gone: Barrel dropped it because it starts
+with `_`.
+</Callout>
+
+- `_rev` is the [revision](/docs/concepts/glossary#revision): the version
+  token Barrel adds on read. Send it back to update the document; a
+  missing or stale `_rev` returns `{error, conflict}`. This stops you from
+  overwriting a change you never read. See [Versions, conflicts,
+  convergence](/docs/concepts/versions).
 - Top-level fields that start with `_` are reserved. Barrel drops the
   ones you send (`_note` above) and never indexes them.
 - A delete writes a version that marks the document deleted. A read then
   returns `{error, not_found}`, and the vector goes too.
 
 ## Fields Barrel adds on request
+
+Besides `_rev`, Barrel adds a few fields to a read when you ask for them.
+You need them when a document has
+[conflicts](/docs/concepts/glossary#conflict) to resolve, or when you
+want to see the vector behind a search result.
 
 | Field | Read option | What it holds |
 |-------|-------------|---------------|
@@ -55,8 +88,11 @@ barrel:get_doc(Db, <<"kb-142">>).`} />
 
 ## Attachments
 
-Attachments belong to a document id. Writing one does not change the
-document's `_rev`.
+An [attachment](/docs/concepts/glossary#attachment) is a named file that
+belongs to a document id, such as the `steps.md` file of `kb-142`. Use
+attachments for content that is not JSON. Writing one does not change the
+document's `_rev`, so updating a file never conflicts with an edit of the
+document.
 
 <CodeBlock label="Erlang shell" code={`barrel:put_attachment(Db, <<"kb-142">>, <<"steps.md">>,
                       <<"1. Open the console">>),
@@ -68,27 +104,46 @@ barrel:list_attachments(Db, <<"kb-142">>).`} />
       chunked => false}}
 [<<"steps.md">>]`} />
 
+<Callout kind="happened">
+The write returns the attachment's metadata: its name, its size in bytes
+(19), a SHA-256 digest of the content, and a generic content type since
+none was given. The listing then shows `steps.md` as the only attachment
+of `kb-142`.
+</Callout>
+
 See [Attachments](/docs/store/attachments).
 
 ## The vector
 
+A [vector](/docs/concepts/glossary#vector) is a list of numbers that
+stands for the meaning of a text. It is what lets a search find `kb-142`
+when the query uses other words than the article.
+
 In [record mode](/docs/guides/record-mode) you give the database an
 embedding policy: which fields to embed, with which provider, at which
-dimension. Barrel embeds those fields on every write and drops the vector
-on delete. Search results read their text and metadata from the current
-document.
+dimension. Barrel computes the
+[embedding](/docs/concepts/glossary#embedding) of those fields on every
+write and drops the vector on delete. Search results read their text and
+metadata from the current document, so they never show a stale copy.
 
 In a plain database you manage vectors yourself with `vector_add`, under
 the same id or another one. The document and its vector are then two
-separate writes.
+separate writes, and keeping them in step is up to you.
 
 ## What else a write can carry
+
+A write can carry options beyond the document itself. They say who made
+the change, how long the document lives, and whether to wait for the
+disk.
 
 | Write option | Effect |
 |--------------|--------|
 | `provenance => #{actor, session, source}` | Stored with the version, shown in history |
 | `expires_at => UnixMs` | The document disappears after that time |
 | `sync => true` | Waits for the write to reach disk |
+
+Here an agent, `agent-7`, records itself and its session as the author
+of a write. The version history then shows who changed the article.
 
 <CodeBlock label="Erlang shell" code={`barrel:put_doc(Db, Doc,
     #{provenance => #{actor => <<"agent-7">>,
@@ -104,5 +159,17 @@ barrel:doc_versions(Db, <<"kb-142">>).`} />
        vv => #{<<"wddc4e1c028733ad0">> =>
                    {timestamp,1794126491982,0}}}]}`} />
 
+<Callout kind="happened">
+The history holds one version, marked `current` and not deleted. Its
+`provenance` holds the actor and session you passed. `vv` is the version
+vector: for each writer, the latest clock this version had seen.
+</Callout>
+
 Provenance is not replicated. See [Audit and
 provenance](/docs/guides/audit-provenance).
+
+<NextSteps steps={[
+  { href: '/docs/concepts/versions', label: 'Versions, conflicts, convergence', why: 'What a revision is made of, and what happens when two copies edit the same document.' },
+  { href: '/docs/guides/record-mode', label: 'Record mode', why: 'Set up the embedding policy so Barrel keeps vectors in step with documents.' },
+  { href: '/docs/store/attachments', label: 'Attachments', why: 'Store, read and replicate the files of a record.' },
+]} />

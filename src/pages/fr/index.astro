@@ -1,5 +1,5 @@
 ---
-// translation_of: src/pages/index.astro source_hash: 144519209fa99203
+// translation_of: src/pages/index.astro source_hash: 80303fda1f783062
 import Base from '../../layouts/Base.astro';
 import RecordFigure from '../../components/RecordFigure.astro';
 import TwoSiteDemo from '../../components/demos/TwoSiteDemo.astro';
@@ -8,17 +8,24 @@ import CodeTabs from '../../components/CodeTabs.astro';
 import { localize } from '../../i18n';
 
 const L = (p: string) => localize(p, 'fr');
+const G = (slug: string) => `${L('/docs/concepts/glossary')}#${slug}`;
 
 const places = [
-  { title: 'Intégrée', when: 'Dans votre release Erlang/OTP. Aucun aller-retour réseau, aucun service séparé à faire tourner.', href: '/docs/start/quickstart-embedded', layers: [
+  { title: 'Intégrée', when: 'Dans votre release Erlang/OTP. Aucun aller-retour réseau, aucun service séparé à faire tourner.', href: '/docs/start/quickstart-embedded',
+    fits: 'Pour une application Erlang ou Elixir qui possède ses données. Vous ajoutez <code>barrel</code> en dépendance et vous l’appelez comme une bibliothèque, avec toute l’API.',
+    start: 'Démarrage rapide : embarqué', layers: [
     { name: 'Votre application', note: 'agents, workers, processus OTP', edge: 'appelle l’API barrel' },
     { name: 'barrel', note: 'enregistrements, recherche, branches', edge: 'stocke dans', rec: true },
     { name: 'RocksDB sur disque local', note: 'documents, pièces jointes, vecteurs' } ] },
-  { title: 'Serveur', when: 'Un nœud partagé par de nombreux clients : les agents en MCP, les services en REST, les autres nœuds par le protocole de synchronisation.', href: '/docs/start/quickstart-server', layers: [
+  { title: 'Serveur', when: 'Un nœud partagé par de nombreux clients : les agents en MCP, les services en REST, les autres nœuds par le protocole de synchronisation.', href: '/docs/start/quickstart-server',
+    fits: `Pour des clients écrits dans d’autres langages ou sur d’autres machines, et pour les agents d’IA qui se connectent en <a href="${G('mcp')}">MCP</a>, le protocole qu’utilisent les outils d’agents pour appeler des services extérieurs. Commencez ici si vous n’écrivez pas en Erlang.`,
+    start: 'Démarrage rapide : serveur', layers: [
     { name: 'Agents et services', note: 'clients MCP, curl, votre backend', edge: 'MCP sur /mcp, REST sur /db' },
     { name: 'barrel_server', note: 'authentification, jetons de capacité, espaces', edge: 'appelle' },
     { name: 'barrel', note: 'la même base intégrée', rec: true } ] },
-  { title: 'Navigateur', when: 'Une copie locale dans une application web. Lectures et écritures continuent de fonctionner hors ligne.', href: '/docs/start/quickstart-browser', layers: [
+  { title: 'Navigateur', when: 'Une copie locale dans une application web. Lectures et écritures continuent de fonctionner hors ligne.', href: '/docs/start/quickstart-browser',
+    fits: 'Pour une application web dont les utilisateurs doivent continuer à travailler sans connexion. La copie du navigateur se synchronise avec un <code>barrel_server</code>, qui garde la copie durable : vous en faites donc tourner un aussi.',
+    start: 'Démarrage rapide : navigateur', layers: [
     { name: 'Votre application web', note: 'TypeScript', edge: 'lit et écrit en local' },
     { name: 'barrel-lite', note: 'stocke dans le navigateur (OPFS)', edge: 'se synchronise via /db/:db/_sync', rec: true },
     { name: 'barrel_server', note: 'la copie avec laquelle il se synchronise' } ] },
@@ -66,9 +73,10 @@ await db.sync();   // envoie les écritures locales, puis récupère` },
     <div class="hero-text">
       <h1 class="display">Une base de données pour les agents.</h1>
       <p class="lead">Donnez à chaque agent, chaque client et chaque tâche sa propre base. Barrel garde le document, les fichiers qui y sont attachés et son vecteur sous un même identifiant. Vous y cherchez par le sens et par mots-clés, vous gardez chaque version, vous créez des branches pour faire des essais, vous la synchronisez avec d’autres nœuds et des navigateurs, et vous la partagez avec des jetons de capacité.</p>
+      <p class="hero-why">Vous en avez besoin quand des agents lisent et écrivent les données dont votre application dépend : articles de support, tâches, notes, code. D’habitude, chaque élément est éclaté entre une base de documents, un stockage de fichiers et un index vectoriel, et c’est votre code qui garde les trois en phase. Dans Barrel, ils forment un seul <a href={G('record')}>enregistrement</a> : les fichiers et le vecteur restent liés au document auquel ils appartiennent.</p>
       <p class="muted hero-sub">Chaque copie accepte les écritures, sur un serveur, en périphérie ou dans un navigateur, et la réplication les remet d’accord sans perdre une seule modification. Intégrée en Erlang, servie en REST et en MCP. Open source, Apache 2.0.</p>
       <p class="hero-cta">
-        <a class="button button--primary" href={L('/docs/start/quickstart-embedded')}>Commencer</a>
+        <a class="button button--primary" href="#start">Commencer</a>
         <a class="button" href={L('/what-is-barrel')}>Qu’est-ce que Barrel ?</a>
       </p>
       <div class="hero-install">
@@ -83,7 +91,8 @@ await db.sync();   // envoie les écritures locales, puis récupère` },
     <div class="wrap rep">
       <div>
         <h2 class="h2">Chaque copie accepte les écritures</h2>
-        <p>Réplication active-active : ni leader, ni copie principale. Sites, nœuds en périphérie et navigateurs continuent chacun de travailler quand ils sont séparés, puis convergent.</p>
+        <p>La <a href={G('replication')}>réplication</a> <a href={G('active-active')}>active-active</a> veut dire que chaque copie d’une base accepte les écritures. Il n’y a ni leader ni copie principale à joindre d’abord : sites, nœuds en périphérie et navigateurs continuent chacun de travailler quand le réseau entre eux est coupé.</p>
+        <p>Quand ils se reconnectent, les copies échangent leurs modifications et <a href={G('convergence')}>convergent</a> : elles finissent avec les mêmes documents et s’accordent sur la même version de chacun. Vous en avez besoin quand un site, un appareil ou un navigateur doit continuer à travailler malgré une connexion perdue, ou quand des personnes à plusieurs endroits modifient les mêmes données.</p>
         <ul class="rep-points">
           {repPoints.map(([t, b]) => <li><strong>{t}</strong> <span class="muted">{b}</span></li>)}
         </ul>
@@ -96,15 +105,15 @@ await db.sync();   // envoie les écritures locales, puis récupère` },
   <section class="section">
     <div class="wrap">
       <h2 class="h2">Ce que vous construisez avec</h2>
-      <p class="section-intro">Huit architectures pour lesquelles Barrel est conçu. Chacune a sa page et un exemple à exécuter.</p>
+      <p class="section-intro">Huit architectures pour lesquelles Barrel est conçu. Chaque onglet part d’un problème que vous avez peut-être déjà, par exemple empêcher des agents de lire les données les uns des autres ou garder une application utilisable hors ligne, puis montre comment Barrel le traite : les pièces en jeu et le code. Choisissez celui qui ressemble le plus à ce que vous construisez ; chacun a sa page et un exemple à exécuter.</p>
       <UseCaseTabs />
     </div>
   </section>
 
-  <section class="section">
+  <section class="section" id="start">
     <div class="wrap">
       <h2 class="h2">Trois endroits où la faire tourner</h2>
-      <p class="section-intro">Le même enregistrement, le même protocole de réplication. Choisissez où vit la base ; les agents qui l’utilisent ne changent pas.</p>
+      <p class="section-intro">C’est par ici que vous commencez. Barrel est la même base aux trois endroits : le même enregistrement, le même protocole de réplication, si bien que des copies placées à des endroits différents peuvent se synchroniser. Choisissez où vit la base selon le langage de votre application, selon que ses clients y accèdent par le réseau ou non, et selon qu’elle doit fonctionner hors ligne. Les agents qui l’utilisent ne changent pas, et vous pourrez ajouter les autres endroits plus tard.</p>
       <div class="three">
         {places.map((p) => (
           <div>
@@ -118,17 +127,19 @@ await db.sync();   // envoie les écritures locales, puis récupère` },
                 </li>
               ))}
             </ol>
+            <p class="small pl-f" set:html={p.fits} />
+            <p class="small pl-s"><a href={L(p.href)}><strong>{p.start}</strong></a></p>
           </div>
         ))}
       </div>
-      <p class="small"><a href={L('/docs/start/choose-deployment')}>Choisir un déploiement</a></p>
+      <p class="small">Vous hésitez ? <a href={L('/docs/start/choose-deployment')}>Choisir un déploiement</a> compare les trois dans un seul tableau : ce que chacun apporte et ce qu’il faut savoir avant de choisir.</p>
     </div>
   </section>
 
   <section class="section">
     <div class="wrap">
       <h2 class="h2">Essayez en deux minutes</h2>
-      <p class="section-intro">Le même enregistrement, écrit et lu de trois façons.</p>
+      <p class="section-intro">Chaque onglet écrit l’article de support <code>kb-142</code> et le relit avec une requête <a href={G('bql')}>BQL</a>, le langage de requête de Barrel, proche de SQL. L’onglet Erlang appelle directement la bibliothèque et ouvre la base sans stockage vectoriel : il n’a besoin d’aucun modèle d’embeddings. L’onglet REST parle avec curl à un <code>barrel_server</code> déjà lancé. L’onglet TypeScript écrit dans la copie du navigateur, puis la synchronise avec le serveur. Prenez l’onglet qui correspond à l’endroit où vous faites tourner Barrel, puis suivez son démarrage rapide pour l’installer.</p>
       <div class="quick"><CodeTabs tabs={quick} /></div>
     </div>
   </section>
@@ -136,7 +147,7 @@ await db.sync();   // envoie les écritures locales, puis récupère` },
   <section class="section">
     <div class="wrap">
       <h2 class="h2">Ce qui fonctionne aujourd’hui, et ce qui ne fonctionne pas encore</h2>
-      <p class="section-intro">Chaque page porte les trois mêmes marques. Tout ce qui n’est pas marqué fonctionne aujourd’hui et est couvert par les suites de tests.</p>
+      <p class="section-intro">Regardez la marque d’une fonctionnalité avant de compter dessus. « Fonctionne aujourd’hui » veut dire qu’elle marche dans la version actuelle et qu’elle est couverte par les suites de tests. « Optionnel » veut dire qu’elle marche une fois que vous avez installé ou configuré quelque chose, comme un virtualenv Python ou une clé d’API. « Prévu » veut dire qu’elle n’existe pas encore : n’en dépendez pas. Chaque page porte les trois mêmes marques, et tout ce qui n’est pas marqué fonctionne aujourd’hui.</p>
       <div class="status">
         {status.map((g) => (
           <div>
@@ -166,6 +177,10 @@ await db.sync();   // envoie les écritures locales, puis récupère` },
   .pl-t { font-size: var(--step-1); margin: 0 0 4px; }
   .pl-t a { color: var(--ink); text-decoration: none; }
   .pl-w { min-height: 4.8em; margin: 0 0 16px; }
+  .pl-f { margin: 16px 0 8px; }
+  .pl-s { margin: 0; }
+  .section-intro { max-width: 68ch; }
+  .hero-why { max-width: 36em; margin: 0 0 20px; }
   .stack { list-style: none; margin: 0; padding: 0; }
   .layer { padding: 12px 14px; border: 1.5px solid var(--ink); border-radius: 6px; background: var(--card); display: flex; flex-direction: column; }
   .layer span { font-size: 13px; color: var(--ink-2); }

@@ -1,5 +1,5 @@
 ---
-// translation_of: src/pages/product/index.astro source_hash: 8cc99c18d0ef9a70
+// translation_of: src/pages/product/index.astro source_hash: 254ef79aa5846f63
 import Base from '../../../layouts/Base.astro';
 import { capabilities, components, componentGroups, statusLabel } from '../../../data/fr/site';
 import { componentsFor } from '../../../data/i18n';
@@ -11,19 +11,30 @@ const install = (slug: string) => {
   const code = componentContent[slug]?.install.code ?? '';
   return code.includes('\n') ? 'À construire depuis le dépôt' : code;
 };
+
+// Quand utiliser chaque capacité. La ligne courte reste dans site.ts pour le menu.
+const when: Record<string, string> = {
+  replication: 'Quand des sites, des appareils ou des navigateurs doivent continuer à accepter des écritures quand ils sont séparés, puis se remettre d’accord sans perdre une modification.',
+  search: 'Quand des agents ou des personnes cherchent par le sens, par mots-clés, ou par texte exact et par motif.',
+  timeline: 'Quand un agent doit travailler sur une copie que vous relisez avant de la fusionner, ou quand il vous faut les données telles qu’elles étaient plus tôt.',
+  agents: 'Quand plusieurs agents partagent un même serveur et que chacun ne doit atteindre que les données qu’on lui a confiées.',
+  security: 'Quand les données sur le disque doivent rester illisibles sans leur clé, ou quand le serveur est joignable depuis d’autres machines.',
+  deployments: 'À lire d’abord si vous n’avez pas encore choisi où tourne Barrel : dans une application Erlang, en serveur ou dans un navigateur.',
+};
 ---
 
 <Base title="Produit" description="Ce que fait Barrel, et les bibliothèques qui le composent : la base de données, les données et la recherche, les modèles, la couche agents, l’accès en HTTP et dans le navigateur, le stockage et la sécurité.">
   <div class="wrap pi">
     <h1 class="pi-title">Produit</h1>
     <p class="lead">Barrel est une seule base de données faite de bibliothèques séparées. Utilisez la bibliothèque <code>barrel</code> pour avoir documents, fichiers et vecteurs au même endroit, ajoutez le serveur pour REST et MCP, ou prenez une bibliothèque seule. Chaque page ci-dessous dit ce que fait une bibliothèque, quand l’utiliser, sur quoi elle repose et comment l’installer.</p>
+    <p class="pi-intro">Commencez par ce que fait Barrel quand vous connaissez le problème à résoudre : chaque page de capacité explique ce qu’elle vous apporte et comment vous en servir. Passez aux bibliothèques quand vous savez déjà de quelle partie vous avez besoin et que vous cherchez sa version, son état et sa ligne d’installation.</p>
 
     <div class="pi-grid">
       <section class="pi-caps" aria-labelledby="caps">
         <h2 id="caps" class="pi-h2">Ce que fait Barrel</h2>
         <ul>
           {capabilities.map((c) => (
-            <li><a href={`/fr/product/${c.slug}`}><span class="pi-cap">{c.name}</span><span class="pi-body">{c.body}</span></a></li>
+            <li><a href={`/fr/product/${c.slug}`}><span class="pi-cap">{c.name}</span><span class="pi-body">{c.body}</span><span class="pi-when">{when[c.slug]}</span></a></li>
           ))}
         </ul>
       </section>
@@ -61,7 +72,9 @@ const install = (slug: string) => {
 <style>
   .pi { padding-top: 48px; padding-bottom: 88px; }
   .pi-title { margin: 0 0 16px; font-size: clamp(2.5rem, 6vw, 3.75rem); font-weight: 620; font-stretch: 112%; letter-spacing: -0.03em; line-height: 1; }
-  .pi .lead { margin: 0 0 48px; }
+  .pi .lead { margin: 0 0 16px; }
+  .pi-intro { max-width: 68ch; margin: 0 0 48px; color: var(--ink-2); }
+  .pi-when { display: block; margin-top: 4px; font-size: var(--step--1); }
   .pi-grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 56px; align-items: start; }
   .pi-h2 { margin: 0 0 12px; font-size: var(--step-1); font-stretch: 108%; }
   ul { list-style: none; margin: 0; padding: 0; }

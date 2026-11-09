@@ -4,13 +4,20 @@ description: Build barrel-lite, open a local database in a web app, write and re
 ---
 import CodeBlock from '../../../components/CodeBlock.astro';
 import Callout from '../../../components/Callout.astro';
+import Goal from '../../../components/docs/Goal.astro';
+import NextSteps from '../../../components/docs/NextSteps.astro';
 
-`barrel-lite` is a TypeScript client that keeps a copy of a Barrel
-database in the browser. Reads and writes are local and keep working
-offline; sync sends them to a `barrel_server` and brings back the
-changes of other copies. In this quickstart you build it, give the
-browser a token, write and read documents, sync, and resolve a conflict
-between two copies. Use this when a web app needs its data offline.
+[`barrel-lite`](/docs/concepts/glossary#barrel-lite) is a TypeScript
+client that keeps a copy of a Barrel database in the browser. Reads and
+writes are local, so the app answers at once and keeps working offline;
+sync sends local writes to a `barrel_server` and brings back the changes
+made by other copies. In this quickstart you build a small notes app that
+runs on two devices, a laptop and a phone: you give the browser a scoped
+token, write a note, sync it to the second device, then edit it on both
+at once and resolve the conflict. Use this path when a web app must keep
+working without a network.
+
+<Goal items={["Build barrel-lite and add it to a web app", "Give the browser a token limited to one space", "Write and read documents locally", "Sync two copies through barrel_server", "Resolve a conflict between two edits"]} />
 
 ## Before you start
 
@@ -20,7 +27,8 @@ between two copies. Use this when a web app needs its data offline.
 
 ## 1. Get barrel-lite
 
-`barrel-lite` 0.1.0 is not on npm. Build it from the umbrella and install
+You build the client from the Barrel source because `barrel-lite` 0.1.0
+is not on npm. Build it from the umbrella and install
 it into your app from that directory:
 
 ```shell
@@ -33,8 +41,10 @@ npm install /path/to/barrel/clients/barrel-lite
 
 ## 2. Let the browser in
 
-The browser needs CORS and a token it is allowed to ship. Add both to the
-server's `sys.config` and restart it:
+A web page runs on its own origin and anyone can read its code, so the
+server must allow cross-origin requests (CORS) and the page must carry a
+token that grants as little as possible. Add CORS and a global admin
+token to the server's `sys.config` and restart it:
 
 <CodeBlock label="sys.config" code={`[{barrel_server, [
     {http_port, 8080},
@@ -42,9 +52,12 @@ server's `sys.config` and restart it:
              expose => [<<"x-barrel-hlc">>]}},
     {auth, #{tokens => [<<"global-token">>]}}]}].`} />
 
-Never put the global token in a web page. Create a space and issue a
-capability token for it; the space id is the database name the browser
-uses:
+Never put the global token in a web page: it opens every database.
+Instead, create a [space](/docs/concepts/glossary#space), a database
+created through Barrel's agent layer that you can share, and issue a
+[capability token](/docs/concepts/glossary#capability-token) for it. A
+capability token grants named rights on one space only, and you can
+revoke it. The space id is the database name the browser uses:
 
 ```shell
 curl -X POST localhost:8080/spaces \
@@ -62,9 +75,18 @@ curl -X POST localhost:8080/spaces/sp_7uitvqeved3z7seu/grants \
  "grant":{"rights":["read","write"],
           "space":"sp_7uitvqeved3z7seu", ...}}`} />
 
-The token is shown once. `read` covers pulls, `write` covers pushes.
+<Callout kind="happened">
+The first call created the space `sp_7uitvqeved3z7seu`. The second issued
+a `bsp_...` token with `read` and `write` on that space and nothing else.
+The token is shown once, since the server stores only a hash of it; copy
+it now. `read` covers pulls, `write` covers pushes.
+</Callout>
 
 ## 3. Open, write, read
+
+`Database.open` creates the local copy and remembers which server
+database it syncs with. You then write and read as if the database were
+local, because it is.
 
 ```ts
 import { Database } from "barrel-lite";
@@ -84,10 +106,21 @@ await laptop.get("n1");
  "version":"000001a1ba4159ea00000000@wd31d29e133c6788f"}
 {"title":"hello","id":"n1"}`} />
 
+<Callout kind="happened">
+`put` answered with the document id and its `version`, the
+[revision](/docs/concepts/glossary#revision) token of this write, the
+same token the server calls `_rev`. `get` read the note back from the
+local store. Nothing has reached the server yet.
+</Callout>
+
 Writes go to the local store at once. In a browser the store is OPFS;
 where OPFS is missing (Node, for example) it is in memory.
 
 ## 4. Sync
+
+Sync is how copies catch up with each other. A push sends local writes to
+the server, a pull applies the changes the server has from other copies,
+and `sync()` does both.
 
 ```ts
 await laptop.sync();             // push, then pull
@@ -113,13 +146,21 @@ await phone.query(
 {"id":"n1","title":"hello"}
 [{"id":"n1","title":"hello"}]`} />
 
-The first line is the laptop's `sync()`, the second the phone's.
+<Callout kind="happened">
+The first line is the laptop's `sync()`: its push sent one document
+(`pushed: 1`), and its pull saw one change on the server, its own, so
+there was nothing to apply. The second line is the phone's: it had
+nothing to push and applied one change, the note. The phone then reads
+the note locally, by id and with BQL.
+</Callout>
 
 ## 5. Resolve a conflict
 
-Edit the same document on both copies before they sync. After a sync both
-versions are kept, every copy shows the same winner, and the other
-version is a conflict:
+Offline copies can change the same note at the same time. Barrel does not
+drop either edit: both versions are kept, every copy picks the same
+winner, and the other version is kept as a
+[conflict](/docs/concepts/glossary#conflict) for you to resolve. Edit
+the note on both copies before they sync, then sync:
 
 ```ts
 await laptop.put({ id: "n1", title: "hello from the laptop" });
@@ -137,6 +178,14 @@ await laptop.conflicts("n1");
   "deleted":false,
   "body":{"id":"n1","title":"hello from the laptop"}}]`} />
 
+<Callout kind="happened">
+Both copies show the phone's edit: the winner is the version with the
+highest token, so every copy reaches the same answer without talking to
+each other. This is [convergence](/docs/concepts/glossary#convergence).
+The laptop's edit is not lost: `conflicts` returns it with its version
+and body.
+</Callout>
+
 `resolve` replaces the winner and every conflict with one body. Push it,
 and the other copy gets the resolution on its next pull:
 
@@ -150,6 +199,11 @@ await phone.conflicts("n1");
 
 <CodeBlock output label="Output from a run of barrel-lite 0.1.0 in Node 22 against barrel_server 1.13.0" code={`{"id":"n1","title":"hello from both"}
 []`} />
+
+<Callout kind="happened">
+The phone now reads the resolved body, and its conflict list is empty:
+the resolution replaced both versions on every copy that pulled it.
+</Callout>
 
 `put` on a document in conflict replaces only the winner; the conflicts
 stay. Pass `null` to `resolve` to resolve to a delete.
@@ -169,3 +223,9 @@ of truth, so sync often.
   capability. It does not sign requests.
 - With `multiTab: true` one tab syncs and the others go through it.
 - The full client is described in [barrel-lite](/docs/guides/barrel-lite).
+
+<NextSteps steps={[
+  { href: '/docs/guides/barrel-lite', label: 'barrel-lite', why: 'Read the full client: storage, live sync, attachments and multiple tabs.' },
+  { href: '/docs/concepts/versions', label: 'Versions, conflicts, convergence', why: 'Understand how every copy picks the same winner.' },
+  { href: '/docs/concepts/spaces', label: 'Spaces and capabilities', why: 'Scope and revoke the tokens you hand to browsers and agents.' },
+]} />

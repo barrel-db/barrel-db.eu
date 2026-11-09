@@ -1,26 +1,41 @@
 ---
 translation_of: src/content/docs/start/quickstart-embedded.mdx
-source_hash: "f51ebefec8b339d0"
+source_hash: "f2c07ddf52dd06ab"
 title: "Démarrage rapide : embarqué"
 description: Ajoutez Barrel à une application Erlang, stockez des articles de support, interrogez-les avec BQL, puis recherchez-les par leur sens.
 ---
 import CodeBlock from '../../../../components/CodeBlock.astro';
 import Callout from '../../../../components/Callout.astro';
+import Goal from '../../../../components/docs/Goal.astro';
+import NextSteps from '../../../../components/docs/NextSteps.astro';
 
-Ajoutez Barrel à une application Erlang, stockez des articles de
-support, interrogez-les avec BQL, puis recherchez-les par leur sens.
-Comptez une dizaine de minutes. Suivez ce parcours quand Barrel tournera
-dans votre propre release OTP, sans serveur entre les deux.
+Dans ce démarrage rapide, vous ajoutez Barrel à une application Erlang
+et construisez une petite base de connaissances de support : trois
+articles, comme kb-142 « Reset a locked account ». Vous les stockez sous
+forme de documents JSON, vous les sélectionnez avec une requête, puis vous
+retrouvez le bon article à partir d’une question formulée autrement,
+comme « I cannot log in ». Suivez ce parcours quand Barrel tournera dans
+votre propre release OTP, sans serveur entre les deux : la base est une
+bibliothèque que votre code appelle directement, sans saut réseau ni
+processus séparé à déployer.
+
+<Goal time="10 minutes" items={["Créer une release OTP qui dépend de barrel", "Écrire et lire des documents JSON", "Sélectionner des documents avec une requête BQL", "Rechercher les articles par leur sens avec des embeddings locaux"]} />
 
 ## Avant de commencer
 
-- Erlang/OTP 26 ou plus récent, et rebar3.
+- Erlang/OTP 26 ou plus récent, et rebar3, pour compiler et lancer la
+  release.
 - CMake et un compilateur C++ : le stockage vectoriel compile une
   bibliothèque native.
 - Pour l’étape 5 seulement : [Ollama](https://ollama.com) en marche en
-  local avec le modèle `nomic-embed-text` (`ollama pull nomic-embed-text`).
+  local avec le modèle `nomic-embed-text` (`ollama pull nomic-embed-text`). Ollama transforme un texte en
+  [embedding](/fr/docs/concepts/glossary#embedding), une liste de nombres
+  qui place près les uns des autres les textes de sens voisin.
 
 ## 1. Créer le projet
+
+Vous partez d’une release OTP vide : Barrel tourne ainsi dans votre
+propre application, comme il le fera en production.
 
 ```shell
 rebar3 new release kb
@@ -28,6 +43,8 @@ cd kb
 ```
 
 Ajoutez barrel aux dépendances, et indiquez-lui où garder ses fichiers.
+`data_dir` est le répertoire où le stockage de documents écrit sur
+disque.
 
 <CodeBlock label="rebar.config" code={`{deps, [{barrel, "~> 1.12"}]}.`} />
 
@@ -35,13 +52,19 @@ Ajoutez barrel aux dépendances, et indiquez-lui où garder ses fichiers.
 
 ## 2. Ouvrir une base
 
-Lancez un shell avec `rebar3 shell`. `vectordb => none` n’ouvre que le
+Une base est un stockage nommé de documents. L’ouvrir vous donne un
+descripteur que vous passez à chaque appel suivant. Lancez un shell avec `rebar3 shell`. `vectordb => none` n’ouvre que le
 stockage de documents, donc aucun modèle n’est encore nécessaire.
 
 <CodeBlock label="Shell Erlang" code={`{ok, _} = application:ensure_all_started(barrel),
 {ok, Db} = barrel:open(<<"kb">>, #{vectordb => none}).`} />
 
 ## 3. Écrire des documents
+
+Chaque article est un document JSON, écrit en Erlang sous forme de map à
+clés binaires. Le champ `id` nomme le document ; c’est par cet id que vous
+le relisez. Ici, vous écrivez les trois articles, puis vous relisez
+kb-207.
 
 <CodeBlock label="Shell Erlang" code={`Articles = [
   #{<<"id">> => <<"kb-142">>, <<"product">> => <<"console">>,
@@ -58,11 +81,23 @@ barrel:get_doc(Db, <<"kb-207">>).`} />
       <<"id">> => <<"kb-207">>,<<"product">> => <<"console">>,
       <<"title">> => <<"Rotate an API key">>}}`} />
 
-`_rev` est le jeton de version de l’écriture. Pour mettre le document à
-jour, renvoyez-le avec votre modification. Voir
+<Callout kind="happened">
+Barrel a stocké le document tel que vous l’avez écrit et a ajouté `_rev`,
+le jeton de [révision](/fr/docs/concepts/glossary#revision) de cette
+écriture. La partie avant `@` est une valeur d’horloge, celle d’après
+désigne l’auteur de l’écriture. Pour mettre le document à jour, renvoyez
+`_rev` avec votre modification : Barrel sait alors quelle version vous
+avez modifiée, et une modification faite sur une copie périmée ne peut pas
+écraser en silence une version plus récente. Voir
 [L’enregistrement](/fr/docs/concepts/record).
+</Callout>
 
 ## 4. Interroger avec BQL
+
+[BQL](/fr/docs/concepts/glossary#bql) est le langage de requête de
+Barrel, proche de SQL. Chaque champ est indexé : vous pouvez filtrer et
+trier sur n’importe quel champ sans déclarer d’index au préalable. Cette
+requête sélectionne les articles de la console.
 
 <CodeBlock label="Shell Erlang" code={`{ok, Rows, _Meta} = barrel:query(Db,
     <<"SELECT id, title FROM kb "
@@ -72,14 +107,29 @@ jour, renvoyez-le avec votre modification. Voir
        <<"title">> => <<"Reset a locked account">>},
      #{<<"id">> => <<"kb-207">>,
        <<"title">> => <<"Rotate an API key">>}],
-    #{count => 2, ...}}`} />
+        #{count => 2, ...}}`} />
+
+<Callout kind="happened">
+Le résultat est une liste de lignes, une map par document, qui ne
+contient que les champs sélectionnés, dans l’ordre des `id`. kb-311
+manque, car son `product` vaut `mobile`. La dernière map contient des
+métadonnées sur la réponse ; `count` est le nombre de lignes.
+</Callout>
 
 ## 5. Rechercher par le sens
 
-Ouvrez une deuxième base en mode enregistrement. Barrel calcule
-l’embedding du titre de chaque document que vous y écrivez et garde
-l’index vectoriel en phase avec les modifications et suppressions
-suivantes. Le mode enregistrement ne traite que les documents écrits
+Un filtre BQL trouve « console », mais pas « I cannot log in » : aucun
+titre ne contient ces mots. La recherche par le sens compare des
+embeddings : une question retrouve ainsi l’article qui y répond.
+
+Ouvrez une deuxième base en [mode
+enregistrement](/fr/docs/concepts/glossary#record-mode). Dans ce mode,
+Barrel calcule l’embedding des champs que vous nommez (ici `title`) pour
+chaque document écrit, et garde l’index vectoriel en phase avec les
+modifications et suppressions suivantes : vous ne gérez jamais les
+vecteurs vous-même. `mode => sync` calcule l’embedding avant que
+l’écriture ne rende la main, si bien qu’une recherche juste après la
+trouve. Le mode enregistrement ne traite que les documents écrits
 après son activation : vous réécrivez donc les articles dans cette
 nouvelle base.
 
@@ -102,9 +152,18 @@ barrel:search(Kb, <<"I cannot log in">>, #{k => 2}).`} />
        metadata =>
            #{<<"product">> => <<"console">>,
              <<"title">> => <<"Reset a locked account">>},
-       key => <<"kb-142">>,score => 0.5460874853125287}]}`} />
+              key => <<"kb-142">>,score => 0.5460874853125287}]}`} />
 
-La même recherche s’exécute depuis BQL, jointe aux documents :
+<Callout kind="happened">
+Vous avez demandé les 2 articles les plus proches (`k => 2`). Chaque
+résultat donne l’id du document dans `key`, le texte calculé dans
+`text`, les autres champs dans `metadata`, et un `score` de similarité,
+le plus haut en premier. Aucun titre ne contient « log in », et pourtant
+les deux articles de connexion reviennent, pas celui sur la clé d’API.
+</Callout>
+
+La même recherche s’exécute depuis BQL, jointe aux documents : vous
+pouvez donc sélectionner des champs du document à côté du score :
 
 <CodeBlock label="Shell Erlang" code={`barrel:query(Kb,
     <<"SELECT v.id, v._score, title "
@@ -116,7 +175,14 @@ La même recherche s’exécute depuis BQL, jointe aux documents :
      #{<<"_score">> => 0.47384916313011594,
        <<"id">> => <<"kb-311">>,
        <<"title">> => <<"Sign in with a passkey">>}],
-    #{count => 2, ...}}`} />
+        #{count => 2, ...}}`} />
+
+<Callout kind="happened">
+`vector_top_k` est une fonction de table : elle renvoie les documents les
+plus proches sous forme de lignes, avec l’alias `v`, leur `id` et leur
+`_score`. `title` vient du document lui-même. Avec une autre question,
+« lost my credentials », kb-142 passe en tête.
+</Callout>
 
 <Callout label="Note">
 Le mode enregistrement traite ce que vous écrivez après son activation ;
@@ -132,15 +198,15 @@ dans `./priv/barrel_vectordb_kb_search` sous le répertoire courant.
 
 ## 6. Fermer
 
+Fermer une base libère son descripteur. Les données restent sur disque,
+et le prochain `barrel:open/2` avec le même nom les retrouve.
+
 <CodeBlock label="Shell Erlang" code={`ok = barrel:close(Db),
 ok = barrel:close(Kb).`} />
 
-## Ensuite
-
-- Recherche hybride et fonctions de table BQL : [Interroger avec
-  BQL](/fr/docs/guides/query-bql) et [Vectorielle, par mot-clé et
-  hybride](/fr/docs/search/hybrid).
-- Garder une deuxième copie en phase :
-  [Synchronisation](/fr/docs/guides/synchronization).
-- Essayer des changements sans toucher l’original : [Brancher, fusionner,
-  récupérer](/fr/docs/guides/timeline).
+<NextSteps steps={[
+  { href: '/docs/guides/query-bql', label: 'Interroger avec BQL', why: 'Découvrez les filtres, les tris et les fonctions de table utilisés ici.' },
+  { href: '/docs/search/hybrid', label: 'Vectorielle, par mot-clé et hybride', why: 'Combinez le sens et les mots-clés exacts dans une seule recherche.' },
+  { href: '/docs/guides/synchronization', label: 'Synchronisation', why: 'Gardez une deuxième copie de la base en phase avec celle-ci.' },
+  { href: '/docs/guides/timeline', label: 'Brancher, fusionner, récupérer', why: 'Essayez des changements sur une branche sans toucher l’original.' },
+]} />

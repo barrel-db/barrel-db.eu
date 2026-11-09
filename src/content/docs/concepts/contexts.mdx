@@ -3,17 +3,31 @@ title: Contexts and working sets
 description: What a context, a context query and a working set are, what is implemented today, and what is planned.
 ---
 import Callout from '../../../components/Callout.astro';
+import NextSteps from '../../../components/docs/NextSteps.astro';
+
+Data rarely sits in one database. A support team may keep European
+tickets on one server and American tickets on another, and an agent that
+answers "which tickets took the longest" needs both. Querying each
+server in turn and stitching the answers together is work, and when one
+server is down you also need to know what the answer is missing.
+Contexts let you ask once, by name, and get one answer that says what it
+covers.
 
 A context is a named dataset, one Barrel database today, that lives on
-this node, on another `barrel_server`, or in an imported snapshot. You
-register a card for it, then run one BQL statement over several contexts
-by name and get one answer that says which contexts answered and what
-each answer covers. A working set is the list of contexts you work with,
-some of them saved locally so they answer offline. Read this to know the
+this node, on another [`barrel_server`](/docs/concepts/glossary#barrel-server),
+or in an imported snapshot. You register a card for it, then run one
+[BQL](/docs/concepts/glossary#bql) statement over several contexts by
+name and get one answer that says which contexts answered and what each
+answer covers. A working set is the list of contexts you work with, some
+of them saved locally so they answer offline. Read this to know the
 model and its limits before you follow [Query several
 datasets](/docs/guides/contexts).
 
 ## The model
+
+Each term below is one piece of that flow: cards say where data lives,
+a context query asks the question, and a working set keeps the contexts
+you need close at hand.
 
 | Term | What it is |
 |------|------------|
@@ -31,6 +45,9 @@ statement. Every member runs the same statement (the collection name
 after `FROM` is ignored), in parallel, within budgets, and the node
 merges the rows.
 
+This query asks the two support contexts for their two longest tickets
+and merges them into one list, longest first:
+
 ```erlang
 {ok, R} = barrel_ctx:query(#{
     query => <<"SELECT id, subject, minutes FROM c "
@@ -41,14 +58,18 @@ merges the rows.
 The answer carries `execution` (`succeeded`, `partial` or `failed`),
 `rows` or `groups`, one `sources` entry per context, `coverage`, and a
 one-paragraph `summary`. A context that does not answer is reported in
-its source entry, not as a failed request.
+its source entry, not as a failed request. If `support/us` is down, you
+still get the European rows, with `execution` set to `partial` and the
+reason in the `support/us` source entry.
 
 Rules:
 
 - A row query needs `LIMIT` (at most 1000). Add `ORDER BY` on a selected
   field to merge rows in order.
 - `bm25_top_k` and `hybrid_top_k` answers stay grouped per context; they
-  are never merged into one ranking.
+  are never merged into one ranking. [BM25](/docs/concepts/glossary#bm25)
+  scores depend on each database's own statistics, so scores from two
+  contexts cannot be compared.
 - Refused: `SUBSCRIBE`, `OFFSET`, `UNNEST`, continuations, and the
   `rrf` and `rerank` merges.
 - Default budgets: 8 contexts per query, a 5 s deadline (60 s at most),
@@ -60,7 +81,8 @@ Rules:
 
 - The catalog: register, list, inspect, discover by topic, unregister.
 - Context queries over local, remote and snapshot members, from Erlang
-  (`barrel_ctx`), REST (`/contexts/_query`) and MCP (`context_query`).
+  (`barrel_ctx`), REST (`/contexts/_query`) and
+  [MCP](/docs/concepts/glossary#mcp) (`context_query`).
 - Working sets: attach and detach members, materialize slices from a
   query, import snapshots, offline mode that skips remote members.
 - Export and read-only import of snapshots.
@@ -96,6 +118,13 @@ None of these exist yet. They are listed in the contexts design under
   (`{error, no_vector_store}`).
 - An imported snapshot opens read only; it is not a restore.
 - Registering, deleting and working-set routes need the global token on
-  `barrel_server`; querying is open to capability tokens, and each local
-  member is then checked as a query on that database.
+  `barrel_server`; querying is open to
+  [capability tokens](/docs/concepts/glossary#capability-token), and each
+  local member is then checked as a query on that database.
 - The design is in [Contexts design](/docs/architecture/contexts).
+
+<NextSteps steps={[
+  { href: '/docs/guides/contexts', label: 'Query several datasets', why: 'Register contexts, run a query across servers, and keep a working set offline.' },
+  { href: '/docs/guides/query-bql', label: 'Query with BQL', why: 'The statements a context query runs on every member.' },
+  { href: '/docs/architecture/contexts', label: 'Contexts design', why: 'Why the model looks this way, and what is not supported yet.' },
+]} />

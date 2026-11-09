@@ -1,17 +1,57 @@
 ---
 translation_of: src/content/docs/start/choose-deployment.md
-source_hash: "9e0bb9ccfdf605e3"
+source_hash: "8a6ba7fbddd1067a"
 title: Choisir un déploiement
 description: Choisissez entre embarquer Barrel dans une release Erlang, lancer barrel_server, et garder une copie dans le navigateur avec barrel-lite.
 ---
 
 Barrel tourne à trois endroits : dans votre release Erlang, comme serveur
 HTTP, et comme copie locale dans un navigateur web. Vous pouvez les
-combiner, puisqu’ils se répliquent entre eux. Servez-vous de cette page
+combiner, puisqu’ils se répliquent entre eux : un serveur peut se
+synchroniser avec des navigateurs et avec d’autres serveurs, et chaque
+copie accepte des écritures. Servez-vous de cette page
 pour choisir par où commencer, selon vos clients et l’endroit où vos
 données doivent vivre.
 
+## Les trois options
+
+### Embarqué
+
+En mode [embarqué](/fr/docs/concepts/glossary#embedded), la
+bibliothèque `barrel` tourne dans votre propre release Erlang ou Elixir,
+et votre code l’appelle comme des fonctions. Il convient à une
+application écrite en Erlang ou en Elixir qui possède ses données, comme
+un environnement d’agents sur un appareil en périphérie. Vous obtenez
+l’API complète sans saut réseau : [mode
+enregistrement](/fr/docs/concepts/glossary#record-mode), timeline,
+espaces. En contrepartie, seul le code de la même release peut atteindre
+les données, et rien n’impose de règles d’accès entre les parties de ce
+code.
+
+### Serveur
+
+[`barrel_server`](/fr/docs/concepts/glossary#barrel-server) fait tourner
+Barrel comme un service et le sert sur HTTP : une API REST/JSON et un
+point d’accès [MCP](/fr/docs/concepts/glossary#mcp) que les agents
+appellent comme des outils. Il convient aux clients écrits dans d’autres
+langages, aux clients sur d’autres machines et aux agents. En
+contrepartie, vous avez un service à faire tourner et à sécuriser : chaque
+appel traverse le réseau, et le serveur n’a aucune authentification tant
+que vous ne la configurez pas.
+
+### Navigateur
+
+[`barrel-lite`](/fr/docs/concepts/glossary#barrel-lite) garde une copie
+d’une base dans une application web : les lectures et les écritures sont
+locales et continuent de fonctionner hors ligne. Il convient à une
+application web qui doit rester utilisable sans réseau. En contrepartie,
+il lui faut un `barrel_server` avec qui se synchroniser, le navigateur
+peut effacer sa copie, et la recherche vectorielle, par mot-clé et
+hybride s’exécute sur le serveur, pas en local.
+
 ## Choisir
+
+Ce tableau associe un besoin à l’option qui y répond.
 
 | Si vous avez besoin de | Utilisez | Pourquoi |
 |-------------|-----|-----|
@@ -25,6 +65,9 @@ données doivent vivre.
 
 ## Ce que donne chaque mode
 
+Ce tableau indique les fonctions de chaque mode : vérifiez que celui que
+vous avez choisi couvre vos besoins.
+
 | | Embarqué | Serveur | Navigateur |
 |-|----------|--------|---------|
 | Documents, BQL | oui | oui | oui, BQL local |
@@ -37,6 +80,8 @@ données doivent vivre.
 | Chiffrement au repos | oui | oui, via `open_opts` | non |
 
 ## À savoir avant de choisir
+
+Voici les limites qui changent le plus souvent un choix.
 
 - **Embarqué veut dire que votre processus détient les données.** Le
   stockage vectoriel est lié au processus qui l’ouvre. Ouvrez les bases à

@@ -4,20 +4,33 @@ description: Add Barrel to an Erlang application, store support articles, query 
 ---
 import CodeBlock from '../../../components/CodeBlock.astro';
 import Callout from '../../../components/Callout.astro';
+import Goal from '../../../components/docs/Goal.astro';
+import NextSteps from '../../../components/docs/NextSteps.astro';
 
-Add Barrel to an Erlang application, store support articles, query them
-with BQL, then search them by meaning. It takes about ten minutes. Use
-this when Barrel will run inside your own OTP release, with no server in
-between.
+In this quickstart you add Barrel to an Erlang application and build a
+small help desk knowledge base: three support articles, such as kb-142
+"Reset a locked account". You store them as JSON documents, select them
+with a query, then find the right article from a question worded
+differently, such as "I cannot log in". Use this path when Barrel will run
+inside your own OTP release, with no server in between: the database is a
+library your code calls directly, so there is no network hop and no
+separate process to deploy.
+
+<Goal time="10 minutes" items={["Create an OTP release with barrel as a dependency", "Write and read JSON documents", "Select documents with a BQL query", "Search the articles by meaning with local embeddings"]} />
 
 ## Before you start
 
-- Erlang/OTP 26 or later and rebar3.
+- Erlang/OTP 26 or later and rebar3, to build and run the release.
 - CMake and a C++ compiler: the vector store builds a native library.
 - For step 5 only: [Ollama](https://ollama.com) running locally with the
-  `nomic-embed-text` model (`ollama pull nomic-embed-text`).
+  `nomic-embed-text` model (`ollama pull nomic-embed-text`). Ollama turns
+  text into an [embedding](/docs/concepts/glossary#embedding), a list of
+  numbers that places text with a similar meaning close together.
 
 ## 1. Create the project
+
+You start from an empty OTP release, so Barrel runs inside your own
+application the way it will in production.
 
 ```shell
 rebar3 new release kb
@@ -25,6 +38,7 @@ cd kb
 ```
 
 Add barrel to the dependencies, and tell it where to keep its files.
+`data_dir` is the directory where the document store writes to disk.
 
 <CodeBlock label="rebar.config" code={`{deps, [{barrel, "~> 1.12"}]}.`} />
 
@@ -32,13 +46,19 @@ Add barrel to the dependencies, and tell it where to keep its files.
 
 ## 2. Open a database
 
-Start a shell with `rebar3 shell`. `vectordb => none` opens the document
-store only, so nothing needs a model yet.
+A database is a named store of documents, and opening it gives you a
+handle you pass to every later call. Start a shell with `rebar3 shell`.
+`vectordb => none` opens the document store only, so nothing needs a
+model yet.
 
 <CodeBlock label="Erlang shell" code={`{ok, _} = application:ensure_all_started(barrel),
 {ok, Db} = barrel:open(<<"kb">>, #{vectordb => none}).`} />
 
 ## 3. Write documents
+
+Each article is a JSON document, written in Erlang as a map with binary
+keys. The `id` field names the document; you read it back by that id.
+Here you write the three articles, then read kb-207.
 
 <CodeBlock label="Erlang shell" code={`Articles = [
   #{<<"id">> => <<"kb-142">>, <<"product">> => <<"console">>,
@@ -55,10 +75,21 @@ barrel:get_doc(Db, <<"kb-207">>).`} />
       <<"id">> => <<"kb-207">>,<<"product">> => <<"console">>,
       <<"title">> => <<"Rotate an API key">>}}`} />
 
-`_rev` is the version token of the write. To update the document, send it
-back with your change. See [The record](/docs/concepts/record).
+<Callout kind="happened">
+Barrel stored the document as you wrote it and added `_rev`, the
+[revision](/docs/concepts/glossary#revision) token of this write. The part
+before `@` is a clock value and the part after it names the writer. To
+update the document, send `_rev` back with your change: Barrel then knows
+which version you edited, so an edit made from a stale copy cannot
+silently overwrite a newer one. See [The record](/docs/concepts/record).
+</Callout>
 
 ## 4. Query with BQL
+
+[BQL](/docs/concepts/glossary#bql) is Barrel's query language, close to
+SQL. Every field is indexed, so you can filter and sort on any field
+without declaring an index first. This query selects the console
+articles.
 
 <CodeBlock label="Erlang shell" code={`{ok, Rows, _Meta} = barrel:query(Db,
     <<"SELECT id, title FROM kb "
@@ -70,12 +101,27 @@ back with your change. See [The record](/docs/concepts/record).
        <<"title">> => <<"Rotate an API key">>}],
     #{count => 2, ...}}`} />
 
+<Callout kind="happened">
+The result is a list of rows, one map per document, holding only the
+fields you selected, in `id` order. kb-311 is missing because its
+`product` is `mobile`. The last map is metadata about the answer;
+`count` is the number of rows.
+</Callout>
+
 ## 5. Search by meaning
 
-Open a second database in record mode. Barrel embeds the title of every
-document you write to it and keeps the vector index in step with later
-edits and deletes. Record mode only embeds documents written after it is
-on, so you write the articles again into this fresh database.
+A BQL filter finds "console", but not "I cannot log in": none of the
+titles contains those words. Search by meaning compares embeddings
+instead, so a question finds the article that answers it.
+
+Open a second database in [record
+mode](/docs/concepts/glossary#record-mode). In record mode Barrel embeds
+the fields you name (here `title`) of every document you write, and keeps
+the vector index in step with later edits and deletes, so you never
+manage vectors yourself. `mode => sync` computes the embedding before the
+write returns, so a search right after the write finds it. Record mode
+only embeds documents written after it is on, so you write the articles
+again into this fresh database.
 
 <CodeBlock label="Erlang shell" code={`{ok, Kb} = barrel:open(<<"kb_search">>, #{
     embedding => #{
@@ -98,7 +144,16 @@ barrel:search(Kb, <<"I cannot log in">>, #{k => 2}).`} />
              <<"title">> => <<"Reset a locked account">>},
        key => <<"kb-142">>,score => 0.5460874853125287}]}`} />
 
-The same search runs from BQL, joined to the documents:
+<Callout kind="happened">
+You asked for the 2 closest articles (`k => 2`). Each result gives the
+document id in `key`, the embedded text in `text`, the other fields in
+`metadata`, and a similarity `score`, highest first. Neither title
+contains "log in", yet both sign-in articles come back and the API key
+article does not.
+</Callout>
+
+The same search runs from BQL, joined to the documents, so you can
+select document fields next to the score:
 
 <CodeBlock label="Erlang shell" code={`barrel:query(Kb,
     <<"SELECT v.id, v._score, title "
@@ -111,6 +166,13 @@ The same search runs from BQL, joined to the documents:
        <<"id">> => <<"kb-311">>,
        <<"title">> => <<"Sign in with a passkey">>}],
     #{count => 2, ...}}`} />
+
+<Callout kind="happened">
+`vector_top_k` is a table function: it returns the nearest documents as
+rows, aliased `v`, with their `id` and `_score`. `title` comes from the
+document itself. With a different question, "lost my credentials", kb-142
+now ranks first.
+</Callout>
 
 <Callout label="Note">
 Record mode embeds what you write after it is on; it does not index
@@ -125,14 +187,15 @@ Set `db_path` as above. Without it the vector store goes to
 
 ## 6. Close it
 
+Closing a database releases its handle. The data stays on
+disk, and the next `barrel:open/2` with the same name finds it again.
+
 <CodeBlock label="Erlang shell" code={`ok = barrel:close(Db),
 ok = barrel:close(Kb).`} />
 
-## Next
-
-- Hybrid search and BQL table functions: [Query with
-  BQL](/docs/guides/query-bql) and [Vector, keyword and
-  hybrid](/docs/search/hybrid).
-- Keep a second copy in step: [Synchronization](/docs/guides/synchronization).
-- Try changes without touching the original: [Branch, merge,
-  recover](/docs/guides/timeline).
+<NextSteps steps={[
+  { href: '/docs/guides/query-bql', label: 'Query with BQL', why: 'Learn the filters, sorting and table functions you used here.' },
+  { href: '/docs/search/hybrid', label: 'Vector, keyword and hybrid', why: 'Combine meaning and exact keywords in one search.' },
+  { href: '/docs/guides/synchronization', label: 'Synchronization', why: 'Keep a second copy of the database in step with this one.' },
+  { href: '/docs/guides/timeline', label: 'Branch, merge, recover', why: 'Try changes on a branch without touching the original.' },
+]} />

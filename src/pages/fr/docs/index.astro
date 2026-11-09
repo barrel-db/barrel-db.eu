@@ -1,5 +1,5 @@
 ---
-// translation_of: src/pages/docs/index.astro source_hash: 3bd353dfd214ea33
+// translation_of: src/pages/docs/index.astro source_hash: f54964cb1e9ff582
 import Base from '../../../layouts/Base.astro';
 import { navFor } from '../../../data/i18n';
 import { localize } from '../../../i18n';
@@ -12,12 +12,30 @@ const starts = [
   { title: 'En serveur', body: 'Lancez barrel_server et accédez-y en REST ou en MCP.', cmd: 'curl -X PUT localhost:8080/db/notes', href: '/docs/start/quickstart-server' },
   { title: 'Dans le navigateur', body: 'Gardez une copie dans une application web avec barrel-lite et synchronisez-la.', cmd: 'await Database.open("notes", { remote })', href: '/docs/start/quickstart-browser' },
 ];
+
+// Une phrase par section de la barre latérale : quand vous en avez besoin.
+const when: Record<string, string> = {
+  Concepts: 'À lire avant d’écrire du code, pour comprendre comment Barrel modélise les données : l’enregistrement, les versions, les espaces, les contextes, et un glossaire des termes de la documentation.',
+  'Stocker et interroger': 'Quand vous écrivez des documents et des fichiers et que vous les relisez, depuis Erlang ou avec des requêtes BQL.',
+  Recherche: 'Quand vous cherchez des documents par le sens, par mots-clés, par texte exact ou par expression régulière, et que vous choisissez le modèle qui calcule les vecteurs.',
+  Répliquer: 'Quand plusieurs copies d’une base échangent leurs modifications, et que vous devez voir et résoudre leurs conflits.',
+  Agents: 'Quand des agents d’IA partagent des données : un espace et un jeton par agent, le point d’accès MCP, et la trace de qui a modifié quoi.',
+  Timeline: 'Quand vous essayez des changements sur une branche, les fusionnez, ou retrouvez la base telle qu’elle était plus tôt.',
+  Contextes: 'Quand une seule instruction BQL doit interroger plusieurs jeux de données par leur nom, sur ce nœud ou sur d’autres.',
+  Navigateur: 'Quand une application web garde sa propre copie des données avec barrel-lite et la synchronise avec un serveur.',
+  Sécurité: 'Quand vous chiffrez les données sur le disque, ou décidez qui peut joindre le serveur et avec quels droits.',
+  Exploiter: 'Quand vous faites tourner barrel_server pour de bon : le lancer, l’intégrer, le surveiller, le dépanner et le sauvegarder.',
+  Référence: 'Quand il vous faut le nom exact d’une fonction, d’une forme de requête, d’une route, d’un outil MCP, d’une option ou d’un code d’erreur.',
+  Architecture: 'Quand vous voulez savoir comment les pièces s’assemblent, où en est chaque fonctionnalité, et comment la réplication est vérifiée.',
+  Contribuer: 'Quand vous construisez Barrel depuis le code source, lancez ses tests, écrivez un fournisseur d’embeddings, ou distribuez une application seule.',
+};
 ---
 
 <Base title="Documentation" description="La documentation de Barrel, organisée par tâche : démarrer, stocker et interroger, chercher, répliquer, construire pour les agents, exploiter, et une référence générée depuis le code source.">
   <section class="wrap dh-top">
     <h1 class="display dh-h1">Documentation de Barrel</h1>
     <p class="lead">Chaque page répond à une tâche. Choisissez où Barrel va tourner et commencez par là ; chaque page renvoie vers la référence qu’elle utilise.</p>
+    <p class="dh-intro">Si vous découvrez Barrel, commencez par un démarrage rapide ci-dessous : en une dizaine de minutes, vous écrivez un document, vous le relisez et vous l’interrogez. Quand vous savez ce que vous voulez faire, passez aux sections plus bas, qui regroupent les guides par tâche. La recherche trouve un guide, une fonction, une route REST ou un outil MCP par son nom.</p>
     <button type="button" class="dh-search" data-open-search>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
       <span>Rechercher guides, fonctions, routes et outils MCP</span>
@@ -37,6 +55,15 @@ const starts = [
       ))}
     </div>
     <p class="small muted">Vous hésitez ? <a href={L('/docs/start/choose-deployment')}>Choisir un déploiement</a> les compare dans un seul tableau.</p>
+
+    <h2 class="h3 dh-order-h">Vous découvrez Barrel ? Lisez dans cet ordre</h2>
+    <ol class="dh-order">
+      <li><a href={L('/docs/start/what-is-barrel')}>Présentation pour les développeurs</a><span class="muted"> : ce que Barrel fait aujourd’hui, ce qu’il ne fait pas, et la partie dont vous avez besoin.</span></li>
+      <li>Un démarrage rapide, <a href={L('/docs/start/quickstart-embedded')}>embarqué</a>, <a href={L('/docs/start/quickstart-server')}>serveur</a> ou <a href={L('/docs/start/quickstart-browser')}>navigateur</a><span class="muted"> : celui qui correspond à l’endroit où vous faites tourner Barrel.</span></li>
+      <li><a href={L('/docs/concepts/record')}>L’enregistrement</a><span class="muted"> : comment un document, ses fichiers et son vecteur restent sous un même identifiant.</span></li>
+      <li><a href={L('/docs/concepts/versions')}>Versions, conflits, convergence</a><span class="muted"> : ce que Barrel garde quand deux copies modifient le même document.</span></li>
+    </ol>
+    <p class="small muted">Cherchez chaque terme rencontré en chemin dans le <a href={L('/docs/concepts/glossary')}>glossaire</a>.</p>
   </section>
 
   <section class="section">
@@ -46,6 +73,7 @@ const starts = [
         {docsNav.filter((s) => s.title !== 'Démarrer').map((s) => (
           <div>
             <h3 class="dh-g">{s.title}</h3>
+            {when[s.title] && <p class="dh-w muted small">{when[s.title]}</p>}
             {s.items.map((i) => <a href={L(`/docs/${i.slug}`)}>{i.label}</a>)}
           </div>
         ))}
@@ -90,6 +118,12 @@ https://barrel-db.eu/docs/reference/mcp-tools.json</pre>
   .dh-goals { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 36px 32px; }
   .dh-goals a { display: block; padding: 3px 0; font-size: 15px; text-decoration: none; }
   .dh-g { font-size: 17px; margin: 0 0 6px; }
+  .dh-w { margin: 0 0 8px; }
+  .dh-intro { max-width: 68ch; margin: 16px 0 0; color: var(--ink-2); }
+  .dh-order-h { margin: 40px 0 12px; }
+  .dh-order { margin: 0; padding-left: 1.4em; max-width: 68ch; }
+  .dh-order li { padding: 3px 0; }
+  .dh-order + p { margin: 12px 0 0; }
   .dh-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; }
   @media (max-width: 980px) { .dh-goals { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 820px) { .dh-start, .dh-goals, .dh-two { grid-template-columns: minmax(0, 1fr); } }

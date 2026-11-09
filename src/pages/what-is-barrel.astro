@@ -27,6 +27,7 @@ const different = [
       <h1 class="display">What is Barrel?</h1>
       <p class="lead">A database that helps AI applications remember, find and work with information.</p>
       <p>AI models can write answers, but a real application also has to remember what happened, look up reliable information, keep track of changes and share data between the different agents that do the work. Barrel is the place where all of that is kept.</p>
+      <p>Take a support assistant. When a customer writes in, it needs the help articles that answer the question, what this customer asked last week, and a note of what it already tried. Barrel keeps all of that, so the assistant finds it in a moment and picks up where it left off.</p>
       <p class="muted small">About a four minute read. Developers can jump to the <a href="/docs/start/what-is-barrel">technical overview</a>.</p>
     </div>
     <RecordFigure plain id="article-142" caption="Every piece of information in Barrel is one record: the text, the files that go with it, and what makes it findable by meaning." />
@@ -37,6 +38,7 @@ const different = [
       <h2 class="h2">AI needs memory</h2>
       <p>A language model knows what it learned during training. It does not know your customers, your documents, or the decision your team made yesterday, and every conversation starts empty. On its own it cannot remember, cannot look anything up, and cannot keep a record of what it did.</p>
       <p>So every serious AI application needs somewhere to put information and find it again: the facts it relies on, what each user told it, the work in progress, and a history of what changed. That place is a database.</p>
+      <p>Barrel is a database built for applications where AI agents do part of the work. An agent is a program that uses an AI model to carry out a task on its own, such as answering a customer, sorting incoming requests or reviewing a document. Several agents often work on the same information, so they need one shared place to keep it.</p>
       <details class="wb-more">
         <summary>What is a database, exactly?</summary>
         <p>A database is software that stores information so it is not lost, lets several programs read and change it at the same time without stepping on each other, and finds what you ask for quickly. Your bank, your email and most websites rely on one. Barrel is a database designed for applications where AI agents read and write the information.</p>
@@ -66,6 +68,7 @@ const different = [
           <p class="small muted">Change a document and its search information follows. Copy it elsewhere and its files go with it.</p>
         </figure>
       </div>
+      <p class="wb-narrow wb-example">An example: a help article on resetting a locked account has its text, a screenshot that goes with it, and the information that lets an assistant find it when a customer writes “I can’t log in”, even though those words are not in the article. In Barrel these three stay together. Change the text and the search information is updated with it; copy the article to another office and the screenshot goes along.</p>
       <details class="wb-more wb-narrow">
         <summary>For the technically curious</summary>
         <p>Each record holds a JSON document, its attachments and a vector embedding under one id. Barrel can compute the embedding when a document is written, using a model you choose, and searches by vector similarity, by keyword ranking (BM25), or both combined. Every version is kept in a history log within a retention window. Read <a href="/docs/concepts/record">the record</a> and <a href="/product/search">search</a>.</p>
@@ -84,6 +87,7 @@ const different = [
   <section class="section">
     <div class="wrap">
       <h2 class="h2">What you can build</h2>
+      <p class="section-intro">These are kinds of applications teams build with Barrel. Each link explains the problem it solves, how it works in practice, and points to an example you can run.</p>
       <div class="wb-builds">
         {builds.map((b) => (
           <a href={b.href} class="wb-build">
@@ -98,6 +102,7 @@ const different = [
   <section class="section">
     <div class="wrap">
       <h2 class="h2">Why Barrel is different</h2>
+      <p class="section-intro">Once an AI application is used every day, the hard questions are rarely about the AI model. They are about where the data lives, what happens when a connection drops, what changed and who changed it, and who is allowed to see what. This is where Barrel helps.</p>
       <div class="wb-diff">
         {different.map((d) => (
           <div>
@@ -150,6 +155,8 @@ const different = [
   .wb-hero .lead { font-size: 1.6rem; font-stretch: 106%; margin: 0 0 20px; }
   .wb-hero p { max-width: 36em; }
   .wb-narrow { max-width: 760px; }
+  .wb-example { margin: 32px 0 0; }
+  .section-intro { max-width: 68ch; }
   .wb-more { margin-top: 24px; border-top: 1px solid var(--rule); padding-top: 12px; }
   .wb-more summary { cursor: pointer; font-weight: 600; color: var(--teal); }
   .wb-more p { margin: 12px 0 0; }
