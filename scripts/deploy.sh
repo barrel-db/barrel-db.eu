@@ -43,7 +43,7 @@ set -eu
 root=$1; tarball=$PWD/$2
 new=$root.new; prev=$root.prev
 rm -rf "$new"; mkdir "$new"
-tar xzf "$tarball" -C "$new"
+tar xzf "$tarball" -C "$new" --no-xattrs --no-acls --no-fflags
 test -f "$new/index.html" || { echo "no index.html in $tarball" >&2; exit 1; }
 [ -d "$root/.well-known" ] && cp -Rp "$root/.well-known" "$new/"
 chmod -R a+rX "$new"
@@ -100,7 +100,14 @@ fi
 
 sha=$(git rev-parse --short HEAD)
 tarball=barrel-db.eu-$sha.tar.gz
-COPYFILE_DISABLE=1 tar czf "$tarball" -C dist .   # no macOS ._ files
+# no macOS ._ files and no extended attributes (com.apple.provenance),
+# which the server's tar cannot restore
+case "$(tar --version 2>/dev/null)" in
+    *bsdtar*) TAR_FLAGS="--no-xattrs --no-acls --no-mac-metadata" ;;
+    *)        TAR_FLAGS="--no-xattrs --no-acls" ;;
+esac
+# shellcheck disable=SC2086  # flags are words
+COPYFILE_DISABLE=1 tar $TAR_FLAGS -czf "$tarball" -C dist .
 echo "uploading $tarball ($(du -h "$tarball" | cut -f1)) to $HOST"
 scp -q "$tarball" "$HOST:"
 run_remote "$remote_install" "$ROOT" "$tarball"
