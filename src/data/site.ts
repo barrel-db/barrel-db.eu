@@ -39,9 +39,9 @@ export const capabilities: Capability[] = [
 ];
 
 export const components: Component[] = [
-  { slug: 'barrel', name: 'barrel', group: 'The database', version: '1.13.0', status: 'today', body: 'Records: document, files and vector under one id', app: 'apps/barrel' },
-  { slug: 'docdb', name: 'barrel_docdb', group: 'Data', version: '2.4.0', status: 'today', body: 'Documents, versions, queries, replication', app: 'apps/barrel_docdb' },
-  { slug: 'vectordb', name: 'barrel_vectordb', group: 'Data', version: '2.5.3', status: 'today', body: 'Vector index, BM25, hybrid search', app: 'apps/barrel_vectordb' },
+  { slug: 'barrel', name: 'barrel', group: 'The database', version: '1.13.1', status: 'today', body: 'Records: document, files and vector under one id', app: 'apps/barrel' },
+  { slug: 'docdb', name: 'barrel_docdb', group: 'Data', version: '2.4.1', status: 'today', body: 'Documents, versions, queries, replication', app: 'apps/barrel_docdb' },
+  { slug: 'vectordb', name: 'barrel_vectordb', group: 'Data', version: '2.5.4', status: 'today', body: 'Vector index, BM25, hybrid search', app: 'apps/barrel_vectordb' },
   { slug: 'ngram', name: 'barrel_ngram', group: 'Data', version: '0.11.4', status: 'today', body: 'Substring and regex search', app: 'apps/barrel_ngram' },
   { slug: 'embed', name: 'barrel_embed', group: 'Models', version: '2.6.1', status: 'today', body: 'Embedding providers, local or cloud', app: 'apps/barrel_embed' },
   { slug: 'rerank', name: 'barrel_rerank', group: 'Models', version: '1.0.3', status: 'optional', body: 'Rerank search results', app: 'apps/barrel_rerank' },

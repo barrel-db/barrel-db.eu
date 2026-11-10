@@ -9,9 +9,9 @@ Barrel is one database made of independent Apache 2.0 libraries in one umbrella 
 
 | Library | Version | Role | Reference |
 |---|---|---|---|
-| `barrel` | 1.13.0 | The database: documents, attachments and vectors under one id, BQL, record mode, timeline, contexts | [/docs/lib/barrel/](/docs/lib/barrel/) |
-| `barrel_docdb` | 2.4.0 | Documents, versions, queries, attachments, replication | [/docs/lib/docdb/](/docs/lib/docdb/) |
-| `barrel_vectordb` | 2.5.3 | Vector index (HNSW, DiskANN, FAISS), BM25, hybrid search | [/docs/lib/vectordb/](/docs/lib/vectordb/) |
+| `barrel` | 1.13.1 | The database: documents, attachments and vectors under one id, BQL, record mode, timeline, contexts | [/docs/lib/barrel/](/docs/lib/barrel/) |
+| `barrel_docdb` | 2.4.1 | Documents, versions, queries, attachments, replication | [/docs/lib/docdb/](/docs/lib/docdb/) |
+| `barrel_vectordb` | 2.5.4 | Vector index (HNSW, DiskANN, FAISS), BM25, hybrid search | [/docs/lib/vectordb/](/docs/lib/vectordb/) |
 | `barrel_ngram` | 0.11.4 | Exact substring and regex search over a docdb database | [source](https://github.com/barrel-db/barrel/tree/main/apps/barrel_ngram) |
 | `barrel_embed` | 2.6.1 | Embedding providers, local or cloud | [/docs/lib/embed/](/docs/lib/embed/) |
 | `barrel_rerank` | 1.0.3 | Cross-encoder reranking | [/docs/lib/rerank/](/docs/lib/rerank/) |
