@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/reference/libraries.md
-source_hash: "ebcb39ddcb46a8bc"
+source_hash: "2be7a882c0385446"
 title: Bibliothèques
 description: Les bibliothèques indépendantes qui composent Barrel, leurs versions et profils de compilation, et où trouver la référence générée de chacune.
 ---
@@ -50,7 +50,7 @@ Voir [Compiler et tester](/fr/docs/contribute/build-and-test) pour les commandes
 Chaque bibliothèque a son propre `rebar.config` et dépend de ses voisines par version. Par exemple, documents et réplication sans vecteurs :
 
 ```erlang
-{deps, [{barrel_docdb, "~> 2.0"}]}.
+{deps, [{barrel_docdb, "~> 2.4"}]}.
 ```
 
 Le code source de chaque bibliothèque est sur [github.com/barrel-db/barrel](https://github.com/barrel-db/barrel), sous `apps/`.

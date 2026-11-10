@@ -57,6 +57,20 @@ if (existsSync(join(barrel, 'apps'))) {
   console.warn(`no barrel checkout at ${barrel}: versions not checked`);
 }
 
+// 2b. Every `{app, "~> X.Y"}` in the sources asks for the current minor version.
+const current = new Map([...block('components').matchAll(/name: '([^']+)'[^}]*version: '([^']+)'/g)]
+  .map(([, n, v]) => [n, v.split('.').slice(0, 2).join('.')]));
+(function scan(dir) {
+  for (const f of readdirSync(dir)) {
+    const p = join(dir, f);
+    if (statSync(p).isDirectory()) { if (f !== 'synced') scan(p); continue; }
+    if (!/\.(astro|ts|md|mdx)$/.test(f)) continue;
+    for (const [, n, v] of readFileSync(p, 'utf8').matchAll(/\{(barrel[a-z_]*), "~> ([0-9.]+)"\}/g)) {
+      if (current.has(n) && current.get(n) !== v) problems.push(`${p.slice(root.length + 1)} asks for ${n} ~> ${v}, current is ${current.get(n)}`);
+    }
+  }
+})(join(root, 'src'));
+
 // 3 and 4. Walk the built HTML, skipping the French legacy pages and the ex_doc reference.
 const pages = [];
 (function walk(dir) {

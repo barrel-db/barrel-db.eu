@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/start/quickstart-embedded.mdx
-source_hash: "50e55eea9d5f453d"
+source_hash: "37bc79e3c261d98f"
 title: "Démarrage rapide : embarqué"
 description: Ajoutez Barrel à une application Erlang, stockez des articles de support, interrogez-les avec BQL, puis recherchez-les par leur sens.
 ---
@@ -46,7 +46,7 @@ Ajoutez barrel aux dépendances, et indiquez-lui où garder ses fichiers.
 `data_dir` est le répertoire où le stockage de documents écrit sur
 disque.
 
-<CodeBlock label="rebar.config" code={`{deps, [{barrel, "~> 1.12"}]}.`} />
+<CodeBlock label="rebar.config" code={`{deps, [{barrel, "~> 1.13"}]}.`} />
 
 <CodeBlock label="config/sys.config" code={`[{barrel_docdb, [{data_dir, "data/docdb"}]}].`} />
 

@@ -8,7 +8,7 @@ const { docsNav } = navFor('fr');
 const L = (p: string) => localize(p, 'fr');
 
 const starts = [
-  { title: 'Intégrée en Erlang', body: 'Ajoutez barrel à votre release et appelez-le directement. Pas de serveur.', cmd: '{deps, [{barrel, "~> 1.12"}]}.', href: '/docs/start/quickstart-embedded' },
+  { title: 'Intégrée en Erlang', body: 'Ajoutez barrel à votre release et appelez-le directement. Pas de serveur.', cmd: '{deps, [{barrel, "~> 1.13"}]}.', href: '/docs/start/quickstart-embedded' },
   { title: 'En serveur', body: 'Lancez barrel_server et accédez-y en REST ou en MCP.', cmd: 'curl -X PUT localhost:8080/db/notes', href: '/docs/start/quickstart-server' },
   { title: 'Dans le navigateur', body: 'Gardez une copie dans une application web avec barrel-lite et synchronisez-la.', cmd: 'await Database.open("notes", { remote })', href: '/docs/start/quickstart-browser' },
 ];

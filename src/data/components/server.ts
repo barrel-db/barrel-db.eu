@@ -45,7 +45,7 @@ export const server: ComponentContent = {
   dependsOn: ['barrel', 'docdb', 'spaces', 'ngram'],
   external: 'livery (HTTP/1.1, HTTP/2, HTTP/3) and barrel_mcp 4.4.1',
   standalone: { short: 'Yes, as a service', text: 'Yes, as a service. It brings barrel, barrel_docdb, barrel_spaces and barrel_ngram with it. You can also mount its routes inside your own livery app.' },
-  install: { code: '{barrel_server, "~> 1.13"}', lang: 'erlang', label: 'rebar.config deps', note: 'In the umbrella: `rebar3 as server compile`, or `rebar3 as server,prod release -n barrel_server`.' },
+  install: { code: '{barrel_server, "~> 1.14"}', lang: 'erlang', label: 'rebar.config deps', note: 'In the umbrella: `rebar3 as server compile`, or `rebar3 as server,prod release -n barrel_server`.' },
   reachedThrough: ['REST over HTTP/1.1, HTTP/2 or HTTP/3', 'MCP (Streamable HTTP) at `/mcp`', 'the `_sync` wire'],
   config: [
     { title: 'App env (barrel_server)', rows: [

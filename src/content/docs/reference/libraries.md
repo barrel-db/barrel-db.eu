@@ -48,7 +48,7 @@ See [Build and test](/docs/contribute/build-and-test) for the test commands.
 Each library has its own `rebar.config` and depends on its siblings by version. For example, documents and replication without vectors:
 
 ```erlang
-{deps, [{barrel_docdb, "~> 2.0"}]}.
+{deps, [{barrel_docdb, "~> 2.4"}]}.
 ```
 
 The source of every library is at [github.com/barrel-db/barrel](https://github.com/barrel-db/barrel), under `apps/`.
