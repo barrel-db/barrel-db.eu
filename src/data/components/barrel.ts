@@ -76,7 +76,7 @@ export const barrel: ComponentContent = {
   dependsOn: ['docdb', 'vectordb', 'embed', 'crypto'],
   external: 'hackney (remote context client); OTP 26 or later',
   standalone: { short: 'Yes', text: 'Yes, as a library. It serves no network protocol on its own.' },
-  install: { code: '{barrel, "~> 1.12"}', lang: 'erlang', label: 'rebar.config deps', note: 'Record mode needs the `barrel` application started; otherwise opens with a policy return `{error, barrel_app_not_started}`.' },
+  install: { code: '{barrel, "~> 1.13"}', lang: 'erlang', label: 'rebar.config deps', note: 'Record mode needs the `barrel` application started; otherwise opens with a policy return `{error, barrel_app_not_started}`.' },
   reachedThrough: ['Erlang API', 'REST and MCP through barrel_server'],
   config: [
     { title: 'barrel:open/2 options', rows: [

@@ -36,7 +36,7 @@ const addons = [
   { name: 'Pièces jointes S3', body: '`rebar3 as s3 compile`. Testé avec RustFS et Garage. Non couvert par le chiffrement au repos.' },
 ];
 
-const embedded = `{deps, [{barrel, "~> 1.12"}]}.`;
+const embedded = `{deps, [{barrel, "~> 1.13"}]}.`;
 
 const embeddedRun = `{ok, _} = application:ensure_all_started(barrel),
 {ok, Db} = barrel:open(<<"kb">>, #{vectordb => #{

@@ -71,7 +71,7 @@ export const docdb: ComponentContent = {
   external: 'rocksdb, hackney, hlc, match_trie, mimerl, instrument',
   optional: [{ slug: 'att-s3', text: 'stores attachment bytes in S3-compatible storage' }],
   standalone: { short: 'Yes', text: 'Yes. Replication (`barrel_rep`, `barrel_rep_tasks`) and BQL for documents live here.' },
-  install: { code: '{barrel_docdb, "~> 2.2"}', lang: 'erlang', label: 'rebar.config deps', note: '2.1.0 changed replication. Upgrading from 2.0 can need `barrel_rep:reconcile/3`.' },
+  install: { code: '{barrel_docdb, "~> 2.4"}', lang: 'erlang', label: 'rebar.config deps', note: '2.1.0 changed replication. Upgrading from 2.0 can need `barrel_rep:reconcile/3`.' },
   reachedThrough: ['Erlang API', 'barrel facade', 'REST `/db/:db/*` and the `_sync` wire (barrel_server)'],
   config: [
     { title: 'create_db/2 options', rows: [

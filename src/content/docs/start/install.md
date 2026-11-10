@@ -39,7 +39,7 @@ runs inside it, the [embedded](/docs/concepts/glossary#embedded) mode.
 Every library is on Hex, the package registry for Erlang and Elixir. Add `barrel` to `rebar.config`:
 
 ```erlang
-{deps, [{barrel, "~> 1.12"}]}.
+{deps, [{barrel, "~> 1.13"}]}.
 ```
 
 Add it to your application's `applications` list in `src/*.app.src`, so
@@ -50,7 +50,7 @@ rebar3 compile
 ```
 
 Add a library on its own when you need only that part, for example
-`{barrel_docdb, "~> 2.1"}` for documents and replication without vectors,
+`{barrel_docdb, "~> 2.4"}` for documents and replication without vectors,
 or `{barrel_ngram, "~> 0.11"}` for substring search.
 
 Set where data goes, in `config/sys.config`. `data_dir` is the directory

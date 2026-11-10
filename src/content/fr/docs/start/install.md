@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/start/install.md
-source_hash: "991b1d373b65776c"
+source_hash: "257c96292351fe7f"
 title: Installer
 description: Ajoutez Barrel à un projet Erlang depuis Hex, compilez le serveur depuis l’umbrella, ou compilez barrel-lite pour le navigateur.
 ---
@@ -47,7 +47,7 @@ Elixir et que Barrel tourne à l’intérieur : c’est le mode
 bibliothèques sont sur Hex, le registre de paquets d’Erlang et d’Elixir. Ajoutez `barrel` à `rebar.config` :
 
 ```erlang
-{deps, [{barrel, "~> 1.12"}]}.
+{deps, [{barrel, "~> 1.13"}]}.
 ```
 
 Ajoutez-la à la liste `applications` de votre application dans
@@ -59,7 +59,7 @@ rebar3 compile
 ```
 
 Ajoutez une bibliothèque seule quand vous n’avez besoin que de cette
-partie, par exemple `{barrel_docdb, "~> 2.1"}` pour les documents et la
+partie, par exemple `{barrel_docdb, "~> 2.4"}` pour les documents et la
 réplication sans vecteurs, ou `{barrel_ngram, "~> 0.11"}` pour la
 recherche de sous-chaînes.
 
