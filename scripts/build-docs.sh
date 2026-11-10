@@ -61,6 +61,16 @@ checkouts_for() {  # checkouts_for <app> -> its transitive umbrella siblings
     esac
 }
 
+# The links live in the barrel checkout only while this script runs: left
+# behind, a `rebar3 hex publish' run there would drop those siblings from
+# the package's requirements.
+cleanup_checkouts() {
+    for app in barrel barrel_docdb barrel_vectordb; do
+        rm -rf "$BARREL_DIR/apps/$app/_checkouts"
+    done
+}
+trap cleanup_checkouts EXIT
+
 for app in barrel barrel_docdb barrel_vectordb; do
     co="$BARREL_DIR/apps/$app/_checkouts"
     rm -rf "$co"; mkdir -p "$co"
