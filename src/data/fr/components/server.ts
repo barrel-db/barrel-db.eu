@@ -1,4 +1,4 @@
-// translation_of: src/data/components/server.ts source_hash: 2c46a41f6b457fa4
+// translation_of: src/data/components/server.ts source_hash: 3a244bfee3b797ea
 // French text for the barrel_server library page. Code, calls and outputs come from the English file.
 import { overlay } from '../../overlay';
 import { server as en } from '../../components/server';

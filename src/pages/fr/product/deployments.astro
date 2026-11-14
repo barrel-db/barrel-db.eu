@@ -1,5 +1,5 @@
 ---
-// translation_of: src/pages/product/deployments.astro source_hash: 133b686ac81dc5d1
+// translation_of: src/pages/product/deployments.astro source_hash: 34757ddfe1762109
 import ProductFrame from '../../../components/product/ProductFrame.astro';
 import FlowDiagram from '../../../components/product/FlowDiagram.astro';
 import Related from '../../../components/product/Related.astro';
@@ -36,7 +36,7 @@ const addons = [
   { name: 'Pièces jointes S3', body: '`rebar3 as s3 compile`. Testé avec RustFS et Garage. Non couvert par le chiffrement au repos.' },
 ];
 
-const embedded = `{deps, [{barrel, "~> 1.13"}]}.`;
+const embedded = `{deps, [{barrel, "~> 1.14"}]}.`;
 
 const embeddedRun = `{ok, _} = application:ensure_all_started(barrel),
 {ok, Db} = barrel:open(<<"kb">>, #{vectordb => #{

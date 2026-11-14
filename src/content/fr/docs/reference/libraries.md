@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/reference/libraries.md
-source_hash: "2be7a882c0385446"
+source_hash: "0817394a40385d75"
 title: Bibliothèques
 description: Les bibliothèques indépendantes qui composent Barrel, leurs versions et profils de compilation, et où trouver la référence générée de chacune.
 ---
@@ -11,16 +11,16 @@ Barrel est une seule base de données faite de bibliothèques indépendantes sou
 
 | Bibliothèque | Version | Rôle | Référence |
 |---|---|---|---|
-| `barrel` | 1.13.1 | La base de données : documents, pièces jointes et vecteurs sous un même id, BQL, mode enregistrement, timeline, contextes | [/docs/lib/barrel/](/docs/lib/barrel/) |
-| `barrel_docdb` | 2.4.1 | Documents, versions, requêtes, pièces jointes, réplication | [/docs/lib/docdb/](/docs/lib/docdb/) |
+| `barrel` | 1.14.0 | La base de données : documents, pièces jointes et vecteurs sous un même id, BQL, mode enregistrement, timeline, contextes | [/docs/lib/barrel/](/docs/lib/barrel/) |
+| `barrel_docdb` | 3.1.0 | Documents, versions, requêtes, pièces jointes, réplication | [/docs/lib/docdb/](/docs/lib/docdb/) |
 | `barrel_vectordb` | 2.5.4 | Index vectoriel (HNSW, DiskANN, FAISS), BM25, recherche hybride | [/docs/lib/vectordb/](/docs/lib/vectordb/) |
-| `barrel_ngram` | 0.11.4 | Recherche exacte par sous-chaîne et expression régulière sur une base docdb | [source](https://github.com/barrel-db/barrel/tree/main/apps/barrel_ngram) |
+| `barrel_ngram` | 0.11.5 | Recherche exacte par sous-chaîne et expression régulière sur une base docdb | [source](https://github.com/barrel-db/barrel/tree/main/apps/barrel_ngram) |
 | `barrel_embed` | 2.6.1 | Fournisseurs d’embeddings, locaux ou cloud | [/docs/lib/embed/](/docs/lib/embed/) |
 | `barrel_rerank` | 1.0.3 | Reclassement par cross-encoder | [/docs/lib/rerank/](/docs/lib/rerank/) |
 | `barrel_crypto` | 1.0.0 | Primitives de chiffrement au repos et fournisseurs de clés | [/docs/lib/crypto/](/docs/lib/crypto/) |
-| `barrel_spaces` | 1.3.1 | Espaces, jetons de capacité, sessions, passations | [/docs/lib/spaces/](/docs/lib/spaces/) |
-| `barrel_server` | 1.14.1 | REST et MCP sur HTTP | [/docs/lib/server/](/docs/lib/server/) |
-| `barrel_att_s3` | 0.2.1 | Pièces jointes dans un stockage compatible S3 | [source](https://github.com/barrel-db/barrel/tree/main/apps/barrel_att_s3) |
+| `barrel_spaces` | 2.0.0 | Espaces, jetons de capacité, sessions, passations | [/docs/lib/spaces/](/docs/lib/spaces/) |
+| `barrel_server` | 1.15.1 | REST et MCP sur HTTP | [/docs/lib/server/](/docs/lib/server/) |
+| `barrel_att_s3` | 0.2.2 | Pièces jointes dans un stockage compatible S3 | [source](https://github.com/barrel-db/barrel/tree/main/apps/barrel_att_s3) |
 | `barrel_faiss` | 1.0.1 | Bindings NIF vers FAISS | [HexDocs](https://hexdocs.pm/barrel_faiss) |
 | `barrel-lite` | 0.1.0 | Client TypeScript avec une copie dans le navigateur ; non publié sur npm | [guide](/fr/docs/guides/barrel-lite) |
 
@@ -50,7 +50,7 @@ Voir [Compiler et tester](/fr/docs/contribute/build-and-test) pour les commandes
 Chaque bibliothèque a son propre `rebar.config` et dépend de ses voisines par version. Par exemple, documents et réplication sans vecteurs :
 
 ```erlang
-{deps, [{barrel_docdb, "~> 2.4"}]}.
+{deps, [{barrel_docdb, "~> 3.1"}]}.
 ```
 
 Le code source de chaque bibliothèque est sur [github.com/barrel-db/barrel](https://github.com/barrel-db/barrel), sous `apps/`.

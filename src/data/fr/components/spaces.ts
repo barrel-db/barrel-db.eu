@@ -1,4 +1,4 @@
-// translation_of: src/data/components/spaces.ts source_hash: 4cef2870966f59bd
+// translation_of: src/data/components/spaces.ts source_hash: 1fe5b8ccba731fc1
 // French text for the barrel_spaces library page. Code, calls and outputs come from the English file.
 import { overlay } from '../../overlay';
 import { spaces as en } from '../../components/spaces';
