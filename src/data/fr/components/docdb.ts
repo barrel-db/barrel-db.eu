@@ -1,4 +1,4 @@
-// translation_of: src/data/components/docdb.ts source_hash: 156857d4ff185c9f
+// translation_of: src/data/components/docdb.ts source_hash: 6b1361acc07a321d
 // French text for the barrel_docdb library page. Code, calls and outputs come from the English file.
 import { overlay } from '../../overlay';
 import { docdb as en } from '../../components/docdb';

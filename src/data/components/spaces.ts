@@ -129,7 +129,7 @@ export const spaces: ComponentContent = {
   dependsOn: ['barrel', 'docdb', 'crypto'],
   external: 'none beyond the Barrel libraries',
   standalone: { short: 'No', text: 'No. A space is a barrel database, so barrel and barrel_docdb come with it.' },
-  install: { code: '{barrel_spaces, "~> 1.3"}', lang: 'erlang', label: 'rebar.config deps' },
+  install: { code: '{barrel_spaces, "~> 2.0"}', lang: 'erlang', label: 'rebar.config deps' },
   reachedThrough: ['Erlang API', 'REST `/spaces` and `/handoffs` (barrel_server)', 'MCP tools `space_*`, `session_*`, `handoff_*`'],
   config: [
     { title: 'create_space/1 options', rows: [
