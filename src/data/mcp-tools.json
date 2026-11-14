@@ -1,11 +1,11 @@
 {
- "barrelServer": "1.13.0",
+ "barrelServer": "1.15.1",
  "serverInfo": {
   "name": "barrel",
-  "version": "4.4.1"
+  "version": "4.5.1"
  },
  "protocolVersion": "2025-06-18",
- "generated": "2026-11-08",
+ "generated": "2026-11-14",
  "tools": [
   {
    "description": "Fork a database into a branch, optionally at a changes cursor.",
