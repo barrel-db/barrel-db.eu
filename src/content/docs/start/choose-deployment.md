@@ -29,7 +29,9 @@ a service and serves it over HTTP: a REST/JSON API and an
 [MCP](/docs/concepts/glossary#mcp) endpoint that agents call as tools. It
 fits clients written in other languages, clients on other machines, and
 agents. The cost is a service to run and secure: every call crosses the
-network, and the server has no authentication until you configure it.
+network, and the server has no authentication until you configure it. You
+can run it from its Docker image or a release tarball without building
+anything; see [Install](/docs/start/install).
 
 ### Browser
 

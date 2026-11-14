@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/start/quickstart-server.mdx
-source_hash: "e2f3d4e456dba14d"
+source_hash: "c03b399e1e00ece4"
 title: "Démarrage rapide : serveur"
 description: Compilez et démarrez barrel_server, créez une base, écrivez et lisez des documents, lancez une requête BQL, et appelez un outil via MCP.
 ---
@@ -28,6 +28,20 @@ service.
   pour compiler le serveur et ses parties natives.
 - git, pour cloner les sources.
 - `curl`, pour envoyer les requêtes.
+
+<Callout label="Sans compilation : utilisez l’image">
+Avec Docker, vous pouvez sauter les étapes 1 et 2. Lancez l’image, puis
+reprenez à l’étape 3 :
+
+```shell
+docker run -p 8080:8080 ghcr.io/barrel-db/barrel-server:2026.11.9
+```
+
+Sans `BARREL_AUTH_TOKENS`, elle affiche `barrel: no BARREL_AUTH_TOKENS set,
+the server accepts every request` (exécution de l’image 2026.11.9), comme
+la compilation ci-dessous. Voir [Exécuter barrel dans
+Docker](/fr/docs/guides/docker).
+</Callout>
 
 ## 1. Compiler
 

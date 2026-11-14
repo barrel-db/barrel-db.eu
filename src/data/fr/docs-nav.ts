@@ -1,4 +1,4 @@
-// translation_of: src/data/docs-nav.ts source_hash: bfc846571acef734
+// translation_of: src/data/docs-nav.ts source_hash: 407c87bf3377ad5c
 // French labels for the docs sidebar. Slugs and order come from the English file.
 import { docsNav as enNav, type NavItem, type NavSection } from '../docs-nav';
 
@@ -32,6 +32,7 @@ const labels: Record<string, string> = {
   'guides/synchronization': 'Synchronisation',
   'replicate/conflicts': 'Conflits',
   'replicate/upgrade-from-2-0': 'Mettre à jour depuis la 2.0',
+  'replicate/upgrade-to-3': 'Passer à docdb 3 et spaces 2',
   'guides/spaces': 'Espaces, sessions, passations',
   'guides/mcp': 'Point d’accès MCP',
   'guides/audit-provenance': 'Audit et provenance',
@@ -42,6 +43,8 @@ const labels: Record<string, string> = {
   'guides/encryption': 'Chiffrement au repos',
   'security/authentication': 'Authentification',
   'guides/rest-server': 'Lancer le serveur',
+  'guides/docker': 'Exécuter dans Docker',
+  'guides/releases': 'Versions publiées',
   'guides/embedding-barrel-server': 'Intégrer le serveur dans une application',
   'operate/monitoring': 'Supervision',
   'operate/troubleshooting': 'Dépannage',

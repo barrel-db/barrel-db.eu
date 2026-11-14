@@ -1,0 +1,98 @@
+---
+translation_of: src/content/docs/replicate/upgrade-to-3.mdx
+source_hash: "c1ebc705d9cd5d43"
+title: Passer à docdb 3 et spaces 2
+description: Faites passer un maillage à barrel_docdb 3.1 et barrel_spaces 2.0 dans l’ordre qui garde chaque nœud correct, sachez ce qui change dans vos métriques et vos données stockées, et pourquoi il n’y a pas de retour arrière.
+---
+import Callout from '../../../../components/Callout.astro';
+
+barrel_docdb 3.0 renomme les métriques exportées, barrel_docdb 3.1 stocke
+l’historique des versions dans une nouvelle organisation, et barrel_spaces
+2.0 stocke les accès, les sessions et les passations sous la forme d’un
+document par fait. Lisez cette page quand vous mettez à jour des nœuds qui
+font tourner barrel_docdb 2.x ou 3.0, ou barrel_spaces 1.x : l’ordre de
+mise à jour, ce qui change de lui-même, et ce que vous devez mettre à jour
+de votre côté. La [release Barrel 2026.11.9](/fr/docs/guides/releases)
+fournit les trois.
+
+## Ce qui change
+
+- **Noms des métriques (docdb 3.0).** Les labels sont exportés comme
+  labels et les counters se terminent par `_total` :
+  `barrel_doc_operations_db_operation_total{db,operation}` devient
+  `barrel_doc_operations_total{db,operation}`, et il en va de même pour
+  chaque métrique avec labels. [Supervision](/fr/docs/operate/monitoring)
+  liste les noms actuels.
+- **Historique des versions (docdb 3.1).** Un document dont l’identifiant
+  est un autre identifiant suivi de `:` (`a` et `a:b`, `session:42` et
+  `session:42:data:k`) mêlait son historique à celui de l’autre : ses
+  conflits listaient les versions de l’autre document, la réplication les
+  propageait, et supprimer l’historique de `a` supprimait celui de `a:b`.
+  La 3.1 garde l’historique de chaque document à part. La première fois
+  qu’elle ouvre une base en écriture, elle déplace l’historique vers la
+  nouvelle organisation et répare les documents que la 3.0 a mélangés, puis
+  journalise le nombre de lignes déplacées et de documents réparés.
+- **Espaces (spaces 2.0).** Une révocation, chaque clé de données, épingle
+  et résumé d’une session, et chaque étape d’une passation deviennent des
+  documents à part entière, et le registre et les espaces ferment
+  eux-mêmes leurs conflits. Les écritures faites sur deux nœuds ne sont
+  plus perdues. Voir [Espaces, sessions, passations](/fr/docs/guides/spaces).
+
+## 1. Mettre à jour barrel_docdb sur chaque nœud
+
+Vous pouvez mettre à jour un nœud à la fois : le protocole de
+réplication ne change pas. Un nœud 3.0 mélange encore les documents dont
+les identifiants se prolongent et envoie ces versions à ses pairs ; un
+nœud 3.1 les refuse et le journalise. Chaque base est convertie lors de sa
+première ouverture en écriture, en une passe ; une base ouverte en lecture
+seule continue de lire correctement l’ancienne organisation.
+
+Mettez à jour vos tableaux de bord et vos alertes avec les nouveaux noms
+de métriques à la même étape.
+
+## 2. Arrêter les écritures passant par barrel_spaces
+
+Des nœuds en barrel_spaces 1.x et 2.0 ne sont pas d’accord. Arrêtez les
+écritures passant par barrel_spaces, ou arrêtez la réplication du registre
+et des bases d’espace, jusqu’à ce que chaque nœud tourne en 2.0.
+
+| Sur un nœud 1.x, pendant que des nœuds 2.0 écrivent | Effet |
+|---|---|
+| Vérifier un jeton | Il ignore les documents `revoke:` et accepte un jeton révoqué sur un nœud 2.0 |
+| Lire une session | Il ne trouve aucune donnée, épingle ni résumé écrits par la 2.0 |
+| `set_data/4` sur une clé existante | La 2.0 continue d’afficher sa propre valeur ; seules les nouvelles clés apparaissent |
+| `unpin_context/3` | L’épingle réapparaît sur les nœuds 2.0 |
+| Accepter une passation | Une passation acceptée en 2.0 paraît en attente, donc une seconde acceptation réussit |
+
+## 3. Mettre à jour barrel_spaces et convertir une fois
+
+Mettez à jour barrel_spaces en 2.0 (et barrel_server en 1.15.1) sur chaque
+nœud. Puis, sur un seul nœud, convertissez ce que la 1.x a écrit :
+
+```erlang
+{ok, #{grants := G, handoffs := H, sessions := S, skipped := Skipped}} =
+    barrel_spaces:migrate().
+```
+
+`skipped` liste les espaces qui ne s’ouvrent pas sans options d’exécution,
+comme les espaces chiffrés. Ouvrez chacun avec sa clé et lancez
+`barrel_session:migrate(Space)`. Reprenez la réplication : les autres
+nœuds reçoivent les documents convertis. Les documents que vous ne
+convertissez pas se lisent toujours de la même façon, et sont convertis à
+leur prochaine écriture.
+
+## 4. Reprendre les écritures
+
+Chaque nœud donne maintenant les mêmes réponses. Si votre application
+ouvre elle-même le registre ou une base d’espace avec son propre
+`conflict_resolver`, confiez les documents de barrel_spaces à
+`barrel_spaces_resolver` (voir le guide des espaces), sinon ces conflits
+restent ouverts.
+
+<Callout label="Pas de retour arrière" kind="limit">
+barrel_spaces 1.x ne sait pas lire les sessions converties, et une base
+ouverte par barrel_docdb 3.1 perd ses conflits et ses versions passées si
+barrel_docdb 3.0 la rouvre. Faites une sauvegarde avant la mise à jour si
+vous risquez de devoir revenir en arrière ; voir [Sauvegarde et
+restauration](/fr/docs/operate/backups).
+</Callout>

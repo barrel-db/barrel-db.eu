@@ -1,12 +1,13 @@
 ---
 title: Install
-description: Add Barrel to an Erlang project from Hex, build the server from the umbrella, or build barrel-lite for the browser.
+description: Add Barrel to an Erlang project from Hex, run the server from its Docker image or a release, build it from the umbrella, or build barrel-lite for the browser.
 ---
 
 This page tells you what to install for each way of running Barrel: the
-`barrel` library from Hex for an Erlang application, the umbrella build for
-`barrel_server`, and a local build of `barrel-lite` for the browser. Read it
-before a quickstart if your machine has never built Barrel.
+`barrel` library from Hex for an Erlang application, the Docker image or a
+release tarball of `barrel_server`, the umbrella build when you want the
+server from source, and a local build of `barrel-lite` for the browser. Read
+it before a quickstart if your machine has never run Barrel.
 
 ## Requirements
 
@@ -22,7 +23,8 @@ is for, so you can skip what your mode does not use.
   compiled on your machine: RocksDB (the storage engine that writes
   documents to disk), the vector store and the ngram index.
 - **git**, for the server from source: you clone the Barrel repository to
-  build `barrel_server`.
+  build `barrel_server`. The Docker image and the release tarballs need
+  neither Erlang nor a compiler.
 - **Node.js 20 or later and npm**, for the browser client: you build
   `barrel-lite` with them and add it to your web app.
 - **Optional, for local embeddings:** Python 3 (the `local` provider) or
@@ -39,7 +41,7 @@ runs inside it, the [embedded](/docs/concepts/glossary#embedded) mode.
 Every library is on Hex, the package registry for Erlang and Elixir. Add `barrel` to `rebar.config`:
 
 ```erlang
-{deps, [{barrel, "~> 1.13"}]}.
+{deps, [{barrel, "~> 1.14"}]}.
 ```
 
 Add it to your application's `applications` list in `src/*.app.src`, so
@@ -50,7 +52,7 @@ rebar3 compile
 ```
 
 Add a library on its own when you need only that part, for example
-`{barrel_docdb, "~> 2.4"}` for documents and replication without vectors,
+`{barrel_docdb, "~> 3.1"}` for documents and replication without vectors,
 or `{barrel_ngram, "~> 0.11"}` for substring search.
 
 Set where data goes, in `config/sys.config`. `data_dir` is the directory
@@ -62,10 +64,40 @@ where documents are written to disk:
 
 The default is `data/barrel_docdb`, relative to the current directory.
 
+## Run the server from its image
+
+Use this when clients reach Barrel over HTTP or MCP and you do not want to
+build it. Each [Barrel release](/docs/guides/releases) publishes a
+`barrel_server` image for amd64 and arm64, with the filesystem and S3
+attachment backends:
+
+```shell
+docker run -p 8080:8080 -v barrel-data:/data \
+  -e BARREL_AUTH_TOKENS=secret ghcr.io/barrel-db/barrel-server:2026.11.9
+```
+
+Pin a release tag such as `2026.11.9` in production; `latest` follows the
+newest release. [Run barrel in Docker](/docs/guides/docker) lists the
+settings and how to mount your own configuration.
+
+## Run the server from a release tarball
+
+Each Barrel release also attaches a `barrel_server` tarball for Linux x64,
+Linux arm64 and macOS arm64. It carries its own Erlang runtime:
+
+```shell
+mkdir barrel && tar xzf barrel_server-2026.11.9-linux-x64.tar.gz -C barrel
+barrel/bin/barrel_server foreground
+```
+
+Download it from the release page, or with
+`gh release download v2026.11.9 --repo barrel-db/barrel`. See
+[Releases](/docs/guides/releases).
+
 ## Build the server from the umbrella
 
-Use this when clients reach Barrel over HTTP or MCP.
-[`barrel_server`](/docs/concepts/glossary#barrel-server) is built from
+Use this when you change the server or need a build the releases do not
+ship. [`barrel_server`](/docs/concepts/glossary#barrel-server) is built from
 the umbrella, the Barrel repository that holds all the libraries. It is
 behind the `server` profile, a named build configuration, and is not in
 the default build.
