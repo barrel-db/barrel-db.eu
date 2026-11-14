@@ -1,0 +1,87 @@
+---
+title: Upgrade to docdb 3 and spaces 2
+description: Move a mesh to barrel_docdb 3.1 and barrel_spaces 2.0, in the order that keeps every node correct, what changes in your metrics and stored data, and why there is no way back.
+---
+import Callout from '../../../components/Callout.astro';
+
+barrel_docdb 3.0 renames the exported metrics, barrel_docdb 3.1 stores the
+version history in a new layout, and barrel_spaces 2.0 stores grants,
+sessions and handoffs as one document per fact. Read this when you upgrade
+nodes that run barrel_docdb 2.x or 3.0, or barrel_spaces 1.x: the order to
+upgrade in, what changes on its own, and what to update on your side. The
+[Barrel release 2026.11.9](/docs/guides/releases) ships all three.
+
+## What changes
+
+- **Metric names (docdb 3.0).** Labels are exported as labels and counters
+  end in `_total`: `barrel_doc_operations_db_operation_total{db,operation}`
+  becomes `barrel_doc_operations_total{db,operation}`, and the same goes
+  for every labeled metric. [Monitoring](/docs/operate/monitoring) lists
+  the current names.
+- **Version history (docdb 3.1).** A document whose id is another id
+  followed by `:` (`a` and `a:b`, `session:42` and `session:42:data:k`)
+  mixed its history with the other one: its conflicts listed the other
+  document's versions, replication spread them, and removing the history
+  of `a` removed the history of `a:b`. 3.1 keeps each document's history
+  apart. The first time it opens a database writable, it moves the history
+  to the new layout and repairs documents that 3.0 mixed up, then logs how
+  many rows it moved and documents it repaired.
+- **Spaces (spaces 2.0).** A revocation, each session data key, pin and
+  summary, and each handoff step become documents of their own, and the
+  registry and spaces close their conflicts on their own. Writes on two
+  nodes are no longer lost. See
+  [Spaces, sessions, handoffs](/docs/guides/spaces).
+
+## 1. Upgrade barrel_docdb on every node
+
+You can upgrade one node at a time: the replication protocol does not
+change. A 3.0 node still mixes up documents whose ids extend each other and
+sends those versions to its peers; a 3.1 node refuses them and logs it. Each
+database is converted on its first writable open, in one pass; a read-only
+database keeps reading the old layout correctly.
+
+Update your dashboards and alerts to the new metric names in the same step.
+
+## 2. Stop writes through barrel_spaces
+
+Nodes on barrel_spaces 1.x and 2.0 do not agree. Stop writing through
+barrel_spaces, or stop replicating the registry and the space databases,
+until every node runs 2.0.
+
+| On a 1.x node, while 2.0 nodes write | Effect |
+|---|---|
+| Verifying a token | It ignores `revoke:` documents and accepts a token revoked on a 2.0 node |
+| Reading a session | It finds no data, pins or summary written by 2.0 |
+| `set_data/4` on an existing key | 2.0 keeps showing its own value; only new keys appear |
+| `unpin_context/3` | The pin comes back on 2.0 nodes |
+| Accepting a handoff | A handoff accepted on 2.0 looks pending, so a second accept succeeds |
+
+## 3. Upgrade barrel_spaces and convert once
+
+Upgrade barrel_spaces to 2.0 (and barrel_server to 1.15.1) on every node.
+Then, on one node, convert what 1.x wrote:
+
+```erlang
+{ok, #{grants := G, handoffs := H, sessions := S, skipped := Skipped}} =
+    barrel_spaces:migrate().
+```
+
+`skipped` lists the spaces that do not open without runtime options, such
+as encrypted ones. Open each with its key and run
+`barrel_session:migrate(Space)`. Resume replication: the other nodes
+receive the converted documents. Documents you do not convert still read
+the same, and convert on their next write.
+
+## 4. Resume writes
+
+Every node now gives the same answers. If your application opens the
+registry or a space database itself with its own `conflict_resolver`, hand
+the barrel_spaces documents to `barrel_spaces_resolver` (see the spaces
+guide), or those conflicts stay open.
+
+<Callout label="No way back" kind="limit">
+barrel_spaces 1.x cannot read converted sessions, and a database opened by
+barrel_docdb 3.1 loses its conflicts and past versions if barrel_docdb 3.0
+opens it again. Back up before you upgrade if you may need to roll back;
+see [Backups and recovery](/docs/operate/backups).
+</Callout>

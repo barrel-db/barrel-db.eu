@@ -134,6 +134,18 @@ revoked, so a later check returns `revoked`.
 Completing a handoff revokes its token by default. `chain/2` hands it on
 instead; use one or the other, not both.
 
+## Across nodes
+
+Spaces and the registry replicate like any database. Since barrel_spaces
+2.0 each fact is a document of its own, so nodes that write at the same
+time never lose each other's writes: a revocation holds on every node,
+session keys and pins written on two nodes are both kept, a removed key or
+pin stays removed, and a handoff never goes back to an earlier status. When
+two agents accept a handoff on nodes that cannot see each other, every node
+names the same owner: the earliest accept. See [Spaces, sessions,
+handoffs](/docs/guides/spaces) for the rules, and [Upgrade to docdb 3 and
+spaces 2](/docs/replicate/upgrade-to-3) to move a mesh from 1.x.
+
 ## In process and behind the server
 
 Where the token is checked decides how much it protects you. Inside your

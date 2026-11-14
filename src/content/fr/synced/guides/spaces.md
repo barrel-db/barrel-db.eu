@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/synced/guides/spaces.md
-source_hash: "43b69fe382a826e6"
+source_hash: "4054e91a5fa21e76"
 title: "Espaces, sessions et passations"
 description: "La couche agents : un espace est une base barrel créée via barrel_spaces, partagée en détenant un jeton de capacité pour elle. Les sessions donnent aux agents un contexte de travail avec un TTL glissant dans un espace ; une passation transfère un travail à un autre agent sous forme d’un jeton dont la possession donne le droit d’accepter. Lisez ce guide si vous coordonnez plusieurs agents sur un contexte partagé."
 source: "docs/guides/spaces.md"
@@ -90,11 +90,13 @@ des clés de chiffrement par espace : voir [encryption](/fr/docs/guides/encrypt
 
 ## Sessions
 
-Une session est un document de la base d’espace écrit avec un TTL ; chaque
-modification le fait glisser. Les messages sont des documents séparés dont les
-ids se trient chronologiquement. Une session expirée disparaît immédiatement des
-lectures et reçoit une pierre tombale du balayeur TTL de l’espace ; un janitor
-collecte ensuite ses messages orphelins.
+Une session est un document d’en-tête de la base d’espace écrit avec un TTL ;
+chaque modification le fait glisser. Chaque clé de données, chaque épingle, le
+résumé et les compteurs de chaque réplique sont des documents à part, et les
+messages sont des documents dont les ids se trient chronologiquement. Une
+session expirée disparaît immédiatement des lectures et son en-tête reçoit une
+pierre tombale du balayeur TTL de l’espace ; un janitor collecte ensuite ses
+documents orphelins.
 
 ```erlang
 {ok, Space} = barrel_spaces:open_space(SpaceId),
@@ -108,12 +110,23 @@ collecte ensuite ses messages orphelins.
 
 %% état de travail structuré et contexte épinglé
 {ok, _} = barrel_session:set_data(Space, Sid, <<"cursor">>, 42),
+{ok, _} = barrel_session:delete_data(Space, Sid, <<"cursor">>),
 {ok, PinId} = barrel_session:pin_context(Space, Sid,
                                          #{content => <<"key fact">>,
                                            priority => 0}),
 {ok, Pinned} = barrel_session:list_pinned(Space, Sid),
-ok = barrel_session:delete(Space, Sid).   %% supprime aussi les messages
+{ok, _} = barrel_session:unpin_context(Space, Sid, PinId),
+
+%% compteurs : aucun incrément n'est perdu quand deux nœuds comptent en même temps
+{ok, 21} = barrel_session:incr_counter(Space, Sid, <<"messages">>, 1),
+{ok, #{<<"messages">> := 21}} = barrel_session:get_counters(Space, Sid),
+ok = barrel_session:delete(Space, Sid).   %% supprime aussi tous les documents
 ```
+
+Un compteur ne monte ou ne descend que des quantités que vous ajoutez. Pour
+compter « les messages depuis la dernière extraction », gardez le compteur de
+messages et stockez son total au moment de la dernière extraction dans une clé
+de données : la différence donne le nombre depuis.
 
 ### Sessions durables
 
@@ -185,9 +198,9 @@ de la base ; les espaces le règlent à 60000 par défaut.
 
 Une passation est un espace partagé plus une capacité. En créer une émet un
 accès et renvoie le jeton une seule fois ; quiconque détient le jeton accepte.
-Accepter fait passer le document de passation de pending à accepted par un CAS
-(une double acceptation perd), ouvre l’espace et y crée une session pour celui
-qui accepte : le contexte est lu sur place, rien n’est copié.
+Accepter enregistre celui qui accepte (une deuxième acceptation est refusée),
+ouvre l’espace et y crée une session pour celui qui accepte : le contexte est
+lu sur place, rien n’est copié.
 
 ```erlang
 {ok, #{handoff_id := Hid, token := HandoffToken}} =
@@ -220,6 +233,105 @@ qui accepte : le contexte est lu sur place, rien n’est copié.
 Les documents de passation vivent dans la base de registre : les passations en
 attente se découvrent avec `barrel_handoff:list/1` (filtres : `space`, `status`,
 `to_agent`, `from_agent`) ou en s’abonnant au flux de changements du registre.
+Chaque étape est un document écrit une seule fois : la passation à la création,
+une acceptation par agent, la complétion. Le statut est l’étape la plus avancée
+présente.
+
+## Répliquer un espace et son registre
+
+Répliquez le registre et une base d’espace entre nœuds comme n’importe quelle
+base barrel. Chaque fait d’accès, de session et de passation est un document
+écrit une seule fois ou remplacé en entier : la version que montre chaque nœud
+est donc déjà la réponse. barrel_spaces ouvre le registre et ses espaces avec
+`barrel_spaces_resolver`, qui clôt chaque conflit sur ces documents en
+choisissant cette version, de la même façon sur chaque nœud :
+
+- Une révocation est un document `revoke:` à part. Un accès modifié ailleurs
+  ne peut pas l’annuler, et deux nœuds qui révoquent le même jeton sont
+  d’accord.
+- Deux nœuds qui écrivent des clés, des épingles ou le résumé différents d’une
+  même session gardent les deux écritures. La même clé écrite sur deux nœuds
+  garde l’écriture la plus récente.
+- Retirer une clé de données ou une épingle se réplique comme une suppression :
+  un nœud qui détient encore l’ancienne copie ne peut pas la faire revenir.
+- Une passation ne revient jamais de completed à accepted, ni de accepted à
+  pending. Quand deux agents l’acceptent sur des nœuds qui ne se voient pas,
+  les deux acceptations sont gardées et chaque nœud désigne le même
+  propriétaire : le `accepted_at` le plus ancien, puis le nom de l’agent.
+- Les compteurs sont par réplique et additionnés : aucun incrément n’est perdu.
+
+```erlang
+%% nœud A
+ok = barrel_caps:revoke(TokenId, #{by => <<"ops">>}),
+
+%% nœud B, après réplication
+{error, revoked} = barrel_caps:verify(Token, SpaceId, read),
+{ok, [#{<<"revoked_by">> := <<"ops">>}]} = barrel_caps:list(SpaceId).
+```
+
+### Votre propre résolveur de conflits
+
+Une base d’espace contient aussi vos documents. Passez votre résolveur avec
+`docdb => #{conflict_resolver => {M, F}}` à `create_space/1` ou
+`open_space/2` : barrel_spaces l’enveloppe, traite les documents `session:` et
+confie tous les autres documents au vôtre. Si vous ouvrez vous-même le registre
+ou une base d’espace, définissez `{barrel_spaces_resolver, registry}` sur le
+registre, et `barrel_spaces_resolver:with({M, F})` (ou `{barrel_spaces_resolver,
+space}`) sur un espace. Comme pour tout résolveur, chaque nœud doit exécuter le
+même.
+
+### Mettre à jour depuis 1.x
+
+2.0 stocke les accès, les sessions et les passations autrement, et demande
+barrel_docdb 3.1. Des nœuds qui exécutent les deux versions ne s’accordent pas.
+Mettez donc à jour tous les nœuds du maillage dans cet ordre :
+
+1. Mettez à jour barrel_docdb en 3.1 sur chaque nœud. Vous pouvez le faire un
+   nœud à la fois : le protocole de réplication ne change pas, et un nœud 3.1
+   refuse les versions mélangées qu’un nœud 3.0 envoie encore. Chaque base
+   convertit son historique de versions la première fois que 3.1 l’ouvre, en un
+   seul passage, et journalise combien de lignes elle a déplacées et combien de
+   documents elle a réparés.
+2. Arrêtez d’écrire via barrel_spaces, ou arrêtez de répliquer le registre et
+   les bases d’espace.
+3. Mettez à jour barrel_spaces en 2.0 (et barrel_server en 1.15.1) sur chaque
+   nœud.
+4. Sur un nœud, lancez `barrel_spaces:migrate/0`. Il convertit le registre et
+   chaque espace qui s’ouvre sans options d’exécution, et liste les autres dans
+   `skipped`. Ouvrez chaque espace ignoré (un espace chiffré avec sa clé) et
+   lancez `barrel_session:migrate/1`.
+5. Reprenez la réplication. Les autres nœuds reçoivent les documents convertis.
+6. Reprenez les écritures.
+
+```erlang
+{ok, #{grants := G, handoffs := H, sessions := S, skipped := Skipped}} =
+    barrel_spaces:migrate(),
+[begin
+     {ok, Space} = barrel_spaces:open_space(Id, #{encryption => Spec}),
+     {ok, _} = barrel_session:migrate(Space)
+ end || Id <- Skipped].
+```
+
+Les documents que vous ne convertissez pas se lisent de la même façon, et se
+convertissent à leur prochaine écriture.
+
+Ce qui se passe mal si vous sautez l’étape 2 et qu’un nœud 1.x continue
+d’écrire :
+
+| Sur un nœud 1.x | Effet |
+|---|---|
+| Vérifier un jeton | Il ignore les documents `revoke:` et accepte un jeton révoqué sur un nœud 2.0. |
+| Lire une session | Il ne trouve aucune donnée, épingle ni résumé écrits par 2.0. |
+| `set_data/4` sur une clé existante | 2.0 continue d’afficher sa propre valeur ; seules les nouvelles clés apparaissent. |
+| `unpin_context/3` | L’épingle revient sur les nœuds 2.0. |
+| Accepter une passation | Une passation acceptée sur 2.0 paraît en attente : une deuxième acceptation réussit et le propriétaire peut changer. |
+
+Une révocation 1.x tient toujours sur les nœuds 2.0, qui lisent les deux
+formats.
+
+Il n’y a pas de retour en arrière : 1.x ne sait pas lire les sessions
+converties, et une base ouverte par barrel_docdb 3.1 perd ses conflits et ses
+versions passées sous 3.0.
 
 ## Sur REST et MCP
 
@@ -254,13 +366,13 @@ outils MCP (`space_*`, `session_*`, `handoff_*`) ; voir [mcp](/fr/docs/guides/m
   purement logique (un id de tenant, un id de passation) est pris en charge : des
   jetons révocables, hachés au repos, avec échelle de droits, sans base d’espace
   derrière eux.
-- Le registre (`_barrel_spaces`) contient les documents d’espace, d’accès et de
-  passation comme des documents ordinaires : les folds et le flux de changements
+- Le registre (`_barrel_spaces`) contient les documents d’espace, d’accès, de
+  révocation et de passation comme des documents ordinaires : les folds et le flux de changements
   les voient.
 - Un espace chiffré a besoin de sa spécification de chiffrement à chaque
   ouverture, y compris dans `barrel_handoff:accept/2` (passez `open_opts`). Sur
   REST et MCP, les espaces s’ouvrent avec les options par défaut : les espaces
   chiffrés ne sont donc accessibles que par l’API Erlang en v1.
-- `barrel_spaces_janitor` balaie périodiquement les messages de session
+- `barrel_spaces_janitor` balaie périodiquement les documents de session
   orphelins des espaces ouverts (`janitor_interval`, 5 minutes par défaut) ;
   `barrel_spaces_janitor:sweep/0` lance un passage immédiatement.

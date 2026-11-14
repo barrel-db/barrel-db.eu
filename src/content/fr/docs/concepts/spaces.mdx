@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/concepts/spaces.mdx
-source_hash: "b87f69e0f5c23ca1"
+source_hash: "bda98da734ac6de5"
 title: Espaces et capacités
 description: Comment s’articulent un espace, un jeton de capacité, une session et une passation, les droits read, write et admin, et quelles vérifications ont lieu dans le processus et lesquelles seulement dans barrel_server.
 ---
@@ -144,6 +144,21 @@ renvoie `revoked`.
 
 Terminer une passation révoque son jeton par défaut. `chain/2` le
 transmet à la place ; utilisez l’un ou l’autre, pas les deux.
+
+## D’un nœud à l’autre
+
+Les espaces et le registre se répliquent comme n’importe quelle base.
+Depuis barrel_spaces 2.0, chaque fait est un document à part entière, si
+bien que des nœuds qui écrivent en même temps ne perdent jamais les
+écritures les uns des autres : une révocation tient sur chaque nœud, les
+clés et les épingles d’une session écrites sur deux nœuds sont toutes
+conservées, une clé ou une épingle retirée le reste, et une passation
+ne revient jamais à un statut antérieur. Quand deux agents acceptent une
+passation sur des nœuds qui ne se voient pas, chaque nœud désigne le même
+titulaire : la première acceptation. Voir [Espaces, sessions,
+passations](/fr/docs/guides/spaces) pour les règles, et [Passer à docdb 3
+et spaces 2](/fr/docs/replicate/upgrade-to-3) pour migrer un maillage
+depuis la 1.x.
 
 ## Dans le processus et derrière le serveur
 

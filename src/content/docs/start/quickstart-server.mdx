@@ -25,6 +25,19 @@ that speaks HTTP can use the database, and you run it as one service.
 - git, to clone the source.
 - `curl`, to send requests.
 
+<Callout label="No build: use the image">
+With Docker you can skip steps 1 and 2. Start the image, then continue at
+step 3:
+
+```shell
+docker run -p 8080:8080 ghcr.io/barrel-db/barrel-server:2026.11.9
+```
+
+Without `BARREL_AUTH_TOKENS` it logs `barrel: no BARREL_AUTH_TOKENS set,
+the server accepts every request` (run of the 2026.11.9 image), like the
+build below. See [Run barrel in Docker](/docs/guides/docker).
+</Callout>
+
 ## 1. Build
 
 The server lives in the Barrel umbrella repository, behind the `server`

@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/synced/contribute/end-to-end-tests.md
-source_hash: "1eeaf46ea574d453"
+source_hash: "5738f6b620eadf7a"
 title: "Tests de bout en bout"
 description: "Des tests qui exécutent la vraie release dans des processus séparés, pas dans une seule VM."
 source: "test/e2e/README.md"
@@ -81,6 +81,24 @@ modifications et suppressions atteignent les pairs mis à niveau comme de
 nouvelles versions à côté de celles qu’elles remplaçaient : elles y
 apparaissent comme des conflits et rien n’est perdu ; une résolution faite
 sur un pair mis à niveau atteint l’ancien pair et n’est pas défaite par lui.
+
+## Vecteurs client
+
+`client-vectors.sh` vérifie que le vecteur que vous fournissez avec un
+document reste attaché à sa version sur trois pairs et un pair de la release
+précédente (`OLD_REF`, par défaut `barrel_server-v1.14.2` ; `OLD_PORT`, par
+défaut 8094, est son port sur l’hôte) :
+
+```console
+$ test/e2e/client-vectors.sh
+```
+
+Deux pairs écrivent le même document avec leurs propres vecteurs. Chaque pair
+garde le vecteur du gagnant et celui de la version perdante, une résolution
+qui revient à la version perdante atteint chaque pair avec son vecteur, et
+une résolution envoyée avec `_observed` et `_embedding` porte le sien. Une
+version relayée par l’ancien pair y perd son vecteur et le retrouve à la
+prochaine synchronisation directe depuis un pair mis à niveau.
 
 ## Crashs
 

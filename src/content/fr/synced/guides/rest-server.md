@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/synced/guides/rest-server.md
-source_hash: "18c36326a34cbc1c"
+source_hash: "1177802c3f795bb6"
 title: "Lancer le serveur REST"
 description: "barrel_server expose la base barrel comme une API REST/JSON avec livery. Par défaut il sert du HTTP/1.1 en clair ; HTTP/2 et HTTP/3 (sur TLS) s’activent via la configuration listeners (voir synchronization). Il ne contient aucune logique de base de données : chaque handler appelle le module barrel via un gestionnaire de cycle de vie des bases."
 source: "docs/guides/rest-server.md"
@@ -36,6 +36,8 @@ Configurez-le avec l’environnement de l’application `barrel_server` :
 `http_port` (par défaut `8080`) et `data_dir` (où les bases sont stockées).
 Définissez-les avant le démarrage de l’application, par exemple dans
 `sys.config`.
+
+Pour lancer le serveur sans le construire, utilisez l’image Docker (voir le [guide Docker](/fr/docs/guides/docker)).
 
 ## Points d’accès
 

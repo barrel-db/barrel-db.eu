@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/synced/guides/synchronization.md
-source_hash: "bd0f437559193065"
+source_hash: "414c34f571069617"
 title: "Synchronisation"
 description: "Barrel réplique les documents entre bases avec un protocole à vecteurs de versions : ordre causal issu d’une horloge logique hybride (HLC), gagnants déterministes, livraison idempotente et checkpoints pour reprendre. La réplication s’exécute dans la même VM ou sur HTTP face à un barrel_server. Lisez ce guide si vous devez copier deux bases ou les garder synchronisées, répliquer un sous-ensemble avec des canaux, ou déplacer les pièces jointes avec les documents."
 source: "docs/guides/synchronization.md"
@@ -370,6 +370,57 @@ Comportement continu :
 - Les documents de tâche ne stockent les endpoints que sous forme d’URL ; les
   jetons viennent de `sync_auth`.
 
+## Vecteurs que vous fournissez
+
+Un vecteur que vous écrivez avec un document (`_embedding`, source `client`)
+appartient à cette version et se réplique avec elle. Lisez cette section quand
+le vecteur ne peut pas être calculé à partir du texte sur un autre nœud, par
+exemple quand le texte est chiffré.
+
+- Chaque version vivante garde son propre vecteur : la version courante, les
+  versions sœurs en conflit, et les versions passées jusqu’à ce que la
+  rétention les supprime. Une version qui redevient courante, par une
+  résolution ou une branche à un instant donné, est indexée avec son propre
+  vecteur.
+- Les vecteurs calculés (source `computed`) ne voyagent pas. Chaque nœud les
+  recalcule à partir du texte.
+
+Résolvez un conflit avec un vecteur à vous quand le corps fusionné en a besoin :
+envoyez le document fusionné avec `_observed` (obtenu par
+`GET /db/:db/doc/:id?conflicts=true`) et `_embedding`.
+
+```console
+$ curl -XPUT localhost:8080/db/mydb/doc/m -H 'content-type: application/json' \
+    -d '{"text": "merged", "_observed": [...], "_embedding": [0.1, 0.2, 0.3]}'
+```
+
+Depuis Erlang, `resolve_conflict` garde le vecteur de la version choisie, et
+prend `_embedding` dans une fusion :
+
+```erlang
+{ok, _} = barrel_docdb:resolve_conflict(Db, Id, Rev, {choose, Token}),
+{ok, _} = barrel_docdb:resolve_conflict(Db, Id, Rev,
+                                        {merge, Merged#{<<"_embedding">> => Vec}}).
+```
+
+Lisez une version passée avec son vecteur :
+
+```console
+$ curl 'localhost:8080/db/mydb/doc/m/_versions/<rev>?include_embedding=true'
+```
+
+Notes :
+
+- Le vecteur d’une version passée coûte 4 octets par dimension (6 Ko à 1536
+  dimensions) et la rétention le supprime avec le corps archivé
+  (`retention_period`, 30 jours par défaut ; `0` garde les deux pour toujours).
+- Un pair antérieur à barrel_docdb 3.0 ne garde que le vecteur de la version
+  courante. Les vecteurs des autres versions qui passent par lui sont perdus,
+  et reviennent à la prochaine synchronisation directe depuis un pair mis à
+  jour.
+- Une fusion sans `_embedding` produit un nouveau corps sans vecteur : une base
+  en mode enregistrement calcule l’embedding de son texte.
+
 ## Horloges
 
 Chaque échange sur le réseau porte un en-tête `x-barrel-hlc` et les deux côtés
@@ -392,9 +443,10 @@ protocole (polling adaptatif ; avec `continuous: true` il garde aussi un flux S
 
 ## Ce qui n’est pas encore couvert
 
-- **Vecteurs.** Les index vectoriels ne sont pas transmis ; en mode
-  enregistrement, le texte et les métadonnées se répliquent comme des documents
-  et l’index se reconstruit localement. Un client qui a besoin des vecteurs
+- **Index vectoriels.** Les index ne sont pas transmis ; en mode
+  enregistrement, les documents se répliquent, avec les vecteurs que vous avez
+  fournis (voir [Vecteurs que vous fournissez](#vecteurs-que-vous-fournissez)),
+  et chaque nœud reconstruit son index. Un client qui a besoin des vecteurs
   stockés les récupère avec `include_embedding` sur `GET /db/:db/doc/:id` ou
   `POST /db/:db/_bulk_get` (c’est ce que fait barrel-lite).
 - **Certificats client sur HTTP/3.** Les listeners H3 servent en TLS mais ne

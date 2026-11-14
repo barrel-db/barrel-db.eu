@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/synced/guides/distributing-apps.md
-source_hash: "ed212f77e47774be"
+source_hash: "2707bb09ea4b19c4"
 title: "Distribuer les applications de l’umbrella"
 description: "L’umbrella est la source de vérité : vous développez toutes les applications dans un seul arbre pour que les changements entre applications restent atomiques. Ce guide sert quand vous devez remettre une application seule à quelqu’un en dehors de l’umbrella. Il y a trois façons de faire, cumulables : publier sur Hex, maintenir un miroir git par application, et consommer une application depuis un autre projet."
 source: "docs/guides/distributing-apps.md"
@@ -27,9 +27,9 @@ Avant de publier une application :
 - Vérifiez que l’application a un `README.md`, une `LICENSE`, un
   `CHANGELOG.md`, un bloc `ex_doc`, et `{rebar3_hex, "7.2.0"}` dans ses
   `project_plugins` (voir la note sur le plugin plus bas).
-- Taguez la release : par application `<app>-v<version>` (par exemple
-  `barrel_docdb-v1.0.0`), et pour l’umbrella `v<version>`. La CI reconnaît
-  les deux motifs de tags.
+- Ne taguez pas l’application. Fusionner le changement de version dans main
+  publie le bundle Barrel (`YYYY.MM.N`), qui enregistre la version de chaque
+  application ; voir [releases](/fr/docs/guides/releases).
 
 ## Ordre de publication
 
@@ -201,9 +201,8 @@ Notes :
 - Remplacez le dépôt distant d’exemple par votre forge. Les `links` du paquet
   dans chaque `.app.src` pointent vers le dépôt de l’umbrella ; les miroirs
   par application sont optionnels (l’umbrella est la source de vérité).
-- Pilotez les miroirs depuis un job de release déclenché par les tags
-  `barrel_*-v*` que la CI reconnaît déjà, pour qu’une release taguée se
-  propage vers les dépôts autonomes.
+- Pilotez les miroirs depuis le workflow de release du bundle, pour que
+  chaque bundle Barrel (`YYYY.MM.N`) se propage vers les dépôts autonomes.
 
 ## Consommer une application ailleurs
 
@@ -218,12 +217,12 @@ Paquet Hex (après publication) :
 ]}.
 ```
 
-Miroir git :
+Miroir git, épinglé sur le bundle Barrel qui contient la version voulue :
 
 ```erlang
 {deps, [
     {barrel_embed, {git, "https://code.barrel-db.eu/barrel-db/barrel_embed.git",
-                    {tag, "v2.2.1"}}}
+                    {tag, "v2026.11.8"}}}
 ]}.
 ```
 

@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/start/choose-deployment.md
-source_hash: "8a6ba7fbddd1067a"
+source_hash: "cc79f819dd3fa840"
 title: Choisir un déploiement
 description: Choisissez entre embarquer Barrel dans une release Erlang, lancer barrel_server, et garder une copie dans le navigateur avec barrel-lite.
 ---
@@ -37,7 +37,9 @@ appellent comme des outils. Il convient aux clients écrits dans d’autres
 langages, aux clients sur d’autres machines et aux agents. En
 contrepartie, vous avez un service à faire tourner et à sécuriser : chaque
 appel traverse le réseau, et le serveur n’a aucune authentification tant
-que vous ne la configurez pas.
+que vous ne la configurez pas. Vous pouvez le lancer depuis son image
+Docker ou une archive tar de release sans rien compiler ; voir
+[Installer](/fr/docs/start/install).
 
 ### Navigateur
 

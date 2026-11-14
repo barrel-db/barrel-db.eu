@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/operate/monitoring.mdx
-source_hash: "634bc9b83c162a58"
+source_hash: "8a879b975ad6497f"
 title: Supervision
 description: Ce que Barrel mesure, comment lire les métriques, comment les envoyer à un collecteur, et comment surveiller les tâches de réplication et l’état du nœud.
 ---
@@ -11,30 +11,35 @@ Cette page décrit ce que Barrel mesure, comment vous le lisez et comment vous s
 
 ## Ce que Barrel mesure
 
-La couche documents, barrel_docdb, enregistre des métriques sur chaque nœud, que vous les exportiez ou non. Elles suivent le nommage Prometheus. Une métrique avec labels est exportée sous un nom qui porte ses labels : écrivez vos requêtes avec les noms ci-dessous.
+La couche documents, barrel_docdb, enregistre des métriques sur chaque nœud, que vous les exportiez ou non. Elles suivent les conventions Prometheus : un counter se termine par `_total`, et les labels sont exportés comme labels. Écrivez vos requêtes avec les noms ci-dessous.
 
 | Nom exporté | Type | Ce qu’il compte |
 |---|---|---|
-| `barrel_doc_operations_db_operation_total{db,operation}` | counter | Écritures, lectures et suppressions de documents |
-| `barrel_doc_operation_duration_seconds_vec_db_operation` | histogram | Durée de chaque opération sur un document |
-| `barrel_write_group_size_vec_db` | histogram | Écritures validées ensemble dans un même lot |
-| `barrel_query_operations_db_total{db}` | counter | Requêtes exécutées |
-| `barrel_query_duration_seconds_vec_db` | histogram | Durée de chaque requête |
+| `barrel_doc_operations_total{db,operation}` | counter | Écritures, lectures et suppressions de documents |
+| `barrel_doc_operation_duration_seconds{db,operation}` | histogram | Durée de chaque opération sur un document |
+| `barrel_write_group_size{db}` | histogram | Écritures validées ensemble dans un même lot |
+| `barrel_query_operations_total{db}` | counter | Requêtes exécutées |
+| `barrel_query_duration_seconds{db}` | histogram | Durée de chaque requête |
+| `barrel_query_results_count{db}` | histogram | Lignes renvoyées par requête |
 | `barrel_query_timeouts_total` | counter | Requêtes qui ont atteint leur échéance |
-| `barrel_replication_docs_direction_total{direction}` | counter | Documents écrits par la réplication |
-| `barrel_replication_errors_task_id_total{task_id}` | counter | Erreurs de réplication, par identifiant de réplication |
-| `barrel_replication_active_task_id{task_id}` | gauge | 1 tant que la tâche tourne, 0 quand elle est en pause, en échec, terminée ou supprimée |
-| `barrel_replication_lag_seconds_task_id{task_id}` | gauge | Secondes écoulées depuis l’écriture sur la source du dernier changement copié ; 0 une fois à jour |
-| `barrel_db_documents_total_db{db}` | gauge | Documents vivants (les documents supprimés ne sont pas comptés), nombre exact |
-| `barrel_db_attachments_total_db{db}` | gauge | Pièces jointes, nombre exact, pour les stockages blob et S3 |
-| `barrel_db_size_bytes_db{db}` | gauge | Taille du stockage des documents sur disque |
-| `barrel_db_pending_compaction_bytes_db{db}` | gauge | Octets que la compaction doit encore réécrire |
-| `barrel_db_compactions_running_db{db}`, `barrel_db_compactions_queued_db{db}` | gauge | Compactions en cours, et en attente d’un thread |
-| `barrel_db_stubs_total`, `barrel_db_stubs_bytes` | gauge | Documents supprimés conservés comme stubs, par base, après chaque purge de rétention |
+| `barrel_replication_docs_total{direction}` | counter | Documents écrits par la réplication |
+| `barrel_replication_errors_total{task_id}` | counter | Erreurs de réplication, par identifiant de réplication |
+| `barrel_replication_active{task_id}` | gauge | 1 tant que la tâche tourne, 0 quand elle est en pause, en échec, terminée ou supprimée |
+| `barrel_replication_lag_seconds{task_id}` | gauge | Secondes écoulées depuis l’écriture sur la source du dernier changement copié ; 0 une fois à jour |
+| `barrel_db_documents_total{db}` | gauge | Documents vivants (les documents supprimés ne sont pas comptés), nombre exact |
+| `barrel_db_attachments_total{db}` | gauge | Pièces jointes, nombre exact, pour les stockages blob et S3 |
+| `barrel_db_size_bytes{db}` | gauge | Taille du stockage des documents sur disque |
+| `barrel_db_pending_compaction_bytes{db}` | gauge | Octets que la compaction doit encore réécrire |
+| `barrel_db_compactions_running{db}`, `barrel_db_compactions_queued{db}` | gauge | Compactions en cours, et en attente d’un thread |
+| `barrel_db_stubs_total{db}`, `barrel_db_stubs_bytes{db}` | gauge | Documents supprimés conservés comme stubs, après chaque purge de rétention |
 
 Les gauges de taille et de compaction se mettent à jour chaque minute (`stats_interval`), et une première fois dans la seconde qui suit l’ouverture. Un retard de compaction qui ne cesse de grandir, ou des compactions en attente qui restent au-dessus de zéro, signifient que la compaction ne suit plus vos écritures.
 
-Chaque métrique déclarée est aussi affichée une fois sans labels ; cette copie reste à 0. Vérifiez le nom exact avec labels dans `export_text/0` avant d’écrire une alerte.
+Une métrique apparaît dans l’export dès qu’elle a une valeur : un nœud qui n’a jamais répliqué n’affiche aucune métrique de réplication.
+
+<Callout label="Modifié dans barrel_docdb 3.0">
+Avant barrel_docdb 3.0, les labels étaient intégrés au nom : les opérations sur les documents étaient exportées sous `barrel_doc_operations_db_operation_total{db,operation}`, et il en allait de même pour chaque métrique avec labels. Mettez à jour les tableaux de bord et les alertes qui utilisent les anciens noms.
+</Callout>
 
 Les nombres de documents et de pièces jointes sont exacts : chaque écriture qui en ajoute ou en retire un met le compte à jour dans la même écriture atomique (barrel_docdb 2.4.0). Une base écrite avant la 2.4.0 est comptée une fois en arrière-plan après son ouverture ; d’ici là, ses comptes ne sont pas publiés et `db_info` les renvoie à `undefined`.
 
@@ -48,10 +53,10 @@ Dans le nœud, `barrel_metrics:export_text/0` renvoie le format texte Prometheus
 io:format("~s", [barrel_metrics:export_text()]).
 ```
 
-<CodeBlock output label="Sortie, abrégée, après une écriture, une lecture et une requête sur la base mon (exécution réelle sur barrel_server 1.13.0)" code={`barrel_doc_operations_db_operation_total{db="mon",operation="put"} 1.0
-barrel_doc_operations_db_operation_total{db="mon",operation="get"} 1.0
-barrel_query_operations_db_total{db="mon"} 1.0
-barrel_doc_operation_duration_seconds_vec_db_operation_count{db="mon",operation="put"} 1`} />
+<CodeBlock output label="Sortie, abrégée, après une écriture, une lecture et une requête sur la base mon (exécution réelle de l’image Barrel 2026.11.9)" code={`barrel_doc_operations_total{db="mon",operation="put"} 1.0
+barrel_doc_operations_total{db="mon",operation="get"} 1.0
+barrel_query_operations_total{db="mon"} 1.0
+barrel_doc_operation_duration_seconds_count{db="mon",operation="put"} 1`} />
 
 ## Les envoyer à un collecteur
 

@@ -38,6 +38,7 @@ export const docsNav: NavSection[] = [
     { label: 'Synchronization', slug: 'guides/synchronization' },
     { label: 'Conflicts', slug: 'replicate/conflicts' },
     { label: 'Upgrade from 2.0', slug: 'replicate/upgrade-from-2-0' },
+    { label: 'Upgrade to docdb 3 and spaces 2', slug: 'replicate/upgrade-to-3' },
   ] },
   { title: 'Agents', items: [
     { label: 'Spaces, sessions, handoffs', slug: 'guides/spaces' },
@@ -60,6 +61,8 @@ export const docsNav: NavSection[] = [
   ] },
   { title: 'Operate', items: [
     { label: 'Run the server', slug: 'guides/rest-server' },
+    { label: 'Run in Docker', slug: 'guides/docker' },
+    { label: 'Releases', slug: 'guides/releases' },
     { label: 'Embed the server in an app', slug: 'guides/embedding-barrel-server' },
     { label: 'Monitoring', slug: 'operate/monitoring' },
     { label: 'Troubleshooting', slug: 'operate/troubleshooting' },

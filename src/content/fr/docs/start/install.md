@@ -1,15 +1,17 @@
 ---
 translation_of: src/content/docs/start/install.md
-source_hash: "257c96292351fe7f"
+source_hash: "5614a5abe71ca695"
 title: Installer
-description: Ajoutez Barrel à un projet Erlang depuis Hex, compilez le serveur depuis l’umbrella, ou compilez barrel-lite pour le navigateur.
+description: Ajoutez Barrel à un projet Erlang depuis Hex, lancez le serveur depuis son image Docker ou une release, compilez-le depuis l’umbrella, ou compilez barrel-lite pour le navigateur.
 ---
 
 Cette page indique quoi installer pour chaque façon de faire tourner
 Barrel : la bibliothèque `barrel` depuis Hex pour une application Erlang,
-la compilation de l’umbrella pour `barrel_server`, et une compilation
-locale de `barrel-lite` pour le navigateur. Lisez-la avant un démarrage
-rapide si votre machine n’a encore jamais compilé Barrel.
+l’image Docker ou une archive tar de release de `barrel_server`, la
+compilation de l’umbrella quand vous voulez le serveur depuis les sources,
+et une compilation locale de `barrel-lite` pour le navigateur. Lisez-la
+avant un démarrage rapide si votre machine n’a encore jamais fait tourner
+Barrel.
 
 ## Prérequis
 
@@ -26,8 +28,9 @@ n’utilise pas.
   code natif compilé sur votre machine : RocksDB (le moteur de stockage
   qui écrit les documents sur disque), le stockage vectoriel et l’index
   ngram.
-- **git**, pour le serveur depuis les sources : vous clonez le dépôt
-  Barrel pour compiler `barrel_server`.
+- **git**, pour le serveur depuis les sources : vous clonez le dépôt
+  Barrel pour compiler `barrel_server`. L’image Docker et les archives tar
+  de release n’ont besoin ni d’Erlang ni d’un compilateur.
 - **Node.js 20 ou plus récent, et npm**, pour le client navigateur : ils
   servent à compiler `barrel-lite` et à l’ajouter à votre application
   web.
@@ -47,7 +50,7 @@ Elixir et que Barrel tourne à l’intérieur : c’est le mode
 bibliothèques sont sur Hex, le registre de paquets d’Erlang et d’Elixir. Ajoutez `barrel` à `rebar.config` :
 
 ```erlang
-{deps, [{barrel, "~> 1.13"}]}.
+{deps, [{barrel, "~> 1.14"}]}.
 ```
 
 Ajoutez-la à la liste `applications` de votre application dans
@@ -59,7 +62,7 @@ rebar3 compile
 ```
 
 Ajoutez une bibliothèque seule quand vous n’avez besoin que de cette
-partie, par exemple `{barrel_docdb, "~> 2.4"}` pour les documents et la
+partie, par exemple `{barrel_docdb, "~> 3.1"}` pour les documents et la
 réplication sans vecteurs, ou `{barrel_ngram, "~> 0.11"}` pour la
 recherche de sous-chaînes.
 
@@ -73,9 +76,43 @@ répertoire où les documents sont écrits sur disque :
 La valeur par défaut est `data/barrel_docdb`, relative au répertoire
 courant.
 
+## Lancer le serveur depuis son image
+
+Suivez cette partie quand vos clients accèdent à Barrel sur HTTP ou MCP et
+que vous ne voulez pas le compiler. Chaque [release de
+Barrel](/fr/docs/guides/releases) publie une image `barrel_server` pour
+amd64 et arm64, avec les stockages de pièces jointes sur le système de
+fichiers et S3 :
+
+```shell
+docker run -p 8080:8080 -v barrel-data:/data \
+  -e BARREL_AUTH_TOKENS=secret ghcr.io/barrel-db/barrel-server:2026.11.9
+```
+
+Fixez un tag de release comme `2026.11.9` en production ; `latest` suit
+la release la plus récente. [Exécuter barrel dans
+Docker](/fr/docs/guides/docker) liste les réglages et explique comment
+monter votre propre configuration.
+
+## Lancer le serveur depuis une archive tar de release
+
+Chaque release de Barrel joint aussi une archive tar de `barrel_server`
+pour Linux x64, Linux arm64 et macOS arm64. Elle embarque son propre
+runtime Erlang :
+
+```shell
+mkdir barrel && tar xzf barrel_server-2026.11.9-linux-x64.tar.gz -C barrel
+barrel/bin/barrel_server foreground
+```
+
+Téléchargez-la depuis la page de la release, ou avec
+`gh release download v2026.11.9 --repo barrel-db/barrel`. Voir
+[Versions publiées](/fr/docs/guides/releases).
+
 ## Compiler le serveur depuis l’umbrella
 
-Suivez cette partie quand vos clients accèdent à Barrel sur HTTP ou MCP.
+Suivez cette partie quand vous modifiez le serveur ou qu’il vous faut une
+compilation que les releases ne fournissent pas.
 [`barrel_server`](/fr/docs/concepts/glossary#barrel-server) se compile
 depuis l’umbrella, le dépôt Barrel qui contient toutes les bibliothèques.
 Il se trouve derrière le profil `server`, une configuration de

@@ -9,30 +9,35 @@ This page covers what Barrel measures, how you read it, and how you watch replic
 
 ## What Barrel measures
 
-The document layer, barrel_docdb, records metrics on every node, whether or not you export them. They use Prometheus naming. A labeled metric is exported under a name that carries its labels, so write your queries against the names below.
+The document layer, barrel_docdb, records metrics on every node, whether or not you export them. They follow Prometheus conventions: a counter ends in `_total`, and labels are exported as labels. Write your queries against the names below.
 
 | Exported name | Type | What it counts |
 |---|---|---|
-| `barrel_doc_operations_db_operation_total{db,operation}` | counter | Document puts, gets and deletes |
-| `barrel_doc_operation_duration_seconds_vec_db_operation` | histogram | Time per document operation |
-| `barrel_write_group_size_vec_db` | histogram | Writes committed together in one batch |
-| `barrel_query_operations_db_total{db}` | counter | Queries run |
-| `barrel_query_duration_seconds_vec_db` | histogram | Time per query |
+| `barrel_doc_operations_total{db,operation}` | counter | Document puts, gets and deletes |
+| `barrel_doc_operation_duration_seconds{db,operation}` | histogram | Time per document operation |
+| `barrel_write_group_size{db}` | histogram | Writes committed together in one batch |
+| `barrel_query_operations_total{db}` | counter | Queries run |
+| `barrel_query_duration_seconds{db}` | histogram | Time per query |
+| `barrel_query_results_count{db}` | histogram | Rows returned per query |
 | `barrel_query_timeouts_total` | counter | Queries that hit their deadline |
-| `barrel_replication_docs_direction_total{direction}` | counter | Documents written by replication |
-| `barrel_replication_errors_task_id_total{task_id}` | counter | Replication errors, per replication id |
-| `barrel_replication_active_task_id{task_id}` | gauge | 1 while the task runs, 0 when it is paused, failed, completed or deleted |
-| `barrel_replication_lag_seconds_task_id{task_id}` | gauge | Seconds since the last copied change was written on the source; 0 once caught up |
-| `barrel_db_documents_total_db{db}` | gauge | Live documents (deleted ones are not counted), exact |
-| `barrel_db_attachments_total_db{db}` | gauge | Attachments, exact, for both the blob and S3 backends |
-| `barrel_db_size_bytes_db{db}` | gauge | Document store size on disk |
-| `barrel_db_pending_compaction_bytes_db{db}` | gauge | Bytes compaction still has to rewrite |
-| `barrel_db_compactions_running_db{db}`, `barrel_db_compactions_queued_db{db}` | gauge | Compactions running now, and waiting for a thread |
-| `barrel_db_stubs_total`, `barrel_db_stubs_bytes` | gauge | Deleted documents kept as stubs, per database, after each retention sweep |
+| `barrel_replication_docs_total{direction}` | counter | Documents written by replication |
+| `barrel_replication_errors_total{task_id}` | counter | Replication errors, per replication id |
+| `barrel_replication_active{task_id}` | gauge | 1 while the task runs, 0 when it is paused, failed, completed or deleted |
+| `barrel_replication_lag_seconds{task_id}` | gauge | Seconds since the last copied change was written on the source; 0 once caught up |
+| `barrel_db_documents_total{db}` | gauge | Live documents (deleted ones are not counted), exact |
+| `barrel_db_attachments_total{db}` | gauge | Attachments, exact, for both the blob and S3 backends |
+| `barrel_db_size_bytes{db}` | gauge | Document store size on disk |
+| `barrel_db_pending_compaction_bytes{db}` | gauge | Bytes compaction still has to rewrite |
+| `barrel_db_compactions_running{db}`, `barrel_db_compactions_queued{db}` | gauge | Compactions running now, and waiting for a thread |
+| `barrel_db_stubs_total{db}`, `barrel_db_stubs_bytes{db}` | gauge | Deleted documents kept as stubs, after each retention sweep |
 
 The size and compaction gauges refresh every minute (`stats_interval`), and once within a second of opening. A pending backlog that keeps growing, or queued compactions that stay above zero, means compaction is falling behind your writes.
 
-Each declared metric is also printed once without labels; that copy stays at 0. Check `export_text/0` for the exact labeled name before you write an alert.
+A metric appears in the export once it has a value: a node that never replicated prints no replication metrics.
+
+<Callout label="Changed in barrel_docdb 3.0">
+Before barrel_docdb 3.0 the labels were folded into the name: document operations were exported as `barrel_doc_operations_db_operation_total{db,operation}`, and the same went for every labeled metric. Update dashboards and alerts that use the old names.
+</Callout>
 
 The document and attachment counts are exact: every write that adds or removes one updates the count in the same atomic write (barrel_docdb 2.4.0). A database written before 2.4.0 is counted once in the background after it opens; until then its counts are not published and `db_info` reports them as `undefined`.
 
@@ -46,10 +51,10 @@ Inside the node, `barrel_metrics:export_text/0` returns the Prometheus text form
 io:format("~s", [barrel_metrics:export_text()]).
 ```
 
-<CodeBlock output label="Output, trimmed, after one write, one read and one query on db mon (live run against barrel_server 1.13.0)" code={`barrel_doc_operations_db_operation_total{db="mon",operation="put"} 1.0
-barrel_doc_operations_db_operation_total{db="mon",operation="get"} 1.0
-barrel_query_operations_db_total{db="mon"} 1.0
-barrel_doc_operation_duration_seconds_vec_db_operation_count{db="mon",operation="put"} 1`} />
+<CodeBlock output label="Output, trimmed, after one write, one read and one query on db mon (live run of the Barrel 2026.11.9 image)" code={`barrel_doc_operations_total{db="mon",operation="put"} 1.0
+barrel_doc_operations_total{db="mon",operation="get"} 1.0
+barrel_query_operations_total{db="mon"} 1.0
+barrel_doc_operation_duration_seconds_count{db="mon",operation="put"} 1`} />
 
 ## Send them to a collector
 
