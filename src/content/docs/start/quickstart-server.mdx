@@ -216,12 +216,12 @@ curl -i -X POST localhost:8080/mcp \
                  "clientInfo":{"name":"curl","version":"0"}}}'
 ```
 
-<CodeBlock output label="Output from a run on barrel_server 1.13.0" code={`HTTP/1.1 200 OK
+<CodeBlock output label="Output from a run of the Barrel 2026.11.9 image (barrel_server 1.15.1)" code={`HTTP/1.1 200 OK
 content-type: application/json
-mcp-session-id: mcp_eb612d0280eda9fef1a406b42ce2c3ea
+mcp-session-id: mcp_23d2e1810ba8c2aaa733edf74b6814cf
 {"id":1,"jsonrpc":"2.0","result":{"capabilities":{...},
  "protocolVersion":"2025-06-18",
- "serverInfo":{"name":"barrel","version":"4.4.1"}}}`} />
+ "serverInfo":{"name":"barrel","version":"4.5.1"}}}`} />
 
 <Callout kind="happened">
 The server agreed on protocol version `2025-06-18` and opened an MCP
@@ -233,7 +233,7 @@ Send `notifications/initialized`, then call a tool. Every request after
 `initialize` carries the session id and the protocol version:
 
 ```shell
-SID=mcp_eb612d0280eda9fef1a406b42ce2c3ea
+SID=mcp_23d2e1810ba8c2aaa733edf74b6814cf
 mcp() {
   curl -s -X POST localhost:8080/mcp \
     -H 'content-type: application/json' \

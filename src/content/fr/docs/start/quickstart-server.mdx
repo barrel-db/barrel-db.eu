@@ -1,6 +1,6 @@
 ---
 translation_of: src/content/docs/start/quickstart-server.mdx
-source_hash: "c03b399e1e00ece4"
+source_hash: "f413a0f3a721f07a"
 title: "Démarrage rapide : serveur"
 description: Compilez et démarrez barrel_server, créez une base, écrivez et lisez des documents, lancez une requête BQL, et appelez un outil via MCP.
 ---
@@ -229,12 +229,12 @@ curl -i -X POST localhost:8080/mcp \
                  "clientInfo":{"name":"curl","version":"0"}}}'
 ```
 
-<CodeBlock output label="Sortie d’une exécution sur barrel_server 1.13.0" code={`HTTP/1.1 200 OK
+<CodeBlock output label="Sortie d’une exécution de l’image Barrel 2026.11.9 (barrel_server 1.15.1)" code={`HTTP/1.1 200 OK
 content-type: application/json
-mcp-session-id: mcp_eb612d0280eda9fef1a406b42ce2c3ea
+mcp-session-id: mcp_23d2e1810ba8c2aaa733edf74b6814cf
 {"id":1,"jsonrpc":"2.0","result":{"capabilities":{...},
  "protocolVersion":"2025-06-18",
-  "serverInfo":{"name":"barrel","version":"4.4.1"}}}`} />
+  "serverInfo":{"name":"barrel","version":"4.5.1"}}}`} />
 
 <Callout kind="happened">
 Le serveur a accepté la version de protocole `2025-06-18` et ouvert une
@@ -247,7 +247,7 @@ requête après `initialize` porte l’id de session et la version du
 protocole :
 
 ```shell
-SID=mcp_eb612d0280eda9fef1a406b42ce2c3ea
+SID=mcp_23d2e1810ba8c2aaa733edf74b6814cf
 mcp() {
   curl -s -X POST localhost:8080/mcp \
     -H 'content-type: application/json' \

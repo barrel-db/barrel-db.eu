@@ -1,4 +1,4 @@
-// translation_of: src/data/components/server.ts source_hash: 3a244bfee3b797ea
+// translation_of: src/data/components/server.ts source_hash: 59912e0164e84bac
 // French text for the barrel_server library page. Code, calls and outputs come from the English file.
 import { overlay } from '../../overlay';
 import { server as en } from '../../components/server';
@@ -14,7 +14,7 @@ export const server = overlay(en, {
   notWhen: [
     'Tout tourne dans un seul nœud Erlang : appelez directement [barrel](/product/barrel).',
   ],
-  external: 'livery (HTTP/1.1, HTTP/2, HTTP/3) et barrel_mcp 4.4.1',
+  external: 'livery (HTTP/1.1, HTTP/2, HTTP/3) et barrel_mcp 4.5.1',
   standalone: { short: 'Oui, comme service', text: 'Oui, comme service. Il apporte avec lui barrel, barrel_docdb, barrel_spaces et barrel_ngram. Vous pouvez aussi monter ses routes dans votre propre application livery.' },
   install: { label: 'dépendances rebar.config', note: 'Dans l’umbrella : `rebar3 as server compile`, ou `rebar3 as server,prod release -n barrel_server`.' },
   reachedThrough: ['REST sur HTTP/1.1, HTTP/2 ou HTTP/3', 'MCP (Streamable HTTP) sur `/mcp`', 'le protocole `_sync`'],

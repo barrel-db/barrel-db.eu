@@ -1,5 +1,5 @@
 --> {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"curl","version":"0"}}}
-{"protocolVersion":"2025-06-18","serverInfo":{"name":"barrel","version":"4.4.1"}}
+{"protocolVersion":"2025-06-18","serverInfo":{"name":"barrel","version":"4.5.1"}}
 mcp-session-id: mcp_07e8b892aebc73ad4d6ae187860202d9
 
 --> {"jsonrpc":"2.0","method":"notifications/initialized"}
